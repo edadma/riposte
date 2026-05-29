@@ -53,15 +53,21 @@ parameter to name or pass around.
 Component-level memoization (a `React.memo` bailout), ref forwarding to DOM
 nodes, error boundaries, SVG namespacing, and a broader typed event set.
 
+## Layout
+
+- `src/` — the `vdom` library (the published artifact)
+- `demo/` — a runnable showcase in its own subproject that depends on the
+  library, so no demo code ends up in the published artifact
+
 ## Development
 
 ```sh
-sbt test           # run the jsdom-backed test suite
-sbt fastLinkJS     # build the demo's JS
+sbt test              # run the library's jsdom-backed test suite
+sbt demo/fastLinkJS   # build the demo's JS
 ```
 
-Then serve the repo root (e.g. `python3 -m http.server`) and open `index.html`
-for the demo. Tests run under a real DOM via jsdom (`npm install` fetches it).
+Then serve `demo/` (e.g. `cd demo && python3 -m http.server`) and open
+`index.html`. Tests run under a real DOM via jsdom (`npm install` fetches it).
 
 ## License
 
