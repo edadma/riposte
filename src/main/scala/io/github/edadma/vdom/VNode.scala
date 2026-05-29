@@ -33,6 +33,11 @@ final case class VComponent[P](
     key:       Option[String],
 ) extends VNode
 
+// Supplies a context value to its subtree. `useContext(ctx)` anywhere inside
+// `child` reads this value (the nearest enclosing provider wins); outside any
+// provider it reads the context's default. Built via `ctx.provide(value, …)`.
+final case class VProvider[T](ctx: Context[T], value: T, child: VNode) extends VNode
+
 case object VEmpty extends VNode
 
 // A property attached to a VElement. The reconciler decides how each kind

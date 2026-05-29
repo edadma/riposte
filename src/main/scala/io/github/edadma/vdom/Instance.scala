@@ -61,6 +61,17 @@ final class FragmentInstance(
     children.foreach(_.collectDomNodes(buf))
     buf += anchor
 
+final class ProviderInstance(
+    var vnode: VNode,
+    val ctx:   Context[?],
+    var value: Any,
+    var child: Instance | Null,
+) extends Instance:
+  def firstDomNode = child.asInstanceOf[Instance].firstDomNode
+  def lastDomNode  = child.asInstanceOf[Instance].lastDomNode
+  def collectDomNodes(buf: scala.collection.mutable.Builder[dom.Node, ?]): Unit =
+    child.asInstanceOf[Instance].collectDomNodes(buf)
+
 final class ComponentInstance[P](
     var vnode:     VNode,
     val component: Component[P],

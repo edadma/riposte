@@ -29,6 +29,7 @@ object Reconciler:
       case e: VElement   => mountElement(e, parent)
       case f: VFragment  => mountFragment(f, parentDom, before, parent)
       case c: VComponent[?] => mountComponent(c, parentDom, before, parent)
+      case pr: VProvider[?] => mountProvider(pr, parentDom, before, parent)
       case VEmpty        => mountEmpty()
     // Element / Text / Empty create a detached node above and insert here;
     // Fragment / Component insert their own pieces during construction.
@@ -75,6 +76,12 @@ object Reconciler:
     inst.rendered = mount(rendered, parentDom, before, inst)
     inst
 
+  private def mountProvider(p: VProvider[?], parentDom: dom.Node, before: dom.Node | Null, parent: Instance | Null): Instance =
+    val inst = new ProviderInstance(p, p.ctx, p.value, null)
+    link(inst, parent)
+    inst.child = mount(p.child, parentDom, before, inst)
+    inst
+
   // Run a component's render function against its hook state.
   private def renderComponent[P](inst: ComponentInstance[P]): VNode =
     val prev = current
@@ -93,6 +100,7 @@ object Reconciler:
         case e: ElementInstance   => patchElement(e, next.asInstanceOf[VElement]); e
         case f: FragmentInstance  => patchFragment(f, next.asInstanceOf[VFragment]); f
         case c: ComponentInstance[?] => patchComponent(c, next); c
+        case pr: ProviderInstance => patchProvider(pr, next.asInstanceOf[VProvider[?]]); pr
         case e: EmptyInstance     => e
     else replace(inst, next)
 
@@ -101,6 +109,7 @@ object Reconciler:
     case (e: ElementInstance, v: VElement)   => e.vnode.asInstanceOf[VElement].tag == v.tag
     case (_: FragmentInstance, _: VFragment) => true
     case (c: ComponentInstance[?], v: VComponent[?]) => c.component eq v.component
+    case (p: ProviderInstance, v: VProvider[?]) => p.ctx eq v.ctx
     case (_: EmptyInstance, VEmpty)          => true
     case _                                   => false
 
@@ -126,6 +135,14 @@ object Reconciler:
     val parentDom = f.anchor.parentNode
     f.children = diffChildren(f, f.children, next.children, parentDom, f.anchor)
     f.vnode    = next
+
+  // Update the provided value and reconcile the child. Because v1 has no memo
+  // bailout, patching the child re-renders the whole subtree, so any consumer
+  // re-reads the new value — no explicit subscriber notification needed.
+  private def patchProvider(pr: ProviderInstance, next: VProvider[?]): Unit =
+    pr.value = next.value
+    pr.vnode = next
+    pr.child = patch(pr.child.asInstanceOf[Instance], next.child)
 
   private def patchComponent(c: ComponentInstance[?], next: VNode): Unit =
     val v = next.asInstanceOf[VComponent[Any]]
@@ -259,6 +276,8 @@ object Reconciler:
         // Children first, then this component's own effect cleanups (bottom-up).
         unmount(c.rendered.asInstanceOf[Instance], removeDom)
         c.hooks.runUnmountCleanups()
+      case pr: ProviderInstance =>
+        unmount(pr.child.asInstanceOf[Instance], removeDom)
 
   private def removeNode(n: dom.Node): Unit =
     val p = n.parentNode

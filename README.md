@@ -40,15 +40,18 @@ parameter to name or pass around.
   event-listener swapping, and a keyed child diff that moves only the DOM
   blocks that are actually out of place (so focus and cursor survive).
 - **Hooks** — `useState` (returns `(state, set, update)`), `useEffect`,
-  `useLayoutEffect`.
+  `useLayoutEffect`, `useRef`, `useMemo`, `useCallback`, `useReducer`, `useId`,
+  and `useContext`.
+- **Context** — `createContext` / `ctx.provide(value, child)` / `useContext`,
+  resolved by walking up the live tree (nearest provider wins).
 - **Scheduler** — state updates batch on the microtask queue and commit before
   paint; layout effects run before paint, passive effects after (on the
   macrotask executor).
 
-## Hooks roadmap
+## Not yet
 
-`useRef`, `useMemo` / `useCallback`, `useReducer`, `useId`, and `useContext`
-with providers.
+Component-level memoization (a `React.memo` bailout), ref forwarding to DOM
+nodes, error boundaries, SVG namespacing, and a broader typed event set.
 
 ## Development
 

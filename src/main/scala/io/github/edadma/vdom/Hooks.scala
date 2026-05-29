@@ -21,10 +21,36 @@ def useEffect(body: () => Cleanup, deps: Array[Any] | Null)(using h: Hooks): Uni
 def useLayoutEffect(body: () => Cleanup, deps: Array[Any] | Null)(using h: Hooks): Unit =
   h.useLayoutEffect(body, deps)
 
+def useRef[T](initial: T)(using h: Hooks): Ref[T] =
+  h.useRef(initial)
+
+def useMemo[T](compute: () => T, deps: Array[Any])(using h: Hooks): T =
+  h.useMemo(compute, deps)
+
+def useCallback[F](fn: F, deps: Array[Any])(using h: Hooks): F =
+  h.useCallback(fn, deps)
+
+def useReducer[S, A](reducer: (S, A) => S, initial: S)(using h: Hooks): (S, A => Unit) =
+  h.useReducer(reducer, initial)
+
+def useId()(using h: Hooks): String =
+  h.useId()
+
+def useContext[T](ctx: Context[T])(using h: Hooks): T =
+  h.useContext(ctx)
+
 // Per-component hook state. Each mounted function component owns one Hooks
 // instance whose cells persist for the life of the component. Within a render,
 // hook calls bind positionally to cells in call order — so, as in React, hooks
 // must not be called conditionally or in loops.
+object Hooks:
+  // Process-wide counter behind useId. IDs need only be unique within a session,
+  // and JavaScript is single-threaded, so a plain counter suffices.
+  private var idSeq: Long = 0
+  private[vdom] def nextId(): String =
+    idSeq += 1
+    s"vdom-$idSeq"
+
 final class Hooks private[vdom] ():
 
   // Back-reference to the owning component instance, set at mount. Hooks use
@@ -66,6 +92,71 @@ final class Hooks private[vdom] ():
       cells(slot) = next
       val inst = instance
       if inst != null then Scheduler.enqueueUpdate(inst)
+
+  // -- useReducer -----------------------------------------------------------
+
+  // State managed by a reducer. Returns the current state and a `dispatch` that
+  // feeds an action through `reducer` to produce the next state.
+  def useReducer[S, A](reducer: (S, A) => S, initial: S): (S, A => Unit) =
+    val (state, _, update) = useState(initial)
+    val dispatch: A => Unit = a => update(s => reducer(s, a))
+    (state, dispatch)
+
+  // -- useRef ---------------------------------------------------------------
+
+  // A mutable box that persists across renders. Writing `ref.current` does NOT
+  // trigger a re-render — use it for DOM handles, timers, or any value that
+  // should survive renders without driving them.
+  def useRef[T](initial: T): Ref[T] =
+    val slot = index
+    if slot >= cells.length then cells += new Ref[T](initial)
+    index = slot + 1
+    cells(slot).asInstanceOf[Ref[T]]
+
+  // -- useMemo / useCallback ------------------------------------------------
+
+  // Memoize a computed value, recomputing only when `deps` change between
+  // renders. Use to avoid expensive recomputation or to keep a stable reference.
+  def useMemo[T](compute: () => T, deps: Array[Any]): T =
+    val slot = index
+    index = slot + 1
+    if slot >= cells.length then
+      val cell = new MemoCell(deps, compute())
+      cells += cell
+      cell.value.asInstanceOf[T]
+    else
+      val cell = cells(slot).asInstanceOf[MemoCell]
+      if !sameDeps(cell.deps, deps) then
+        cell.deps  = deps
+        cell.value = compute()
+      cell.value.asInstanceOf[T]
+
+  // Memoize a callback — a stable function reference while `deps` are unchanged.
+  def useCallback[F](fn: F, deps: Array[Any]): F = useMemo(() => fn, deps)
+
+  // -- useId ----------------------------------------------------------------
+
+  // A stable unique id, generated once per slot and returned unchanged on every
+  // subsequent render — handy for label/input pairing or any unique-string need.
+  def useId(): String =
+    val slot = index
+    if slot >= cells.length then cells += Hooks.nextId()
+    index = slot + 1
+    cells(slot).asInstanceOf[String]
+
+  // -- useContext -----------------------------------------------------------
+
+  // Read the value of the nearest enclosing provider for `ctx`, or the context's
+  // default if there is none. Resolves by walking up the live instance tree from
+  // this component, so a re-rendered consumer always sees the current value.
+  def useContext[T](ctx: Context[T]): T =
+    var cur: Instance | Null = instance
+    while cur != null do
+      cur match
+        case p: ProviderInstance if p.ctx eq ctx => return p.value.asInstanceOf[T]
+        case _                                    => ()
+      cur = cur.parent
+    ctx.default
 
   // -- useEffect / useLayoutEffect ------------------------------------------
 
@@ -145,5 +236,10 @@ private[vdom] final class EffectCell(
 ):
   var queued: Boolean = false
 
-// A mutable cell whose writes do NOT trigger re-render (the future useRef).
+// One useMemo / useCallback cell: the deps it was last computed for and the
+// cached value.
+private final class MemoCell(var deps: Array[Any] | Null, var value: Any)
+
+// A mutable cell whose writes do NOT trigger re-render. Returned by useRef and
+// used internally; assign through `current`.
 final class Ref[T](var current: T)
