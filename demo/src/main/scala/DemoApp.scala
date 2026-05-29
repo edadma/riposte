@@ -56,11 +56,44 @@ object DemoApp:
     )
   }
 
+  // A child component that takes props. With more than one prop the idiomatic
+  // shape is a small props case class (React passes a props object too).
+  private case class StatProps(label: String, value: Int)
+
+  private val Stat = component[StatProps]("Stat") { props =>
+    div(
+      cls := "stat",
+      span(cls := "label", props.label),
+      span(": "),
+      strong(props.value),
+    )
+  }
+
+  // A parent that renders the props-taking child twice, feeding each its own
+  // values from local state. Bumping a counter re-renders the parent, which
+  // passes new props down and re-renders just that Stat.
+  private val Dashboard = view("Dashboard") {
+    val (clicks, _, bumpClicks) = useState(0)
+    val (likes,  _, bumpLikes)  = useState(0)
+    div(
+      cls := "card",
+      h2("Dashboard (child component with props)"),
+      Stat(StatProps("Clicks", clicks)),
+      Stat(StatProps("Likes", likes)),
+      div(
+        button(onClick := (_ => bumpClicks(_ + 1)), "click"),
+        span(" "),
+        button(onClick := (_ => bumpLikes(_ + 1)), "like"),
+      ),
+    )
+  }
+
   private val App = view("App") {
     div(
       h1("vdom demo"),
       Counter(),
       TodoList(),
+      Dashboard(),
     )
   }
 
