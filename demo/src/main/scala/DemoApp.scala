@@ -56,16 +56,13 @@ object DemoApp:
     )
   }
 
-  // A child component that takes props. With more than one prop the idiomatic
-  // shape is a small props case class (React passes a props object too).
-  private case class StatProps(label: String, value: Int)
-
-  private val Stat = component[StatProps]("Stat") { props =>
+  // A child component that takes props — passed positionally, no wrapper type.
+  private val Stat = component[String, Int]("Stat") { (label, value) =>
     div(
       cls := "stat",
-      span(cls := "label", props.label),
+      span(cls := "label", label),
       span(": "),
-      strong(props.value),
+      strong(value),
     )
   }
 
@@ -78,8 +75,8 @@ object DemoApp:
     div(
       cls := "card",
       h2("Dashboard (child component with props)"),
-      Stat(StatProps("Clicks", clicks)),
-      Stat(StatProps("Likes", likes)),
+      Stat("Clicks", clicks),
+      Stat("Likes", likes),
       div(
         button(onClick := (_ => bumpClicks(_ + 1)), "click"),
         span(" "),

@@ -30,6 +30,31 @@ A component body is a `Hooks ?=> VNode` context function, so the hook context
 is threaded implicitly — you call `useState(0)` directly, with no `hooks`
 parameter to name or pass around.
 
+## Props
+
+A component with one prop uses `component[P]`. For several props, pass them
+positionally — no wrapper type:
+
+```scala
+val Stat = component[String, Int]("Stat") { (label, value) =>
+  div(span(label), strong(value))
+}
+Stat("Clicks", clicks)
+```
+
+When you want field names without declaring a case class, use a named tuple as
+the single prop:
+
+```scala
+val Card = component[(title: String, count: Int)]("Card") { p =>
+  div(span(p.title), strong(p.count))
+}
+Card((title = "Hi", count = 3))
+```
+
+Both keep component identity stable (so hook state survives prop changes) and
+work with `memo`, which compares props structurally.
+
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.

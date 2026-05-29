@@ -53,3 +53,53 @@ extension (c: Component[Unit]) def apply(): VNode = c.apply(())
 // render and defeat the bailout — stabilize handlers with `useCallback`.
 def memo[P](c: Component[P]): Component[P] =
   new Component(c.name, c.render, memoized = true)
+
+// --- multi-argument components ---------------------------------------------
+//
+// For a component with several props, these arities let you pass positional
+// arguments — `Stat("Clicks", n)` — instead of bundling them into one value.
+// Under the hood the args are stored as a tuple, so component identity and
+// `memo` (structural `==` on the tuple) behave exactly as for one prop.
+//
+//   val Stat = component[String, Int]("Stat") { (label, value) =>
+//     div(span(label), strong(value))
+//   }
+//   Stat("Clicks", clicks)
+//
+// When you'd rather have field names without declaring a case class, pass a
+// single named tuple to `component[P]` instead:
+//
+//   val Card = component[(title: String, count: Int)]("Card") { p =>
+//     div(span(p.title), strong(p.count))
+//   }
+//   Card((title = "Hi", count = 3))
+
+final class Component2[A, B] private[vdom] (private[vdom] val underlying: Component[(A, B)]):
+  def apply(a: A, b: B): VNode              = underlying((a, b))
+  def apply(a: A, b: B, key: String): VNode = underlying((a, b), key)
+
+final class Component3[A, B, C] private[vdom] (private[vdom] val underlying: Component[(A, B, C)]):
+  def apply(a: A, b: B, c: C): VNode              = underlying((a, b, c))
+  def apply(a: A, b: B, c: C, key: String): VNode = underlying((a, b, c), key)
+
+final class Component4[A, B, C, D] private[vdom] (private[vdom] val underlying: Component[(A, B, C, D)]):
+  def apply(a: A, b: B, c: C, d: D): VNode              = underlying((a, b, c, d))
+  def apply(a: A, b: B, c: C, d: D, key: String): VNode = underlying((a, b, c, d), key)
+
+def component[A, B](name: String)(render: (A, B) => (Hooks ?=> VNode)): Component2[A, B] =
+  new Component2(new Component[(A, B)](name, t => render(t._1, t._2)))
+
+def component[A, B, C](name: String)(render: (A, B, C) => (Hooks ?=> VNode)): Component3[A, B, C] =
+  new Component3(new Component[(A, B, C)](name, t => render(t._1, t._2, t._3)))
+
+def component[A, B, C, D](name: String)(render: (A, B, C, D) => (Hooks ?=> VNode)): Component4[A, B, C, D] =
+  new Component4(new Component[(A, B, C, D)](name, t => render(t._1, t._2, t._3, t._4)))
+
+def memo[A, B](c: Component2[A, B]): Component2[A, B] =
+  new Component2(memo(c.underlying))
+
+def memo[A, B, C](c: Component3[A, B, C]): Component3[A, B, C] =
+  new Component3(memo(c.underlying))
+
+def memo[A, B, C, D](c: Component4[A, B, C, D]): Component4[A, B, C, D] =
+  new Component4(memo(c.underlying))

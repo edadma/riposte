@@ -1,28 +1,46 @@
 package io.github.edadma.vdom
 
-// Components that take props: receiving them, re-rendering when a parent passes
-// new ones, and — the subtle part — keeping their own hook state across prop
-// changes (because the reconciler matches by component identity, not props).
+// Components that take props: positional multi-arg factories, named-tuple props,
+// re-rendering when a parent passes new props, and — the subtle part — keeping
+// their own hook state across prop changes (matched by component identity, not
+// props).
 class PropsSpec extends DomSuite:
 
-  private case class CardProps(title: String, count: Int)
-
-  private val Card = component[CardProps]("Card") { p =>
-    div(cls := "card", span(cls := "title", p.title), span(cls := "count", p.count))
+  private val Card = component[String, Int]("Card") { (title, count) =>
+    div(cls := "card", span(cls := "title", title), span(cls := "count", count))
   }
 
-  test("a child component receives its props"):
+  test("a positional multi-arg child receives its props"):
     val c = container()
-    render(Card(CardProps("hello", 3)), c)
+    render(Card("hello", 3), c)
     assert(c.querySelector("span.title").textContent == "hello")
     assert(c.querySelector("span.count").textContent == "3")
+
+  test("a three-arg positional component receives all three props"):
+    val c = container()
+    val Row = component[String, Int, Boolean]("Row") { (label, n, on) =>
+      div(span(cls := "l", label), span(cls := "n", n), span(cls := "on", on.toString))
+    }
+    render(Row("x", 5, true), c)
+    assert(c.querySelector("span.l").textContent == "x")
+    assert(c.querySelector("span.n").textContent == "5")
+    assert(c.querySelector("span.on").textContent == "true")
+
+  test("a named-tuple child receives its props by name"):
+    val c = container()
+    val Badge = component[(text: String, tone: String)]("Badge") { p =>
+      div(cls := "badge", span(cls := "text", p.text), span(cls := "tone", p.tone))
+    }
+    render(Badge((text = "new", tone = "info")), c)
+    assert(c.querySelector("span.text").textContent == "new")
+    assert(c.querySelector("span.tone").textContent == "info")
 
   test("a child re-renders when the parent passes new props"):
     val c = container()
     val Parent = view("Parent") {
       val (n, _, update) = useState(0)
       div(
-        Card(CardProps("n", n)),
+        Card("n", n),
         button(onClick := (_ => update(_ + 1)), "bump"),
       )
     }

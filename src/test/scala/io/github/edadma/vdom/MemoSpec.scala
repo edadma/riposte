@@ -26,6 +26,27 @@ class MemoSpec extends DomSuite:
     assert(c.querySelector("span.n").textContent == "1") // parent did re-render
     assert(childRenders == 1)                            // memoized child did not
 
+  test("a memoized multi-arg child bails when its positional args are unchanged"):
+    val c = container()
+    var childRenders = 0
+    val Child = memo(component[String, Int]("Child") { (label, value) =>
+      childRenders += 1
+      span(cls := "c", s"$label$value")
+    })
+    val Parent = view("Parent") {
+      val (n, _, update) = useState(0)
+      div(
+        Child("fixed", 7), // args never change
+        span(cls := "n", n),
+        button(onClick := (_ => update(_ + 1)), "bump"),
+      )
+    }
+    render(Parent(), c)
+    assert(childRenders == 1)
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("span.n").textContent == "1")
+    assert(childRenders == 1) // tuple ("fixed", 7) compared equal → bailed
+
   test("a memoized child re-renders when its props change"):
     val c = container()
     var childRenders = 0
