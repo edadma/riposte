@@ -56,13 +56,14 @@ object DemoApp:
     )
   }
 
-  // A child component that takes props — passed positionally, no wrapper type.
-  private val Stat = component[String, Int]("Stat") { (label, value) =>
+  // A child component that takes props. Using a named tuple gives the props
+  // field names without declaring a case class.
+  private val Stat = component[(label: String, value: Int)]("Stat") { p =>
     div(
       cls := "stat",
-      span(cls := "label", label),
+      span(cls := "label", p.label),
       span(": "),
-      strong(value),
+      strong(p.value),
     )
   }
 
@@ -75,8 +76,8 @@ object DemoApp:
     div(
       cls := "card",
       h2("Dashboard (child component with props)"),
-      Stat("Clicks", clicks),
-      Stat("Likes", likes),
+      Stat((label = "Clicks", value = clicks)),
+      Stat((label = "Likes", value = likes)),
       div(
         button(onClick := (_ => bumpClicks(_ + 1)), "click"),
         span(" "),
