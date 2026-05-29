@@ -1,0 +1,9 @@
+{
+  "name": "vdom",
+  "version": "0.0.1",
+  "private": true,
+  "description": "npm deps for vdom's jsdom-backed Scala.js unit tests",
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

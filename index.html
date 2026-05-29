@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>vdom demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 40rem; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    h1 { margin-top: 0; }
+    button { cursor: pointer; }
+    input { padding: 0.25rem 0.5rem; }
+    ul { padding-left: 1.25rem; }
+    li { margin: 0.25rem 0; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- Run `sbt fastLinkJS`, then serve this directory (e.g. `python3 -m http.server`). -->
+  <script src="./target/scala-3.8.3/vdom-fastopt/main.js"></script>
+</body>
+</html>
