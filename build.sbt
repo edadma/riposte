@@ -46,7 +46,7 @@ lazy val demo = project
     name := "vdom-demo",
     scalacOptions ++= commonScalacOptions,
     scalaJSUseMainModuleInitializer := true,
-    Compile / mainClass := Some("io.github.edadma.vdom.demo.DemoApp"),
+    Compile / mainClass := Some("DemoApp"),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.NoModule)),
     publish / skip := true,
   )

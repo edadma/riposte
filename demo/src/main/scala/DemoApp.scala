@@ -1,10 +1,9 @@
-package io.github.edadma.vdom.demo
-
 import io.github.edadma.vdom.*
 import org.scalajs.dom
 
 // A small showcase of the basics: local state via useState, event handlers,
-// a controlled input, and a keyed list that adds and removes items.
+// a controlled input, and a keyed list that adds and removes items. Lives in
+// the default (empty) package — it's a self-contained app, imported by nobody.
 object DemoApp:
 
   private val Counter = view("Counter") {
