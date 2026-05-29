@@ -60,6 +60,9 @@ final class Hooks private[vdom] ():
   private val cells          = ArrayBuffer.empty[Any]
   private var index          = 0
 
+  // Contexts this component reads, so its subscriptions can be dropped on unmount.
+  private[vdom] val subscribedContexts = scala.collection.mutable.HashSet.empty[Context[?]]
+
   private[vdom] def beginRender(): Unit = index = 0
 
   // -- useState -------------------------------------------------------------
@@ -149,14 +152,29 @@ final class Hooks private[vdom] ():
   // Read the value of the nearest enclosing provider for `ctx`, or the context's
   // default if there is none. Resolves by walking up the live instance tree from
   // this component, so a re-rendered consumer always sees the current value.
+  //
+  // Reading also subscribes this component to the context, so a provider value
+  // change re-renders it even when an intervening memoized ancestor bails out.
   def useContext[T](ctx: Context[T]): T =
-    var cur: Instance | Null = instance
+    val self = instance
+    if self != null then
+      subscribedContexts += ctx
+      ctx.subscribers += self
+    var cur: Instance | Null = self
     while cur != null do
       cur match
         case p: ProviderInstance if p.ctx eq ctx => return p.value.asInstanceOf[T]
         case _                                    => ()
       cur = cur.parent
     ctx.default
+
+  // Drop this component from every context it subscribed to. Called by the
+  // reconciler on unmount so stale instances aren't notified.
+  private[vdom] def clearContextSubscriptions(): Unit =
+    val self = instance
+    if self != null && subscribedContexts.nonEmpty then
+      subscribedContexts.foreach(_.subscribers.remove(self))
+      subscribedContexts.clear()
 
   // -- useEffect / useLayoutEffect ------------------------------------------
 

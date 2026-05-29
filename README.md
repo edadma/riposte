@@ -43,15 +43,18 @@ parameter to name or pass around.
   `useLayoutEffect`, `useRef`, `useMemo`, `useCallback`, `useReducer`, `useId`,
   and `useContext`.
 - **Context** — `createContext` / `ctx.provide(value, child)` / `useContext`,
-  resolved by walking up the live tree (nearest provider wins).
+  resolved by walking up the live tree (nearest provider wins); consumers
+  subscribe, so they update even from behind a memoized ancestor.
+- **`memo`** — wrap a component to skip a parent-driven re-render when its props
+  are unchanged (it still re-renders on its own state or a consumed context).
 - **Scheduler** — state updates batch on the microtask queue and commit before
   paint; layout effects run before paint, passive effects after (on the
   macrotask executor).
 
 ## Not yet
 
-Component-level memoization (a `React.memo` bailout), ref forwarding to DOM
-nodes, error boundaries, SVG namespacing, and a broader typed event set.
+Ref forwarding to DOM nodes, error boundaries, SVG namespacing, and a broader
+typed event set.
 
 ## Layout
 

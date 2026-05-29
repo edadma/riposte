@@ -136,19 +136,29 @@ object Reconciler:
     f.children = diffChildren(f, f.children, next.children, parentDom, f.anchor)
     f.vnode    = next
 
-  // Update the provided value and reconcile the child. Because v1 has no memo
-  // bailout, patching the child re-renders the whole subtree, so any consumer
-  // re-reads the new value — no explicit subscriber notification needed.
+  // Update the provided value and reconcile the child. Patching the child
+  // re-renders the subtree top-down, which covers ordinary consumers — but a
+  // memoized ancestor may bail and skip consumers below it, so when the value
+  // actually changes we also enqueue every subscriber of this context directly.
   private def patchProvider(pr: ProviderInstance, next: VProvider[?]): Unit =
+    val changed = pr.value != next.value
     pr.value = next.value
     pr.vnode = next
     pr.child = patch(pr.child.asInstanceOf[Instance], next.child)
+    if changed then
+      pr.ctx.subscribers.foreach(sub => if sub.mounted then Scheduler.enqueueUpdate(sub))
 
   private def patchComponent(c: ComponentInstance[?], next: VNode): Unit =
-    val v = next.asInstanceOf[VComponent[Any]]
-    c.asInstanceOf[ComponentInstance[Any]].props = v.props
-    c.vnode = next
-    rerender(c)
+    val v  = next.asInstanceOf[VComponent[Any]]
+    val ci = c.asInstanceOf[ComponentInstance[Any]]
+    val prevProps = ci.props
+    ci.props = v.props
+    ci.vnode = next
+    // memo bailout: a memoized component skips this parent-driven re-render when
+    // its props are unchanged and it has no pending state update of its own.
+    // (Context changes reach it through the subscriber path, not this cascade.)
+    if c.component.memoized && !c.dirty && prevProps == v.props then ()
+    else rerender(c)
 
   // Re-render a single component and reconcile its output. Used both by the
   // parent-driven patch above and by the scheduler for local state updates.
@@ -276,6 +286,7 @@ object Reconciler:
         // Children first, then this component's own effect cleanups (bottom-up).
         unmount(c.rendered.asInstanceOf[Instance], removeDom)
         c.hooks.runUnmountCleanups()
+        c.hooks.clearContextSubscriptions()
       case pr: ProviderInstance =>
         unmount(pr.child.asInstanceOf[Instance], removeDom)
 
