@@ -15,7 +15,7 @@ fencing term — the counter-thrust after a parry. Diffing is the parry; patchin
 the riposte.
 
 ```scala
-def Counter(using Hooks): VNode =
+def Counter(): Hooks ?=> VNode =
   val (count, _, update) = useState(0)
   button(onClick := (_ => update(_ + 1)), s"Count: $count")
 ```

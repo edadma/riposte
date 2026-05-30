@@ -9,14 +9,15 @@ This walks through a complete, tiny Riposte application: a counter you can click
 
 ## Describe the UI
 
-A component is a function returning a `VNode`. The builder DSL gives you HTML tags,
-attributes, and event handlers. Hooks like `useState` are available at the top level of
-a component through a `Hooks` context:
+A component is a zero-arg function whose return type is the context function
+`Hooks ?=> VNode`. The `Hooks ?=>` part is what lets you call hooks like `useState` at the
+top level — the reconciler supplies the `Hooks` context when it runs the component. The
+builder DSL gives you HTML tags, attributes, and event handlers:
 
 ```scala
 import io.github.edadma.riposte.*
 
-def Counter(using Hooks): VNode =
+def Counter(): Hooks ?=> VNode =
   val (count, set, update) = useState(0)
 
   div(
@@ -39,8 +40,12 @@ import org.scalajs.dom
 
 @main def main(): Unit =
   val root = dom.document.getElementById("app")
-  render(Counter, root)
+  render(Counter(), root)
 ```
+
+Note the `Counter()` — you *call* the component. That yields a `Hooks ?=> VNode`, which an
+implicit conversion wraps as a component node, so it can be passed to `render` or nested as
+a child of any element.
 
 ```html
 <!-- index.html -->

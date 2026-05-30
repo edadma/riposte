@@ -6,8 +6,10 @@ weight: 1
 # Components & the DSL
 
 A Riposte UI is an immutable tree of `VNode`s. You build that tree with the DSL: a set
-of element functions, attribute keys, and event keys. A *component* is just a function
-that returns a `VNode`.
+of element functions, attribute keys, and event keys. A *component* is a zero-arg function
+returning `Hooks ?=> VNode` — call it (`MyComponent()`) wherever a child is expected, and
+an implicit conversion wraps the result as a node. (A component that uses no hooks can
+just return `VNode`.) See [Hooks](/guide/hooks/) for the `Hooks ?=>` part.
 
 ## Elements
 
@@ -19,7 +21,7 @@ import io.github.edadma.riposte.*
 div(
   cls := "card",
   h2("Riposte"),
-  p("A virtual-DOM library for Scala.js."),
+  p("A React-inspired library for Scala.js."),
 )
 ```
 

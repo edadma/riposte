@@ -33,11 +33,12 @@ graph live in a `Store`.
 ## Using atoms in components
 
 The atom hooks mirror `useState`. `useAtom` returns the current value and a setter;
-`useAtomValue` reads only; `useSetAtom` writes only. They need a `Store` in scope,
-provided by `StoreProvider` near the root of your app:
+`useAtomValue` reads only; `useSetAtom` writes only. Each resolves its store from the
+nearest `StoreProvider` ancestor (or a default store if there is none), so the component
+signature is the ordinary `Hooks ?=> VNode` — no extra parameter:
 
 ```scala
-def Counter(using Hooks, Store): VNode =
+def Counter(): Hooks ?=> VNode =
   val (count, setCount) = useAtom(countAtom)
   val doubled           = useAtomValue(doubledAtom)
 
@@ -46,10 +47,10 @@ def Counter(using Hooks, Store): VNode =
     button(onClick := (_ => setCount(count + 1)), "Increment"),
   )
 
-def App(using Hooks): VNode =
-  StoreProvider(
-    Counter,
-  )
+def App(): Hooks ?=> VNode =
+  StoreProvider() {
+    Counter()
+  }
 ```
 
 Any component reading `countAtom` re-renders when it changes; `doubledAtom` recomputes

@@ -6,13 +6,14 @@ weight: 2
 # Hooks
 
 Hooks give a function component local state, side effects, and access to the DOM. They
-are available through a `Hooks` context, which Riposte supplies while rendering. Declare
-a component as `(using Hooks)` (or `Hooks ?=> VNode`) and call hooks at the top level:
+are available through a `Hooks` context, which Riposte supplies while rendering. Give a
+component the return type `Hooks ?=> VNode` and call hooks at the top level — the `Hooks ?=>`
+is what makes the context available without you passing it explicitly:
 
 ```scala
 import io.github.edadma.riposte.*
 
-def Greeting(using Hooks): VNode =
+def Greeting(): Hooks ?=> VNode =
   val (name, setName, _) = useState("world")
   div(
     input(value := name, onInput := (e => setName(e.target.value))),
@@ -44,14 +45,19 @@ batched into a single render.
 ## useEffect
 
 `useEffect(effect, deps)` runs a side effect after the DOM has been updated. It runs on
-the macrotask queue, after the browser paints, so it never blocks a frame. The
-dependency list controls when it re-runs — same deps, no re-run:
+the macrotask queue, after the browser paints, so it never blocks a frame. The effect
+returns either a cleanup function or `null` when there's nothing to tear down. The
+dependency list — an `Array` — controls when it re-runs; same deps, no re-run:
 
 ```scala
 useEffect(() => {
-  document.title = s"Count: $count"
-}, Seq(count))
+  dom.document.title = s"Count: $count"
+  null
+}, Array(count))
 ```
+
+Pass `empty` (an empty dependency array) to run the effect only once, after the first
+mount; pass `null` to run it after every render.
 
 ## Refs
 
@@ -61,7 +67,7 @@ read it from an effect:
 ```scala
 val box = Ref[dom.html.Input]()
 input(ref := box)
-useEffect(() => box.current.foreach(_.focus()), Nil)
+useEffect(() => { box.current.foreach(_.focus()); null }, empty)
 ```
 
 ## Beyond local state

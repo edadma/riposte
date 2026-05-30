@@ -25,26 +25,26 @@ pairs a path pattern with an element:
 import io.github.edadma.riposte.*
 import io.github.edadma.riposte.router.*
 
-def App(using Hooks): VNode =
+def App(): Hooks ?=> VNode =
   Router() {
     Routes(
-      route("/")(Home),
-      route("/about")(About),
-      route("/users/:id")(UserPage),
+      route("/")(Home()),
+      route("/about")(About()),
+      route("/users/:id")(UserPage()),
     )
   }
 ```
 
-`Router(mode = History)` uses the HTML History API and clean URLs; `Router(mode = Hash)`
-uses `#/…` fragments for static hosting without server rewrites.
+`Router(RouterMode.History)` uses the HTML History API and clean URLs; `Router(RouterMode.Hash)`
+uses `#/…` fragments for static hosting without server rewrites. The default is History.
 
 ## Params
 
 A `:name` segment is a parameter. Read the matched params with `useParams`:
 
 ```scala
-def UserPage(using Hooks, RouterContext): VNode =
-  val id = useParams.getOrElse("id", "")
+def UserPage(): Hooks ?=> VNode =
+  val id = useParams().getOrElse("id", "")
   p(s"User $id")
 ```
 
@@ -55,7 +55,7 @@ target matches the current location (`end = true` matches the path exactly):
 
 ```scala
 nav(
-  Link("/")("Home"),
+  Link("/", "Home"),
   NavLink("/about", activeClass = "current")("About"),
 )
 ```
@@ -74,14 +74,14 @@ the branch:
 
 ```scala
 Routes(
-  route("/dashboard")(Dashboard)(
-    index(Overview),
-    route("settings")(Settings),
-    route("users/:id")(UserDetail),
+  route("/dashboard")(Dashboard())(
+    index(Overview()),
+    route("settings")(Settings()),
+    route("users/:id")(UserDetail()),
   ),
 )
 
-def Dashboard(using Hooks, RouterContext): VNode =
+def Dashboard(): Hooks ?=> VNode =
   div(
     h1("Dashboard"),
     Outlet,  // renders Overview, Settings, or UserDetail
