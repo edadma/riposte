@@ -194,3 +194,46 @@ class AtomSpec extends AnyFunSuite:
     assert(c.querySelector("span.f").textContent == "32")
     fireClick(c.querySelector("button"))
     assert(c.querySelector("span.f").textContent == "212")
+
+  // --- Provider-scoped stores ----------------------------------------------
+
+  test("the same atom holds independent values under two StoreProviders"):
+    val c     = host()
+    val s1    = new Store
+    val s2    = new Store
+    val count = atom(0)
+    val Inc = view {
+      val (n, set) = useAtom(count)
+      button(onClick := (_ => set(n + 1)), n)
+    }
+    render(
+      div(
+        div(cls := "a", StoreProvider(s1)(Inc())),
+        div(cls := "b", StoreProvider(s2)(Inc())),
+      ),
+      c,
+    )
+    Scheduler.flushSync()
+    val a = c.querySelector("div.a button")
+    val b = c.querySelector("div.b button")
+    assert(a.textContent == "0")
+    assert(b.textContent == "0")
+    fireClick(a) // increments only s1's count
+    assert(a.textContent == "1")
+    assert(b.textContent == "0")
+    assert(s1.get(count) == 1)
+    assert(s2.get(count) == 0)
+
+  test("without a provider the hooks fall back to Store.default"):
+    val c     = host()
+    val count = atom(0)
+    val Show  = view {
+      val v = useAtomValue(count)
+      span(cls := "g", v)
+    }
+    render(Show(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.g").textContent == "0")
+    Store.default.set(count, 9)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.g").textContent == "9")
