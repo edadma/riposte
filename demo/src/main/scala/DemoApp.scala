@@ -89,12 +89,34 @@ object DemoApp:
     )
   }
 
+  // Holds a handle to the live <input> through `ref`, then reaches for it
+  // imperatively in a click handler — the thing local state can't do.
+  val FocusCard = view {
+    val inputRef = useRef[dom.html.Input | Null](null)
+    div(
+      cls := "card",
+      h2("Ref (imperative focus)"),
+      input(ref := inputRef, placeholder := "press focus →"),
+      span(" "),
+      button(
+        onClick := { _ =>
+          val node = inputRef.current
+          if node != null then
+            node.focus()
+            node.select()
+        },
+        "focus",
+      ),
+    )
+  }
+
   val App = view {
     div(
       h1("vdom demo"),
       Counter(),
       TodoList(),
       Dashboard(),
+      FocusCard(),
     )
   }
 

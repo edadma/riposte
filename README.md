@@ -55,6 +55,28 @@ Card((title = "Hi", count = 3))
 Both keep component identity stable (so hook state survives prop changes) and
 work with `memo`, which compares props structurally.
 
+## Refs
+
+`ref := box` binds an element to a `useRef` box so you can reach its live DOM
+node imperatively — focus, measure, or hand it to a browser API:
+
+```scala
+val Field = view {
+  val inputRef = useRef[dom.html.Input | Null](null)
+  div(
+    input(ref := inputRef),
+    button(onClick := { _ =>
+      val node = inputRef.current
+      if node != null then node.focus()
+    }, "focus"),
+  )
+}
+```
+
+The node is written to `.current` on mount and cleared to null on unmount. Pass
+a callback instead — `ref := (node => …)`, called with the node on mount and
+null on unmount — when you'd rather run code than hold a handle.
+
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.
@@ -67,6 +89,9 @@ work with `memo`, which compares props structurally.
 - **Hooks** — `useState` (returns `(state, set, update)`), `useEffect`,
   `useLayoutEffect`, `useRef`, `useMemo`, `useCallback`, `useReducer`, `useId`,
   and `useContext`.
+- **Refs to DOM nodes** — `ref := someRefBox` writes the live element into a
+  `useRef` box (`.current`), cleared to null on unmount; `ref := (node => …)`
+  takes a callback instead. For focus, measurement, and other imperative work.
 - **Context** — `createContext` / `ctx.provide(value, child)` / `useContext`,
   resolved by walking up the live tree (nearest provider wins); consumers
   subscribe, so they update even from behind a memoized ancestor.
@@ -78,8 +103,7 @@ work with `memo`, which compares props structurally.
 
 ## Not yet
 
-Ref forwarding to DOM nodes, error boundaries, SVG namespacing, and a broader
-typed event set.
+Error boundaries, SVG namespacing, portals, and a broader typed event set.
 
 ## Layout
 

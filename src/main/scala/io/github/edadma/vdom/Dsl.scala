@@ -22,6 +22,7 @@ final case class PropMod(name: String, value: Prop)    extends Mod
 final case class ChildMod(node: VNode)                 extends Mod
 final case class ChildrenMod(nodes: Seq[VNode])        extends Mod
 final case class KeyMod(key: String)                   extends Mod
+final case class RefMod(ref: ElementRef)               extends Mod
 case object NoMod                                       extends Mod
 
 // Folds a list of mods into a VElement. Later props with the same name win;
@@ -31,6 +32,7 @@ def h(tag: String)(mods: Mod*): VElement =
   var props                    = Map.empty[String, Prop]
   val children                 = Vector.newBuilder[VNode]
   var key: Option[String]      = None
+  var ref: ElementRef | Null   = null
   mods.foreach {
     case PropMod("class", Attr(v)) =>
       props = props.updated("class", Attr(props.get("class") match
@@ -40,9 +42,10 @@ def h(tag: String)(mods: Mod*): VElement =
     case ChildMod(n)     => children += n
     case ChildrenMod(ns) => children ++= ns
     case KeyMod(k)       => key = Some(k)
+    case RefMod(r)       => ref = r
     case NoMod           => ()
   }
-  VElement(tag, props, children.result(), key)
+  VElement(tag, props, children.result(), key, ref)
 
 // A transparent group of siblings — splices its children into the parent's
 // child list without introducing a wrapper element.
@@ -76,6 +79,17 @@ def css(decls: (String, String)*): Mod = PropMod("style", StyleProp(decls.toMap)
 object key:
   def :=(k: String): Mod = KeyMod(k)
   def :=(k: Int):    Mod = KeyMod(k.toString)
+
+// Binds an element to a handle on its live DOM node. Either a `useRef` box —
+// `val r = useRef[dom.html.Input | Null](null); input(ref := r)`, read as
+// `r.current` from an effect — or a callback `node => …` run on mount (node)
+// and unmount (null). `ref` is a top-level val (not an object) so its compiled
+// name doesn't case-clash with the `Ref` class on case-insensitive filesystems.
+final class RefKey:
+  def :=[T](box: Ref[T]): Mod                   = RefMod(BoxRef(box))
+  def :=(fn: (dom.Element | Null) => Unit): Mod = RefMod(FnRef(fn))
+
+val ref = new RefKey
 
 // --- common attributes -----------------------------------------------------
 

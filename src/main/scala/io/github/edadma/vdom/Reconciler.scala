@@ -57,6 +57,7 @@ object Reconciler:
     link(inst, parent)
     inst.listeners = applyProps(el, Map.empty, e.props, Map.empty)
     inst.children  = e.children.map(c => mount(c, el, null, inst))
+    if e.ref != null then e.ref.attach(el)
     inst
 
   private def mountFragment(f: VFragment, parentDom: dom.Node, before: dom.Node | Null, parent: Instance | Null): Instance =
@@ -129,7 +130,14 @@ object Reconciler:
     val old = e.vnode.asInstanceOf[VElement]
     e.listeners = applyProps(e.node, old.props, next.props, e.listeners)
     e.children  = diffChildren(e, e.children, next.children, e.node, null)
-    e.vnode     = next
+    // The node is reused across a same-tag patch, so a stable ref needs no
+    // action. Only a change of ref identity re-points the handle: clear the old,
+    // bind the new to this same node. Equality is structural, so the same
+    // `useRef` box (or hoisted callback) re-binds nothing.
+    if (old.ref: ElementRef | Null) != (next.ref: ElementRef | Null) then
+      if old.ref != null then old.ref.detach()
+      if next.ref != null then next.ref.attach(e.node)
+    e.vnode = next
 
   private def patchFragment(f: FragmentInstance, next: VFragment): Unit =
     val parentDom = f.anchor.parentNode
@@ -278,6 +286,8 @@ object Reconciler:
         if removeDom then removeNode(e.node)
       case e: ElementInstance =>
         e.children.foreach(unmount(_, removeDom = false))
+        val r = e.vnode.asInstanceOf[VElement].ref
+        if r != null then r.detach()
         if removeDom then removeNode(e.node)
       case f: FragmentInstance =>
         f.children.foreach(unmount(_, removeDom))

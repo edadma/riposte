@@ -20,6 +20,7 @@ final case class VElement(
     props:    Map[String, Prop],
     children: Vector[VNode],
     key:      Option[String],
+    ref:      ElementRef | Null = null,
 ) extends VNode
 
 final case class VFragment(
@@ -50,3 +51,29 @@ final case class Attr(value: String)              extends Prop
 final case class BoolAttr(value: Boolean)         extends Prop
 final case class Handler(fn: dom.Event => Unit)   extends Prop
 final case class StyleProp(decls: Map[String, String]) extends Prop
+
+// Binds a VElement to its live DOM node. `attach` runs once the element is
+// created (on mount) with the real node; `detach` runs on unmount, and before a
+// re-attach when an element's ref identity changes across a patch. The node is
+// the same object for the life of an ElementInstance — a same-tag patch reuses
+// it — so a stable ref sees a stable node.
+sealed trait ElementRef:
+  private[vdom] def attach(node: dom.Element): Unit
+  private[vdom] def detach(): Unit
+
+// A ref backed by a `useRef` box: the live node is written into `.current` on
+// mount and cleared to null on unmount. Declare the box's type to include null,
+// e.g. `useRef[dom.html.Input | Null](null)`, so `current` can hold both. These
+// are case classes so that wrapping the same box (or function) compares equal:
+// a patch re-binds only when the underlying handle actually changes, so a stable
+// `useRef` box never churns, while an inline callback — a fresh function each
+// render — re-runs, matching React.
+private[vdom] final case class BoxRef[T](box: Ref[T]) extends ElementRef:
+  def attach(node: dom.Element): Unit = box.current = node.asInstanceOf[T]
+  def detach(): Unit                  = box.current = null.asInstanceOf[T]
+
+// A callback ref: invoked with the node on mount and with null on unmount —
+// for running code (focus, measure, observers) as the element comes and goes.
+private[vdom] final case class FnRef(fn: (dom.Element | Null) => Unit) extends ElementRef:
+  def attach(node: dom.Element): Unit = fn(node)
+  def detach(): Unit                  = fn(null)
