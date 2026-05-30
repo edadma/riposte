@@ -5,14 +5,15 @@ weight: 1
 
 # Components & the DSL
 
-A Riposte UI is an immutable tree of `VNode`s. You build that tree with the DSL: a set
-of element functions, attribute keys, and event keys. A *component* is a value built with
-`view { … }` (or `component[P] { … }` when it takes props — see [Hooks](/guide/hooks/));
-call it (`MyComponent()`) wherever a child is expected.
+A Riposte UI is an immutable tree of `VNode`s. You don't build that tree by hand — you
+describe it with the **DSL** (element functions, attribute keys, event keys) and package
+reusable pieces of it as **components**. This page covers both: first how to describe
+markup, then how to factor it into components that take props and children.
 
 ## Elements
 
-Element functions take a mix of attributes, event handlers, and children as arguments:
+Every HTML element has a function of the same name. Each takes a varargs list of
+*modifiers* — attributes, event handlers, and children, in any order:
 
 ```scala
 import io.github.edadma.riposte.*
@@ -24,60 +25,264 @@ div(
 )
 ```
 
-Strings are valid children — they become text nodes. Sequences of `VNode`s are spread
-in as children too, so you can map over data:
+The element functions cover the everyday HTML vocabulary — sectioning (`section`,
+`article`, `nav`, `header`, `footer`, `main`, `aside`), grouping (`div`, `p`, `ul`, `ol`,
+`li`, `pre`, `blockquote`, `figure`), text (`span`, `a`, `strong`, `em`, `code`, `small`,
+`mark`), forms (`form`, `input`, `textarea`, `select`, `option`, `button`, `label`),
+tables (`table`, `thead`, `tbody`, `tr`, `th`, `td`), and media (`img`, `video`, `audio`,
+`source`). SVG elements (`svg`, `path`, `circle`, `g`, …) are there too and are namespaced
+automatically.
+
+### Children
+
+A child can be another element, a `String` (becomes a text node), or an `Int` (rendered
+as its decimal text). These conversions are automatic, so you can mix them freely:
+
+```scala
+p("You have ", strong(count), " unread messages.")
+```
+
+A `Seq[VNode]` is spliced in as a run of children — the idiom for rendering a list from
+data:
 
 ```scala
 ul(
-  items.map(item => li(item.name)),
+  items.map(item => li(item.name))
 )
 ```
 
+An `Option[VNode]` is also a valid child: `Some(node)` renders the node, `None` renders an
+empty placeholder (not nothing) so that toggling between the two keeps the surrounding
+siblings — and their state — in stable positions.
+
 ## Attributes
 
-Attributes are set with `AttrKey` values and the `:=` operator:
+Attributes are `AttrKey` values combined with a value through `:=`:
 
 ```scala
 input(
   cls         := "field",
+  id          := "email",
   value       := text,
-  placeholder := "Type here…",
+  placeholder := "you@example.com",
+  disabled    := submitting,        // Boolean
+  tabIndex    := 0,                  // rendered as text
 )
 ```
 
-`cls` (aliased as `className`), `id`, `href`, `value`, and the rest of the everyday HTML
-attributes are provided. For the long tail there are `aria(...)` and `data(...)`
-helpers, and enumerated booleans like `draggable` render as `"true"`/`"false"` rather
-than by presence.
+`:=` accepts a `String`, a `Boolean`, or a `Double`. `cls` (also available as
+`className`), `id`, `href`, `src`, `value`, `name`, `type`, `placeholder`, `title`, and the
+rest of the common attributes are provided as keys.
 
-## Events
-
-Event handlers use `EventKey` values, also with `:=`. Handlers are typed by the event
-they receive — `onClick` hands you a `MouseEvent`, `onInput` an input event:
-
-```scala
-button(onClick := (e => println(s"clicked at ${e.clientX}")), "Click me")
-```
-
-## Conditional rendering
-
-`when` and `unless` include a node only when a condition holds; an `Option[VNode]` child
-works too. A hidden branch leaves a placeholder so sibling positions stay stable across
-renders:
+For attributes without a dedicated key, two families of helpers cover the long tail:
 
 ```scala
 div(
-  when(loggedIn)(p(s"Welcome, $name")),
-  unless(loggedIn)(a(href := "/login", "Sign in")),
+  aria("label") := "Close",        // aria-label="Close"
+  data("user-id") := userId,       // data-user-id="…"
 )
 ```
 
+Enumerated booleans — `draggable`, `spellcheck`, `contenteditable`, and the ARIA states —
+render the literal strings `"true"` / `"false"` rather than toggling by presence, which is
+what those attributes actually require.
+
+### Inline styles
+
+`css` takes `name -> value` pairs and sets the `style` attribute:
+
+```scala
+div(
+  css(
+    "background"    -> "#0c8599",
+    "height"        -> "0.75rem",
+    "border-radius" -> "4px",
+    "width"         -> s"$pct%",
+  )
+)
+```
+
+## Events
+
+Event handlers are `EventKey` values, also combined with `:=`. Each key is typed by the
+event it delivers, so the handler parameter needs no annotation — `onClick` hands you a
+`dom.MouseEvent`, `onKeyDown` a `dom.KeyboardEvent`, `onInput` a `dom.Event`:
+
+```scala
+button(onClick := (e => println(s"clicked at ${e.clientX}, ${e.clientY}")), "Click me")
+
+input(onKeyDown := (e => if e.key == "Enter" then submit()))
+```
+
+The full set covers mouse, pointer, keyboard, focus, drag, touch, and clipboard events.
+For an event without a dedicated key, `on(name)` gives you a handler typed as the base
+`dom.Event`. Reading the current value of an `<input>` is common enough to have a helper:
+
+```scala
+input(value := draft, onInput := (e => setDraft(targetValue(e))))
+```
+
+## Components
+
+A component is a reusable, named piece of UI. It's an ordinary `val`, built with one of
+three constructors depending on what it accepts. You *call* it — `Counter()`,
+`Stat("Clicks", n)` — wherever a child is expected, and the result is a `VNode` like any
+other.
+
+Components matter for more than reuse: the reconciler tracks each mounted component by
+identity, so hook state (see [Hooks](/guide/hooks/)) lives on the instance and survives
+re-renders, and only the components whose inputs changed re-render.
+
+### `view` — no props
+
+The simplest component takes nothing. Build it with `view { … }`; the block is the render
+body, and hooks work inside it:
+
+```scala
+val Counter = view {
+  val (count, _, update) = useState(0)
+  button(onClick := (_ => update(_ + 1)), s"Count: $count")
+}
+```
+
+Call it with empty parens — `Counter()` — to get a node:
+
+```scala
+div(h1("Demo"), Counter())
+```
+
+### `component` — props
+
+When a component needs inputs, build it with `component`. The one-prop form takes a single
+value:
+
+```scala
+val Greeting = component[String] { name =>
+  p(s"Hello, $name!")
+}
+
+Greeting("world")
+```
+
+For several inputs, the positional forms (`component[A, B]`, up to four) let you pass
+arguments directly instead of bundling them:
+
+```scala
+val Stat = component[String, Int] { (label, value) =>
+  div(
+    cls := "stat",
+    span(cls := "label", label),
+    span(": "),
+    strong(value),
+  )
+}
+
+Stat("Clicks", clicks)
+Stat("Likes", likes)
+```
+
+If you'd rather have named fields without declaring a case class, pass a single *named
+tuple* to `component[P]`:
+
+```scala
+val Card = component[(title: String, count: Int)] { p =>
+  div(span(p.title), strong(p.count))
+}
+
+Card((title = "Unread", count = 12))
+```
+
+A parent re-renders its children by passing them new props; each child re-renders only
+when the props it received actually changed.
+
+### `container` — children (slots)
+
+A component that wraps arbitrary children — the analogue of React's `props.children` — is
+built with `container`. The children arrive as a `Children` (a `Vector[VNode]`); splice
+them wherever you like with the usual seq-as-children conversion:
+
+```scala
+val Card = container { children =>
+  div(cls := "card", children)
+}
+
+Card(
+  h2("Title"),
+  p("Body text."),
+)
+```
+
+A container can take props *and* children. Declare it with `container[P]` and call it
+curried — props first, then the children:
+
+```scala
+val Panel = container[(title: String)] { (p, children) =>
+  section(
+    cls := "panel",
+    h2(p.title),
+    div(cls := "panel-body", children),
+  )
+}
+
+Panel((title = "Settings"))(
+  toggle,
+  slider,
+)
+```
+
+### Keyed lists
+
+When you render a list that can reorder, insert, or delete, give each item a stable `key`
+so the reconciler moves DOM nodes instead of rebuilding them — preserving their state and
+focus. Inside an element, set it with the `key` attribute:
+
+```scala
+ul(
+  items.map(item =>
+    li(
+      key := item.id,
+      span(item.name),
+      button(onClick := (_ => remove(item.id)), "✕"),
+    )
+  )
+)
+```
+
+A component instance can be keyed too, by passing a key as the second argument:
+`Row(rowProps, item.id)`.
+
+### `memo` — skip unchanged re-renders
+
+Wrapping a component in `memo` makes it bail out of a parent-driven re-render when its new
+props are equal (`==`) to the previous ones — Riposte's `React.memo`. It still re-renders
+on its own state changes:
+
+```scala
+val Row = memo(component[RowProps] { props => … })
+```
+
+Define the memoized component once as a stable `val`; calling `memo` inline in a render
+produces a new identity each time and defeats the purpose. Props that carry freshly
+allocated closures compare unequal every render, so stabilize handlers with `useCallback`
+(see [Hooks](/guide/hooks/)) when memoizing.
+
 ## Escape hatches
 
-- **`unsafeHtml(s)`** sets inner HTML directly (React's `dangerouslySetInnerHTML`).
-- **`portal(target, child)`** renders a child into a different DOM node — modals, tooltips.
-- **`errorBoundary(fallback)(child)`** catches throws during mount, patch, and
-  re-render, showing the fallback instead of crashing the tree.
-- **SVG** elements (`svg`, `path`, …) are namespaced automatically.
+A few constructs step outside the normal element-tree flow:
 
-Continue to [Hooks](/guide/hooks/) for state and effects.
+- **`unsafeHtml(s)`** sets an element's inner HTML directly — Riposte's
+  `dangerouslySetInnerHTML`. Only pass markup you trust.
+- **`portal(target, child)`** renders `child` into a *different* DOM node (one outside the
+  component's own subtree) while keeping it logically part of the tree — for modals,
+  tooltips, and overlays that must escape `overflow: hidden` or stacking contexts.
+- **`errorBoundary(fallback)(child)`** catches throws during `child`'s mount, patch, and
+  re-render, rendering `fallback(error)` in its place instead of tearing down the whole
+  tree.
+
+```scala
+errorBoundary(err => div(cls := "error", s"Something broke: ${err.getMessage}")) {
+  RiskyWidget()
+}
+```
+
+Continue to [Hooks](/guide/hooks/) for state, effects, and the rest of the hook family.
