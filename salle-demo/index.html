@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>salle — component showcase</title>
+
+    <!-- DaisyUI's prebuilt CSS so the DaisySkin classes (btn, input, …) are styled
+         without a Tailwind build. Only needed to demo the DaisyUI skin. -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+    />
+
+    <!-- salle's own look (the SalleSkin). Loaded after DaisyUI; its rules live in
+         @layer salle, so nothing here fights for specificity. -->
+    <link rel="stylesheet" href="../salle/css/salle.css" />
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 2rem;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+      .demo-root {
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      .demo-root > h1 {
+        margin: 0 0 0.25rem;
+      }
+      .demo-root > p {
+        margin: 0 0 1rem;
+        color: #475569;
+      }
+      .demo-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 0 0 2rem;
+        padding: 0.75rem 1rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+      }
+      .demo-skin-label {
+        font-weight: 600;
+      }
+      .demo-section {
+        margin-bottom: 1.75rem;
+      }
+      .demo-section > h2 {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin: 0 0 0.6rem;
+      }
+      .demo-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="target/scala-3.8.3/salle-demo-fastopt/main.js"></script>
+  </body>
+</html>

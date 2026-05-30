@@ -10,7 +10,7 @@ ThisBuild / version      := "0.0.1"
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(riposte, atoms, router, salle, demo)
+  .aggregate(riposte, atoms, router, salle, salleDemo, demo)
   .settings(
     name           := "riposte-root",
     publish / skip := true,
@@ -103,6 +103,22 @@ lazy val salle = project
     scalacOptions ++= commonScalacOptions,
     Test / jsEnv := new JSDOMNodeJSEnv(),
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+
+// salle-demo — a runnable showcase for salle. Mirrors the riposte `demo` module
+// (NoModule, main-module initializer) but depends on `salle`. Build with
+// `sbt salleDemo/fastLinkJS`, then open salle-demo/index.html.
+lazy val salleDemo = project
+  .in(file("salle-demo"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(salle)
+  .settings(
+    name := "salle-demo",
+    scalacOptions ++= commonScalacOptions,
+    scalaJSUseMainModuleInitializer := true,
+    Compile / mainClass             := Some("SalleDemo"),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.NoModule)),
+    publish / skip := true,
   )
 
 lazy val commonScalacOptions = Seq(
