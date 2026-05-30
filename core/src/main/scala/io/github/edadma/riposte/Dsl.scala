@@ -185,3 +185,40 @@ def br(mods: Mod*):     VElement = h("br")(mods*)
 
 // A bare text node, for the rare case the String conversion isn't triggered.
 def text(s: String): VNode = VText(s)
+
+// --- SVG --------------------------------------------------------------------
+
+// SVG element tags. An `<svg>` (and everything nested under it) is mounted in the
+// SVG namespace automatically, so these render as real graphics. The SVG `<text>`
+// element is exposed as `svgText` because `text` already builds a DOM text node.
+def svg(mods: Mod*):      VElement = h("svg")(mods*)
+def g(mods: Mod*):        VElement = h("g")(mods*)
+def path(mods: Mod*):     VElement = h("path")(mods*)
+def circle(mods: Mod*):   VElement = h("circle")(mods*)
+def rect(mods: Mod*):     VElement = h("rect")(mods*)
+def line(mods: Mod*):     VElement = h("line")(mods*)
+def polyline(mods: Mod*): VElement = h("polyline")(mods*)
+def polygon(mods: Mod*):  VElement = h("polygon")(mods*)
+def ellipse(mods: Mod*):  VElement = h("ellipse")(mods*)
+def svgText(mods: Mod*):  VElement = h("text")(mods*)
+
+// Common SVG attribute keys. Anything else goes through `attr("…")` — these are
+// just the frequently-typed ones (exact case matters for SVG, e.g. `viewBox`).
+val viewBox     = AttrKey("viewBox")
+val fill        = AttrKey("fill")
+val stroke      = AttrKey("stroke")
+val strokeWidth = AttrKey("stroke-width")
+val d           = AttrKey("d")
+val cx          = AttrKey("cx")
+val cy          = AttrKey("cy")
+val r           = AttrKey("r")
+val x           = AttrKey("x")
+val y           = AttrKey("y")
+val x1          = AttrKey("x1")
+val y1          = AttrKey("y1")
+val x2          = AttrKey("x2")
+val y2          = AttrKey("y2")
+val points      = AttrKey("points")
+val width       = AttrKey("width")
+val height      = AttrKey("height")
+val transform   = AttrKey("transform")

@@ -21,12 +21,14 @@ object Reconciler:
 
   private val document = dom.document
 
+  private val SvgNs = "http://www.w3.org/2000/svg"
+
   // --- mount ---------------------------------------------------------------
 
   def mount(vnode: VNode, parentDom: dom.Node, before: dom.Node | Null, parent: Instance | Null): Instance =
     val inst = vnode match
       case VText(t)      => mountText(t)
-      case e: VElement   => mountElement(e, parent)
+      case e: VElement   => mountElement(e, parentDom, parent)
       case f: VFragment  => mountFragment(f, parentDom, before, parent)
       case c: VComponent[?] => mountComponent(c, parentDom, before, parent)
       case pr: VProvider[?] => mountProvider(pr, parentDom, before, parent)
@@ -51,8 +53,15 @@ object Reconciler:
   private def mountEmpty(): Instance =
     new EmptyInstance(VEmpty, document.createComment("empty"))
 
-  private def mountElement(e: VElement, parent: Instance | Null): Instance =
-    val el   = document.createElement(e.tag)
+  // An element enters the SVG namespace at an `<svg>` tag, or when its DOM parent
+  // is already in that namespace — so every descendant of an `<svg>` is created
+  // with `createElementNS` and renders. The parent's namespace is the source of
+  // truth (not a threaded flag), so children mounted later during a patch get it
+  // right too. (HTML re-entry via `<foreignObject>` is not handled in v1: its
+  // children would be created in the SVG namespace.)
+  private def mountElement(e: VElement, parentDom: dom.Node, parent: Instance | Null): Instance =
+    val svg  = e.tag == "svg" || parentDom.asInstanceOf[dom.Element].namespaceURI == SvgNs
+    val el   = if svg then document.createElementNS(SvgNs, e.tag) else document.createElement(e.tag)
     val inst = new ElementInstance(e, el, Vector.empty, Map.empty)
     link(inst, parent)
     inst.listeners = applyProps(el, Map.empty, e.props, Map.empty)
