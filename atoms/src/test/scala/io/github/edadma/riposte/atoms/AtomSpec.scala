@@ -237,3 +237,65 @@ class AtomSpec extends AnyFunSuite:
     Store.default.set(count, 9)
     Scheduler.flushSync()
     assert(c.querySelector("span.g").textContent == "9")
+
+  // --- utilities -----------------------------------------------------------
+
+  test("selectAtom exposes a slice and notifies only when it changes"):
+    val s     = new Store
+    val pair  = atom((1, 2))
+    val first = selectAtom(pair, _._1)
+    var hits  = 0
+    s.sub(first, () => hits += 1)
+    assert(s.get(first) == 1)
+    s.set(pair, (1, 9)) // first component unchanged → no notify
+    assert(hits == 0)
+    s.set(pair, (5, 9)) // first component changed → notify
+    assert(hits == 1)
+    assert(s.get(first) == 5)
+
+  test("atomFamily memoises atoms by parameter"):
+    val s        = new Store
+    val itemAtom = atomFamily((id: Int) => atom(id * 10))
+    assert(itemAtom(1) eq itemAtom(1))
+    assert(!(itemAtom(1) eq itemAtom(2)))
+    assert(s.get(itemAtom(1)) == 10)
+    assert(s.get(itemAtom(2)) == 20)
+    s.set(itemAtom(1), 99)
+    assert(s.get(itemAtom(1)) == 99)
+    assert(s.get(itemAtom(2)) == 20) // independent state per parameter
+
+  test("onMount runs on the first listener and cleans up after the last"):
+    val s        = new Store
+    var mounts   = 0
+    var cleanups = 0
+    val a        = atom(0)
+    onMount(a) { setSelf =>
+      mounts += 1
+      setSelf(42) // the hook may seed the atom
+      Some(() => cleanups += 1)
+    }
+    assert(mounts == 0)
+    val u1 = s.sub(a, () => ())
+    assert(mounts == 1)
+    assert(s.get(a) == 42) // setSelf wrote through
+    val u2 = s.sub(a, () => ())
+    assert(mounts == 1)   // a second listener does not re-mount
+    u1()
+    assert(cleanups == 0) // still observed
+    u2()
+    assert(cleanups == 1) // last listener gone → cleanup
+
+  test("atomWithStorage loads from and writes back to localStorage"):
+    val c = host()
+    dom.window.localStorage.setItem("riposte-test-pref", "stored")
+    val pref = atomWithStorage("riposte-test-pref", "default")
+    val Show = view {
+      val (v, setV) = useAtom(pref)
+      div(span(cls := "v", v), button(onClick := (_ => setV("changed")), "set"))
+    }
+    render(Show(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "stored") // onMount loaded it
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("span.v").textContent == "changed")
+    assert(dom.window.localStorage.getItem("riposte-test-pref") == "changed") // persisted

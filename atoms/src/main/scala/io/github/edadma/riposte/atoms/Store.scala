@@ -13,11 +13,12 @@ import scala.collection.mutable
 final class Store:
 
   private final class State(
-      var value:       Any,
-      var valid:       Boolean,
-      var deps:        mutable.Set[Atom[?]],
-      val dependents:  mutable.Set[Atom[?]],
-      val listeners:   mutable.Set[() => Unit],
+      var value:        Any,
+      var valid:        Boolean,
+      var deps:         mutable.Set[Atom[?]],
+      val dependents:   mutable.Set[Atom[?]],
+      val listeners:    mutable.Set[() => Unit],
+      var mountCleanup: Option[() => Unit] = None,
   )
 
   private val states = mutable.Map.empty[Atom[?], State]
@@ -107,13 +108,29 @@ final class Store:
     })
 
   // Watch `a` for value changes. Computing it first ensures its dependency edges
-  // exist, so a later write to an underlying primitive knows to reach it. Returns
-  // an unsubscribe.
+  // exist, so a later write to an underlying primitive knows to reach it. The
+  // atom's `onMount` hook (if any) fires when the listener set goes empty→nonempty
+  // and its cleanup when it goes back to empty, so an atom's external resources are
+  // tied to it actually being observed. Returns an unsubscribe.
   def sub(a: Atom[?], listener: () => Unit): () => Unit =
     val st = stateOf(a)
     if !st.valid then get(a.asInstanceOf[Atom[Any]])
+    val wasEmpty = st.listeners.isEmpty
     st.listeners += listener
-    () => st.listeners -= listener
+    if wasEmpty then runMount(a, st)
+    () =>
+      st.listeners -= listener
+      if st.listeners.isEmpty then
+        st.mountCleanup.foreach(_())
+        st.mountCleanup = None
+
+  // Invoke `a`'s mount hook, handing it a `setSelf` that writes `a` in this store,
+  // and remember any cleanup it returns.
+  private def runMount(a: Atom[?], st: State): Unit =
+    a.mountHook.foreach { hook =>
+      val setSelf = (v: Any) => set(a.asInstanceOf[WritableAtom[Any, Any]], v)
+      st.mountCleanup = hook(setSelf)
+    }
 
 // The process-wide default store, used by the hooks unless a scoped store is
 // introduced later.

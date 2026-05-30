@@ -5,7 +5,13 @@ package io.github.edadma.riposte.atoms
 // components is the same piece of state. Create one with `atom(value)` for a
 // writable primitive, `atom(get => …)` for a read-only derived value, or
 // `atom(read, write)` for a derived value that also knows how to be written.
-sealed trait Atom[A]
+sealed trait Atom[A]:
+  // An optional lifecycle hook (see `onMount`). The Store invokes it the first
+  // time the atom gains a listener, passing a `setSelf` that writes the atom in
+  // that store; the hook may return a cleanup run when the last listener leaves.
+  // Stored erased (setSelf and the write type are existential here) and cast back
+  // at the call site; only writable atoms can carry one, so `setSelf` is sound.
+  private[atoms] var mountHook: Option[(Any => Unit) => Option[() => Unit]] = None
 
 // An atom whose value is computed from the atoms its `compute` reads. Both the
 // read-only and writable-derived kinds compute the same way, so the Store treats
