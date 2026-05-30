@@ -81,9 +81,13 @@ final class AttrKey(val name: String):
   def :=(v: Int):     Mod = PropMod(name, Attr(v.toString))
   def :=(v: Boolean): Mod = PropMod(name, BoolAttr(v))
 
-// An event name (the raw DOM type, e.g. "click") that becomes a handler prop.
-final class EventKey(val name: String):
-  def :=(fn: dom.Event => Unit): Mod = PropMod("on:" + name, Handler(fn))
+// An event name plus the DOM event type it delivers, so a handler is typed at
+// the call site with no cast: `onClick := (e => …)` gets a `dom.MouseEvent`,
+// `onKeyDown` a `dom.KeyboardEvent`. The handler is stored untyped — the DOM
+// hands the listener the matching event subtype, so the cast to `dom.Event =>
+// Unit` is sound (and erases to a no-op, since functions erase to Function1).
+final class EventKey[E <: dom.Event](val name: String):
+  def :=(fn: E => Unit): Mod = PropMod("on:" + name, Handler(fn.asInstanceOf[dom.Event => Unit]))
 
 // Inline styles. `style := Map("color" -> "red")` or the variadic `css(...)`.
 object style:
@@ -131,18 +135,21 @@ def attr(n: String): AttrKey = new AttrKey(n)
 
 // --- common events ---------------------------------------------------------
 
-val onClick     = EventKey("click")
-val onInput     = EventKey("input")
-val onChange    = EventKey("change")
-val onSubmit    = EventKey("submit")
-val onKeyDown   = EventKey("keydown")
-val onKeyUp     = EventKey("keyup")
-val onFocus     = EventKey("focus")
-val onBlur      = EventKey("blur")
-val onMouseDown = EventKey("mousedown")
-val onMouseUp   = EventKey("mouseup")
+val onClick     = EventKey[dom.MouseEvent]("click")
+val onInput     = EventKey[dom.Event]("input")
+val onChange    = EventKey[dom.Event]("change")
+val onSubmit    = EventKey[dom.Event]("submit")
+val onKeyDown   = EventKey[dom.KeyboardEvent]("keydown")
+val onKeyUp     = EventKey[dom.KeyboardEvent]("keyup")
+val onFocus     = EventKey[dom.FocusEvent]("focus")
+val onBlur      = EventKey[dom.FocusEvent]("blur")
+val onMouseDown = EventKey[dom.MouseEvent]("mousedown")
+val onMouseUp   = EventKey[dom.MouseEvent]("mouseup")
 
-def on(n: String): EventKey = new EventKey(n)
+// A handler for any other event, typed as a plain `dom.Event`. For a typed
+// custom event, name the type on the key directly: `EventKey[dom.WheelEvent](
+// "wheel") := (e => …)`.
+def on(n: String): EventKey[dom.Event] = new EventKey(n)
 
 // Read the current value of the input/textarea/select that fired an event —
 // the common need inside an `onInput` handler.

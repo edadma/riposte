@@ -40,7 +40,7 @@ object DemoApp:
           value := draft,
           placeholder := "add an item…",
           onInput := (e => setDraft(targetValue(e))),
-          onKeyDown := (e => if e.asInstanceOf[dom.KeyboardEvent].key == "Enter" then add()),
+          onKeyDown := (e => if e.key == "Enter" then add()),
         ),
         span(" "),
         button(onClick := (_ => add()), "add"),

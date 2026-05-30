@@ -142,6 +142,9 @@ state — e.g. a collapsible that shows the children it's given only when open.
 - **Children / slots** — `container { children => … }` (and `container[P]` for
   props plus children) builds a component you call with child nodes, the
   analogue of React's `props.children`.
+- **Typed events** — `onClick` hands you a `dom.MouseEvent`, `onKeyDown` a
+  `dom.KeyboardEvent`, `onFocus`/`onBlur` a `dom.FocusEvent` — no cast at the
+  call site; `on(name)` covers anything else as a `dom.Event`.
 - **Context** — `createContext` / `ctx.provide(value, child)` / `useContext`,
   resolved by walking up the live tree (nearest provider wins); consumers
   subscribe, so they update even from behind a memoized ancestor.
@@ -153,7 +156,7 @@ state — e.g. a collapsible that shows the children it's given only when open.
 
 ## Not yet
 
-Error boundaries, SVG namespacing, portals, and a broader typed event set.
+Error boundaries, SVG namespacing, and portals.
 
 ## Layout
 
