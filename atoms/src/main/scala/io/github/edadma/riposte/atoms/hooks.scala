@@ -14,11 +14,13 @@ def useAtomValue[A](a: Atom[A])(using Hooks): A =
   val subscribe = useCallback((cb: () => Unit) => store.sub(a, cb), Array(a))
   useSyncExternalStore(subscribe, () => store.get(a))
 
-// A stable setter for a primitive atom. Write-only: it does not subscribe, so a
-// component that only sets an atom doesn't re-render when the atom changes.
-def useSetAtom[A](a: PrimitiveAtom[A])(using Hooks): A => Unit =
-  useCallback((v: A) => Store.default.set(a, v), Array(a))
+// A stable dispatcher for any writable atom. Write-only: it does not subscribe,
+// so a component that only writes an atom doesn't re-render when the atom changes.
+// For a primitive `W` is the value type; for a writable-derived or action atom it
+// is whatever the atom's `write` accepts.
+def useSetAtom[A, W](a: WritableAtom[A, W])(using Hooks): W => Unit =
+  useCallback((arg: W) => Store.default.set(a, arg), Array(a))
 
-// Read and write a primitive atom — useState's shape, but the state is shared.
-def useAtom[A](a: PrimitiveAtom[A])(using Hooks): (A, A => Unit) =
+// Read and write a writable atom — useState's shape, but the state is shared.
+def useAtom[A, W](a: WritableAtom[A, W])(using Hooks): (A, W => Unit) =
   (useAtomValue(a), useSetAtom(a))

@@ -151,3 +151,46 @@ class AtomSpec extends AnyFunSuite:
     Scheduler.flushSync()
     assert(renders == 2)
     assert(c.querySelector("span.e").textContent == "false")
+
+  // --- Writable-derived and action atoms -----------------------------------
+
+  test("a writable-derived atom reads derived and writes through to a primitive"):
+    val s    = new Store
+    val cel  = atom(20)
+    val fahr = atom[Int, Int](
+      read = g => g(cel) * 9 / 5 + 32,
+      write = (_, set, f) => set(cel, (f - 32) * 5 / 9),
+    )
+    assert(s.get(fahr) == 68)
+    s.set(fahr, 212) // writes back to celsius
+    assert(s.get(cel) == 100)
+    assert(s.get(fahr) == 212)
+
+  test("an action atom dispatches a write that mutates other atoms"):
+    val s   = new Store
+    val n   = atom(0)
+    val inc = action[Int]((g, set, by) => set(n, g(n) + by))
+    s.set(inc, 5)
+    assert(s.get(n) == 5)
+    s.set(inc, 3)
+    assert(s.get(n) == 8)
+
+  test("useAtom on a writable-derived atom dispatches the write and the reader updates"):
+    val c    = host()
+    val cel  = atom(0)
+    val fahr = atom[Int, Int](
+      read = g => g(cel) * 9 / 5 + 32,
+      write = (_, set, f) => set(cel, (f - 32) * 5 / 9),
+    )
+    val Show = view {
+      val (f, setF) = useAtom(fahr)
+      div(
+        span(cls := "f", f),
+        button(onClick := (_ => setF(212)), "boil"),
+      )
+    }
+    render(Show(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.f").textContent == "32")
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("span.f").textContent == "212")
