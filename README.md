@@ -166,6 +166,12 @@ Atoms are identity-based units of shared state; a derived atom recomputes when a
 atom it reads changes, and a component re-renders only for the atoms it actually
 reads — fine-grained by construction, no selectors needed.
 
+Beyond primitive and read-only derived atoms, the module also has writable-derived
+atoms (`atom(read, write)`) and write-only `action` atoms, a `StoreProvider` for
+scoping state to a subtree, `selectAtom` / `atomFamily` / `onMount` /
+`atomWithStorage` utilities, and `atomLoadable` for `Future`-backed values
+(`Loadable` = Loading / Data / Errored, no Suspense).
+
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.
@@ -198,10 +204,20 @@ reads — fine-grained by construction, no selectors needed.
 - **Scheduler** — state updates batch on the microtask queue and commit before
   paint; layout effects run before paint, passive effects after (on the
   macrotask executor).
+- **SVG** — `svg`/`g`/`path`/`circle`/… render in the SVG namespace
+  automatically (every descendant of an `<svg>`, including children added in a
+  later patch); `svgText` for the SVG `<text>` element.
+- **Portals** — `portal(target, child)` renders a subtree into a different DOM
+  container while keeping it in the component tree (events and re-renders still
+  flow); for modals and overlays that must escape an ancestor's clipping.
+- **Error boundaries** — `errorBoundary(fallback)(child)` contains a render
+  throw in its subtree and shows a fallback instead of tearing down the tree,
+  on the mount, parent-patch, and state-update re-render paths; recovers when a
+  later render succeeds.
 
 ## Not yet
 
-Error boundaries, SVG namespacing, and portals.
+`foreignObject` HTML re-entry inside SVG, and form helpers.
 
 ## Layout
 
