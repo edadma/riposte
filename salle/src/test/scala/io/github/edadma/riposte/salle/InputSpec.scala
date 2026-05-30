@@ -20,7 +20,7 @@ class InputSpec extends AnyFunSuite:
 
   test("renders an input with placeholder, type, and base+size classes"):
     val c = host()
-    render(Input(InputProps(placeholder = "Email", inputType = "email")), c)
+    render(Input(placeholder = "Email", inputType = "email"), c)
     Scheduler.flushSync()
     val inp = c.querySelector("input").asInstanceOf[dom.html.Input]
     assert(inp.getAttribute("placeholder") == "Email")
@@ -30,7 +30,7 @@ class InputSpec extends AnyFunSuite:
 
   test("colour and size map to modifier classes"):
     val c = host()
-    render(Input(InputProps(color = Color.Success, size = Size.Lg)), c)
+    render(Input(color = Color.Success, size = Size.Lg), c)
     Scheduler.flushSync()
     val cl = c.querySelector("input").classList
     assert(cl.contains("salle-input--success"))
@@ -38,7 +38,7 @@ class InputSpec extends AnyFunSuite:
 
   test("invalid sets the error class, aria-invalid, and data-state, overriding colour"):
     val c = host()
-    render(Input(InputProps(invalid = true, color = Color.Primary)), c)
+    render(Input(invalid = true, color = Color.Primary), c)
     Scheduler.flushSync()
     val inp = c.querySelector("input")
     assert(inp.classList.contains("salle-input--error"))
@@ -49,7 +49,7 @@ class InputSpec extends AnyFunSuite:
   test("uncontrolled: typing updates the value and fires onChange"):
     val c    = host()
     var last = ""
-    render(Input(InputProps(defaultValue = "", onChange = s => last = s)), c)
+    render(Input(defaultValue = "", onChange = s => last = s), c)
     Scheduler.flushSync()
     val inp = c.querySelector("input").asInstanceOf[dom.html.Input]
     typeInto(inp, "hello")
@@ -58,7 +58,7 @@ class InputSpec extends AnyFunSuite:
 
   test("DaisySkin maps the input axes"):
     val c = host()
-    render(SkinProvider(DaisySkin)(Input(InputProps(color = Color.Primary, size = Size.Sm))), c)
+    render(SkinProvider(DaisySkin)(Input(color = Color.Primary, size = Size.Sm)), c)
     Scheduler.flushSync()
     val cl = c.querySelector("input").classList
     assert(cl.contains("input"))

@@ -26,7 +26,7 @@ class SkinSpec extends AnyFunSuite:
     (0 until cl.length).exists(i => cl.item(i) == name)
 
   test("with no provider a button uses the salle skin"):
-    val cl = classesUnder(None, Button(ButtonProps("Save", color = Color.Primary)))
+    val cl = classesUnder(None, Button("Save", color = Color.Primary))
     assert(cl.contains("salle-btn"))
     assert(cl.contains("salle-btn--primary"))
     assert(!cl.contains("btn-primary"))
@@ -34,7 +34,7 @@ class SkinSpec extends AnyFunSuite:
   test("DaisySkin maps each axis to a DaisyUI class"):
     val cl = classesUnder(
       Some(DaisySkin),
-      Button(ButtonProps("Save", color = Color.Primary, variant = ButtonVariant.Outline, size = Size.Sm)),
+      Button("Save", color = Color.Primary, variant = ButtonVariant.Outline, size = Size.Sm),
     )
     assert(cl.contains("btn"))
     assert(cl.contains("btn-primary"))
@@ -43,7 +43,7 @@ class SkinSpec extends AnyFunSuite:
     assert(!cl.contains("salle-btn"))
 
   test("default colour and solid variant emit no modifier under DaisySkin"):
-    val cl = classesUnder(Some(DaisySkin), Button(ButtonProps("Save")))
+    val cl = classesUnder(Some(DaisySkin), Button("Save"))
     assert(cl.contains("btn"))
     assert(cl.contains("btn-md"))
     assert(!cl.contains("btn-primary"))
@@ -55,8 +55,8 @@ class SkinSpec extends AnyFunSuite:
     render(
       SkinProvider(DaisySkin)(
         div(
-          Button(ButtonProps("a", color = Color.Primary)),
-          Button(ButtonProps("b", color = Color.Error, variant = ButtonVariant.Ghost)),
+          Button("a", color = Color.Primary),
+          Button("b", color = Color.Error, variant = ButtonVariant.Ghost),
         ),
       ),
       c,

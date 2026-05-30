@@ -3,9 +3,40 @@ package io.github.edadma.riposte.salle
 import io.github.edadma.riposte.*
 import org.scalajs.dom
 
-/** Props for [[Toggle]], a switch-style boolean control. Same controlled/uncontrolled
-  * model as [[Checkbox]]. */
-final case class ToggleProps(
+// Props as a named tuple; the public `Toggle` below carries the defaults.
+private val ToggleImpl =
+  component[
+    (
+        label: String,
+        checked: Option[Boolean],
+        defaultChecked: Boolean,
+        color: Color,
+        size: Size,
+        disabled: Boolean,
+        onChange: Boolean => Unit,
+    ),
+  ] { p =>
+    val skin                  = useSkin()
+    val (current, setChecked) = useControllable(p.checked, p.defaultChecked, p.onChange)
+    val box = input(
+      typ             := "checkbox",
+      role            := "switch",
+      cls             := skin.toggle(p.color, p.size),
+      checked         := current,
+      disabled        := p.disabled,
+      aria("checked") := current,
+      data("state")   := stateOf(p.disabled, current),
+      onChange        := (e => setChecked(e.target.asInstanceOf[dom.html.Input].checked)),
+    )
+    if p.label.isEmpty then box
+    else label(cls := "salle-toggle-label", box, span(p.label))
+  }
+
+/** A switch — a checkbox input styled as a slider, with `role="switch"` and
+  * `aria-checked` so assistive tech reads it as a switch. Same controlled/uncontrolled
+  * model as [[Checkbox]]; classes come from the active [[Skin]].
+  */
+def Toggle(
     label:          String          = "",
     checked:        Option[Boolean] = None,
     defaultChecked: Boolean         = false,
@@ -13,25 +44,15 @@ final case class ToggleProps(
     size:           Size            = Size.Md,
     disabled:       Boolean         = false,
     onChange:       Boolean => Unit = _ => (),
-)
-
-/** A switch — a checkbox input styled as a slider, with `role="switch"` and
-  * `aria-checked` so assistive tech reads it as a switch rather than a checkbox.
-  * Classes come from the active [[Skin]]; state is controlled-or-uncontrolled via
-  * [[useControllable]]. */
-val Toggle = component[ToggleProps] { props =>
-  val skin                  = useSkin()
-  val (current, setChecked) = useControllable(props.checked, props.defaultChecked, props.onChange)
-  val box = input(
-    typ             := "checkbox",
-    role            := "switch",
-    cls             := skin.toggle(props.color, props.size),
-    checked         := current,
-    disabled        := props.disabled,
-    aria("checked") := current,
-    data("state")   := stateOf(props.disabled, current),
-    onChange        := (e => setChecked(e.target.asInstanceOf[dom.html.Input].checked)),
+): VNode =
+  ToggleImpl(
+    (
+      label = label,
+      checked = checked,
+      defaultChecked = defaultChecked,
+      color = color,
+      size = size,
+      disabled = disabled,
+      onChange = onChange,
+    ),
   )
-  if props.label.isEmpty then box
-  else label(cls := "salle-toggle-label", box, span(props.label))
-}

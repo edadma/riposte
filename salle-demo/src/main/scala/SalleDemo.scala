@@ -28,41 +28,41 @@ private def showcase: VNode =
   div(
     cls := "demo-stage",
     section("Button — colours")(
-      row(colors.map(c => Button(ButtonProps(c.toString, color = c)))),
+      row(colors.map(c => Button(c.toString, color = c))),
     ),
     section("Button — variants (primary)")(
-      row(variants.map(v => Button(ButtonProps(v.toString, color = Color.Primary, variant = v)))),
+      row(variants.map(v => Button(v.toString, color = Color.Primary, variant = v))),
     ),
     section("Button — sizes")(
-      row(sizes.map(s => Button(ButtonProps(s.toString, color = Color.Primary, size = s)))),
+      row(sizes.map(s => Button(s.toString, color = Color.Primary, size = s))),
     ),
     section("Input")(
       row(
         Seq(
-          Input(InputProps(placeholder = "Normal")),
-          Input(InputProps(placeholder = "Success", color = Color.Success)),
-          Input(InputProps(placeholder = "Invalid", invalid = true)),
-          Input(InputProps(placeholder = "Disabled", disabled = true)),
+          Input(placeholder = "Normal"),
+          Input(placeholder = "Success", color = Color.Success),
+          Input(placeholder = "Invalid", invalid = true),
+          Input(placeholder = "Disabled", disabled = true),
         ),
       ),
     ),
     section("Checkbox")(
       row(
         Seq(
-          Checkbox(CheckboxProps(label = "Default", defaultChecked = true)),
-          Checkbox(CheckboxProps(label = "Success", color = Color.Success, defaultChecked = true)),
-          Checkbox(CheckboxProps(label = "Accent", color = Color.Accent)),
-          Checkbox(CheckboxProps(label = "Disabled", disabled = true)),
+          Checkbox(label = "Default", defaultChecked = true),
+          Checkbox(label = "Success", color = Color.Success, defaultChecked = true),
+          Checkbox(label = "Accent", color = Color.Accent),
+          Checkbox(label = "Disabled", disabled = true),
         ),
       ),
     ),
     section("Toggle")(
       row(
         Seq(
-          Toggle(ToggleProps(label = "Off")),
-          Toggle(ToggleProps(label = "On", defaultChecked = true)),
-          Toggle(ToggleProps(label = "Success", color = Color.Success, defaultChecked = true)),
-          Toggle(ToggleProps(label = "Accent", color = Color.Accent, defaultChecked = true)),
+          Toggle(label = "Off"),
+          Toggle(label = "On", defaultChecked = true),
+          Toggle(label = "Success", color = Color.Success, defaultChecked = true),
+          Toggle(label = "Accent", color = Color.Accent, defaultChecked = true),
         ),
       ),
     ),
@@ -79,11 +79,9 @@ private val App = view {
       cls := "demo-toolbar",
       span(cls := "demo-skin-label", s"Active skin: ${if daisy then "DaisyUI" else "salle (native)"}"),
       Button(
-        ButtonProps(
-          if daisy then "Use salle skin" else "Use DaisyUI skin",
-          variant = ButtonVariant.Outline,
-          onClick = () => setSkin(if daisy then SalleSkin else DaisySkin),
-        ),
+        if daisy then "Use salle skin" else "Use DaisyUI skin",
+        variant = ButtonVariant.Outline,
+        onClick = () => setSkin(if daisy then SalleSkin else DaisySkin),
       ),
     ),
     SkinProvider(skin)(showcase),

@@ -20,7 +20,7 @@ class CheckboxSpec extends AnyFunSuite:
 
   test("renders a checkbox with base and size classes"):
     val c = host()
-    render(Checkbox(CheckboxProps(size = Size.Lg)), c)
+    render(Checkbox(size = Size.Lg), c)
     Scheduler.flushSync()
     val inp = c.querySelector("input").asInstanceOf[dom.html.Input]
     assert(inp.getAttribute("type") == "checkbox")
@@ -29,14 +29,14 @@ class CheckboxSpec extends AnyFunSuite:
 
   test("colour maps to a modifier class"):
     val c = host()
-    render(Checkbox(CheckboxProps(color = Color.Success)), c)
+    render(Checkbox(color = Color.Success), c)
     Scheduler.flushSync()
     assert(c.querySelector("input").classList.contains("salle-checkbox--success"))
 
   test("uncontrolled: toggling updates state and fires onChange"):
     val c    = host()
     var last = false
-    render(Checkbox(CheckboxProps(onChange = b => last = b)), c)
+    render(Checkbox(onChange = b => last = b), c)
     Scheduler.flushSync()
     val inp = c.querySelector("input").asInstanceOf[dom.html.Input]
     assert(!inp.checked)
@@ -46,7 +46,7 @@ class CheckboxSpec extends AnyFunSuite:
 
   test("a label wraps the box so the text is clickable"):
     val c = host()
-    render(Checkbox(CheckboxProps(label = "Accept")), c)
+    render(Checkbox(label = "Accept"), c)
     Scheduler.flushSync()
     val lbl = c.querySelector("label.salle-check-label")
     assert(lbl != null)
@@ -55,7 +55,7 @@ class CheckboxSpec extends AnyFunSuite:
 
   test("DaisySkin maps the checkbox axes"):
     val c = host()
-    render(SkinProvider(DaisySkin)(Checkbox(CheckboxProps(color = Color.Primary, size = Size.Sm))), c)
+    render(SkinProvider(DaisySkin)(Checkbox(color = Color.Primary, size = Size.Sm)), c)
     Scheduler.flushSync()
     val cl = c.querySelector("input").classList
     assert(cl.contains("checkbox"))

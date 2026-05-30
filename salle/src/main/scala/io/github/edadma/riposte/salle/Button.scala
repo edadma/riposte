@@ -14,33 +14,35 @@ enum ButtonVariant:
     case Solid => ""
     case v     => v.toString.toLowerCase
 
-/** Props for [[Button]]. The three style axes are independent and match the proven
-  * DaisyUI model: [[Color]] (semantic palette), [[ButtonVariant]] (fill style), and
-  * [[Size]]. The active [[Skin]] turns them into classes. `disabled` is structural,
-  * not styling, so it is reflected as the HTML attribute regardless of skin.
+// The component proper. Props travel as a named tuple (no case class); the render
+// reads them as `p.field`, which keeps the DSL's `disabled` / `onClick` keys in scope
+// unshadowed. The public `Button` below adds the defaults a named tuple can't carry.
+private val ButtonImpl =
+  component[
+    (label: String, color: Color, variant: ButtonVariant, size: Size, disabled: Boolean, onClick: () => Unit),
+  ] { p =>
+    val skin = useSkin()
+    button(
+      cls           := skin.button(p.color, p.variant, p.size),
+      disabled      := p.disabled,
+      data("state") := (if p.disabled then "disabled" else "default"),
+      onClick       := (_ => p.onClick()),
+      p.label,
+    )
+  }
+
+/** A clickable button. Its classes come from the active [[Skin]] (salle's own look or
+  * DaisyUI's, per the enclosing [[SkinProvider]]); the label is its text, the click
+  * handler is wired typed, and the disabled state is reflected both as the HTML
+  * presence attribute and as `data-state`. The three style axes — [[Color]],
+  * [[ButtonVariant]], [[Size]] — are independent and default to a plain medium button.
   */
-final case class ButtonProps(
+def Button(
     label:    String,
     color:    Color         = Color.Default,
     variant:  ButtonVariant = ButtonVariant.Solid,
     size:     Size          = Size.Md,
     disabled: Boolean       = false,
     onClick:  () => Unit    = () => (),
-)
-
-/** A clickable button. Its classes come from the active [[Skin]] (salle's own look
-  * or DaisyUI's, depending on the enclosing [[SkinProvider]]); the label is its
-  * text, the click handler is wired typed, and the disabled state is reflected both
-  * as the HTML presence attribute and as `data-state`, a styling/test hook that
-  * works independently of the class soup.
-  */
-val Button = component[ButtonProps] { props =>
-  val skin = useSkin()
-  button(
-    cls           := skin.button(props.color, props.variant, props.size),
-    disabled      := props.disabled,
-    data("state") := (if props.disabled then "disabled" else "default"),
-    onClick       := (_ => props.onClick()),
-    props.label,
-  )
-}
+): VNode =
+  ButtonImpl((label = label, color = color, variant = variant, size = size, disabled = disabled, onClick = onClick))

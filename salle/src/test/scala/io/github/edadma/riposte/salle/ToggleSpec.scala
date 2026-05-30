@@ -20,7 +20,7 @@ class ToggleSpec extends AnyFunSuite:
 
   test("renders a switch with role and base+size classes"):
     val c = host()
-    render(Toggle(ToggleProps(size = Size.Lg)), c)
+    render(Toggle(size = Size.Lg), c)
     Scheduler.flushSync()
     val inp = c.querySelector("input").asInstanceOf[dom.html.Input]
     assert(inp.getAttribute("type") == "checkbox")
@@ -30,7 +30,7 @@ class ToggleSpec extends AnyFunSuite:
 
   test("aria-checked reflects state and updates on toggle"):
     val c = host()
-    render(Toggle(ToggleProps(defaultChecked = false)), c)
+    render(Toggle(defaultChecked = false), c)
     Scheduler.flushSync()
     val inp = c.querySelector("input").asInstanceOf[dom.html.Input]
     assert(inp.getAttribute("aria-checked") == "false")
@@ -40,14 +40,14 @@ class ToggleSpec extends AnyFunSuite:
   test("uncontrolled: toggling fires onChange"):
     val c    = host()
     var last = false
-    render(Toggle(ToggleProps(onChange = b => last = b)), c)
+    render(Toggle(onChange = b => last = b), c)
     Scheduler.flushSync()
     setChecked(c.querySelector("input").asInstanceOf[dom.html.Input], true)
     assert(last)
 
   test("DaisySkin maps the toggle axes"):
     val c = host()
-    render(SkinProvider(DaisySkin)(Toggle(ToggleProps(color = Color.Accent, size = Size.Sm))), c)
+    render(SkinProvider(DaisySkin)(Toggle(color = Color.Accent, size = Size.Sm)), c)
     Scheduler.flushSync()
     val cl = c.querySelector("input").classList
     assert(cl.contains("toggle"))
