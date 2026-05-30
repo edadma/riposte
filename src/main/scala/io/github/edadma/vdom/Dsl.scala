@@ -18,6 +18,14 @@ object Mod:
   given Conversion[Int, Mod]        = i  => ChildMod(VText(i.toString))
   given Conversion[Seq[VNode], Mod] = ns => ChildrenMod(ns)
 
+  // An optional child: `Some(node)` shows the node, `None` renders an empty
+  // placeholder rather than no child at all — so that toggling between the two
+  // keeps a stable slot and leaves the surrounding siblings (and their state)
+  // untouched, exactly like `if cond then node else empty`.
+  given Conversion[Option[VNode], Mod] =
+    case Some(n) => ChildMod(n)
+    case None    => ChildMod(VEmpty)
+
 final case class PropMod(name: String, value: Prop)    extends Mod
 final case class ChildMod(node: VNode)                 extends Mod
 final case class ChildrenMod(nodes: Seq[VNode])        extends Mod
@@ -54,6 +62,15 @@ def fragment(children: VNode*): VFragment = VFragment(children.toVector)
 // Renders nothing while still occupying a stable slot, so toggling between
 // `if cond then something else empty` keeps surrounding siblings put.
 val empty: VNode = VEmpty
+
+// Conditional children. `when(cond)(node)` is the node when `cond` holds and an
+// empty placeholder otherwise; `unless` is its negation. The node is by-name, so
+// it is built only when actually shown. Both yield a VNode (`empty` when hidden)
+// — never a dropped child — so the slot is stable and surrounding siblings keep
+// their DOM and state as the condition flips. The Scala stand-in for React's
+// `{cond && <X/>}`.
+def when(cond: Boolean)(node: => VNode): VNode   = if cond then node else VEmpty
+def unless(cond: Boolean)(node: => VNode): VNode = if cond then VEmpty else node
 
 // --- attribute & event keys ------------------------------------------------
 

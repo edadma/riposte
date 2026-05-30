@@ -77,6 +77,25 @@ The node is written to `.current` on mount and cleared to null on unmount. Pass
 a callback instead — `ref := (node => …)`, called with the node on mount and
 null on unmount — when you'd rather run code than hold a handle.
 
+## Conditional children
+
+`when(cond)(node)` renders the node only when the condition holds (`unless` is
+its negation), and an `Option[VNode]` renders `Some` or nothing — the Scala
+stand-ins for React's `{cond && <X/>}` and `{maybe}`:
+
+```scala
+div(
+  when(items.isEmpty)(p("nothing here yet")),
+  errorBanner,           // errorBanner: Option[VNode]
+  ul(items.map(row)),
+)
+```
+
+A hidden branch leaves an empty placeholder in its slot rather than dropping the
+child, so flipping the condition never disturbs the DOM or state of the siblings
+around it. The node passed to `when`/`unless` is by-name, so it is built only
+when actually shown.
+
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.
@@ -92,6 +111,8 @@ null on unmount — when you'd rather run code than hold a handle.
 - **Refs to DOM nodes** — `ref := someRefBox` writes the live element into a
   `useRef` box (`.current`), cleared to null on unmount; `ref := (node => …)`
   takes a callback instead. For focus, measurement, and other imperative work.
+- **Conditional children** — `when(cond)(node)` / `unless`, and an
+  `Option[VNode]` child; a hidden branch holds its slot so siblings stay put.
 - **Context** — `createContext` / `ctx.provide(value, child)` / `useContext`,
   resolved by walking up the live tree (nearest provider wins); consumers
   subscribe, so they update even from behind a memoized ancestor.

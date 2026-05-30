@@ -43,6 +43,7 @@ object DemoApp:
         span(" "),
         button(onClick := (_ => add()), "add"),
       ),
+      when(items.isEmpty)(p(cls := "muted", "Nothing yet — add one above.")),
       ul(
         items.map { item =>
           li(
