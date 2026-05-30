@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 import org.scalajs.dom
 
@@ -8,7 +8,7 @@ import org.scalajs.dom
 //
 //   val root = createRoot(dom.document.getElementById("app"))
 //   root.render(App(()))
-final class Root private[vdom] (container: dom.Element):
+final class Root private[riposte] (container: dom.Element):
   private var instance: Instance | Null = null
 
   def render(vnode: VNode): Unit =

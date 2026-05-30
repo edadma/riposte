@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 import org.scalajs.dom
 import org.scalatest.funsuite.AnyFunSuite
@@ -12,7 +12,7 @@ import org.scalatest.funsuite.AnyFunSuite
 // State updates are batched onto the microtask queue, so the `click` / `input`
 // helpers call `Scheduler.flushSync()` afterwards — committed DOM can then be
 // asserted synchronously. Plain `assert` is used rather than ScalaTest's
-// Matchers, whose DSL words `value` / `key` / `empty` would shadow the vdom
+// Matchers, whose DSL words `value` / `key` / `empty` would shadow the riposte
 // identifiers of the same name.
 trait DomSuite extends AnyFunSuite:
 

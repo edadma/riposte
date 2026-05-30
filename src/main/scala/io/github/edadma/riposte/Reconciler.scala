@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 import org.scalajs.dom
 import scala.scalajs.js
@@ -17,7 +17,7 @@ object Reconciler:
 
   // The component currently being rendered, so hooks know who they belong to.
   // JavaScript is single-threaded, so a plain var is a correct "current fiber".
-  private[vdom] var current: ComponentInstance[?] | Null = null
+  private[riposte] var current: ComponentInstance[?] | Null = null
 
   private val document = dom.document
 
@@ -170,7 +170,7 @@ object Reconciler:
 
   // Re-render a single component and reconcile its output. Used both by the
   // parent-driven patch above and by the scheduler for local state updates.
-  private[vdom] def rerender(c: ComponentInstance[?]): Unit =
+  private[riposte] def rerender(c: ComponentInstance[?]): Unit =
     c.dirty = false
     val rendered = renderComponent(c.asInstanceOf[ComponentInstance[Any]])
     c.rendered = patch(c.rendered.asInstanceOf[Instance], rendered)

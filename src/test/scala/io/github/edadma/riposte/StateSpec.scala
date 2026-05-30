@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // Hooks and the scheduler: useState driving re-renders through events, the
 // three-value (state, set, update) shape, and microtask batching collapsing

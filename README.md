@@ -1,4 +1,4 @@
-# vdom
+# riposte
 
 A small, React-shaped **virtual-DOM UI library for Scala.js**.
 
@@ -7,8 +7,13 @@ against the live DOM and mutates the DOM to match. Function components hold
 local state through positional hooks. Built on
 [scalajs-dom](https://github.com/scala-js/scala-js-dom).
 
+> *riposte* — in fencing, the swift counter-thrust that follows a parry. Here:
+> an event or state change comes in, the reconciler diffs (parry), and patches
+> the DOM in answer (riposte). The word traces back through Italian
+> sword-fighting to Latin *respondēre* — "to respond."
+
 ```scala
-import io.github.edadma.vdom.*
+import io.github.edadma.riposte.*
 import org.scalajs.dom
 
 val Counter = view {
@@ -160,7 +165,7 @@ Error boundaries, SVG namespacing, and portals.
 
 ## Layout
 
-- `src/` — the `vdom` library (the published artifact)
+- `src/` — the `riposte` library (the published artifact)
 - `demo/` — a runnable showcase in its own subproject that depends on the
   library, so no demo code ends up in the published artifact
 

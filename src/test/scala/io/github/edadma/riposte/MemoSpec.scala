@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // memo: bailing out of parent-driven re-renders when props are unchanged, while
 // still re-rendering on prop changes and own state changes — and still updating

@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // Components that take props: positional multi-arg factories, named-tuple props,
 // re-rendering when a parent passes new props, and — the subtle part — keeping

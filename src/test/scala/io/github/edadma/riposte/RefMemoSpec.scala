@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 import scala.collection.mutable.ArrayBuffer
 

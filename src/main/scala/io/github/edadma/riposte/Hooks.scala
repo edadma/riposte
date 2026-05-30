@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -47,23 +47,23 @@ object Hooks:
   // Process-wide counter behind useId. IDs need only be unique within a session,
   // and JavaScript is single-threaded, so a plain counter suffices.
   private var idSeq: Long = 0
-  private[vdom] def nextId(): String =
+  private[riposte] def nextId(): String =
     idSeq += 1
-    s"vdom-$idSeq"
+    s"riposte-$idSeq"
 
-final class Hooks private[vdom] ():
+final class Hooks private[riposte] ():
 
   // Back-reference to the owning component instance, set at mount. Hooks use
   // it to mark the component dirty when state changes.
-  private[vdom] var instance: ComponentInstance[?] | Null = null
+  private[riposte] var instance: ComponentInstance[?] | Null = null
 
   private val cells          = ArrayBuffer.empty[Any]
   private var index          = 0
 
   // Contexts this component reads, so its subscriptions can be dropped on unmount.
-  private[vdom] val subscribedContexts = scala.collection.mutable.HashSet.empty[Context[?]]
+  private[riposte] val subscribedContexts = scala.collection.mutable.HashSet.empty[Context[?]]
 
-  private[vdom] def beginRender(): Unit = index = 0
+  private[riposte] def beginRender(): Unit = index = 0
 
   // -- useState -------------------------------------------------------------
 
@@ -87,9 +87,9 @@ final class Hooks private[vdom] ():
     val update: (T => T) => Unit = f  => cellSet(slot, f(cellGet[T](slot)))
     (current, set, update)
 
-  private[vdom] def cellGet[T](slot: Int): T = cells(slot).asInstanceOf[T]
+  private[riposte] def cellGet[T](slot: Int): T = cells(slot).asInstanceOf[T]
 
-  private[vdom] def cellSet[T](slot: Int, next: T): Unit =
+  private[riposte] def cellSet[T](slot: Int, next: T): Unit =
     val prev = cells(slot)
     if prev != next then
       cells(slot) = next
@@ -170,7 +170,7 @@ final class Hooks private[vdom] ():
 
   // Drop this component from every context it subscribed to. Called by the
   // reconciler on unmount so stale instances aren't notified.
-  private[vdom] def clearContextSubscriptions(): Unit =
+  private[riposte] def clearContextSubscriptions(): Unit =
     val self = instance
     if self != null && subscribedContexts.nonEmpty then
       subscribedContexts.foreach(_.subscribers.remove(self))
@@ -218,7 +218,7 @@ final class Hooks private[vdom] ():
 
   // Run every live effect cleanup. Called by the reconciler when the owning
   // component unmounts.
-  private[vdom] def runUnmountCleanups(): Unit =
+  private[riposte] def runUnmountCleanups(): Unit =
     var i = 0
     while i < cells.length do
       cells(i) match
@@ -245,7 +245,7 @@ final class Hooks private[vdom] ():
 // run; `cleanup` is the teardown returned by the previous run. `queued` guards
 // against the same cell being enqueued twice before a flush. `owner` lets the
 // scheduler order effects by depth and skip unmounted components.
-private[vdom] final class EffectCell(
+private[riposte] final class EffectCell(
     var deps:        Array[Any] | Null,
     var cleanup:     Cleanup | Null,
     var pendingBody: () => Cleanup,

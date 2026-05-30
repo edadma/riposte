@@ -4,7 +4,7 @@ ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
 ThisBuild / version      := "0.0.1"
 
-// vdom — a React-style virtual-DOM UI library for Scala.js.
+// riposte — a React-style virtual-DOM UI library for Scala.js.
 //
 // An immutable VNode tree describes the UI; a reconciler diffs each new tree
 // against the live DOM and mutates the DOM to match. Function components carry
@@ -13,11 +13,11 @@ ThisBuild / version      := "0.0.1"
 // This is the library only — no demo code, no main initializer — so the
 // published artifact stays clean. The runnable demo lives in its own `demo`
 // subproject below.
-lazy val vdom = project
+lazy val riposte = project
   .in(file("."))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    name := "vdom",
+    name := "riposte",
     scalacOptions ++= commonScalacOptions,
 
     // Tests need a real DOM. jsdom provides one under Node (installed via the
@@ -37,13 +37,13 @@ lazy val vdom = project
 // the page, and emits a single classic <script>-loadable file so demo/index.html
 // can load it with a plain <script src> tag. Never published.
 //
-//   sbt demo/fastLinkJS   # build demo/target/scala-3.8.3/demo-fastopt/main.js
+//   sbt demo/fastLinkJS   # build demo/target/scala-3.8.3/riposte-demo-fastopt/main.js
 lazy val demo = project
   .in(file("demo"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(vdom)
+  .dependsOn(riposte)
   .settings(
-    name := "vdom-demo",
+    name := "riposte-demo",
     scalacOptions ++= commonScalacOptions,
     scalaJSUseMainModuleInitializer := true,
     Compile / mainClass := Some("DemoApp"),

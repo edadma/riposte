@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 import org.scalajs.dom
 
@@ -67,8 +67,8 @@ final case class StyleProp(decls: Map[String, String]) extends Prop
 // the same object for the life of an ElementInstance — a same-tag patch reuses
 // it — so a stable ref sees a stable node.
 sealed trait ElementRef:
-  private[vdom] def attach(node: dom.Element): Unit
-  private[vdom] def detach(): Unit
+  private[riposte] def attach(node: dom.Element): Unit
+  private[riposte] def detach(): Unit
 
 // A ref backed by a `useRef` box: the live node is written into `.current` on
 // mount and cleared to null on unmount. Declare the box's type to include null,
@@ -77,12 +77,12 @@ sealed trait ElementRef:
 // a patch re-binds only when the underlying handle actually changes, so a stable
 // `useRef` box never churns, while an inline callback — a fresh function each
 // render — re-runs, matching React.
-private[vdom] final case class BoxRef[T](box: Ref[T]) extends ElementRef:
+private[riposte] final case class BoxRef[T](box: Ref[T]) extends ElementRef:
   def attach(node: dom.Element): Unit = box.current = node.asInstanceOf[T]
   def detach(): Unit                  = box.current = null.asInstanceOf[T]
 
 // A callback ref: invoked with the node on mount and with null on unmount —
 // for running code (focus, measure, observers) as the element comes and goes.
-private[vdom] final case class FnRef(fn: (dom.Element | Null) => Unit) extends ElementRef:
+private[riposte] final case class FnRef(fn: (dom.Element | Null) => Unit) extends ElementRef:
   def attach(node: dom.Element): Unit = fn(node)
   def detach(): Unit                  = fn(null)

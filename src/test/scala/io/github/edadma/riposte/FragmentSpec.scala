@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // Fragments: splicing a group of siblings into the parent with no wrapper
 // element, updating them in place, and letting a component render a fragment.

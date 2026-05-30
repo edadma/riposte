@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // useContext + providers: reading the nearest provided value, falling back to
 // the default, nested overrides, and propagation when a provided value changes.

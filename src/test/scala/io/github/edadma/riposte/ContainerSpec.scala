@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // Components that accept children (slots): a propless `container`, a `container`
 // with props, children that update across re-renders, a container that wraps its

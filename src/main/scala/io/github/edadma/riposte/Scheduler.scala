@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 import org.scalajs.dom
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor
@@ -38,7 +38,7 @@ object Scheduler:
       dirty += inst
     requestFlush()
 
-  private[vdom] def scheduleEffect(cell: EffectCell): Unit =
+  private[riposte] def scheduleEffect(cell: EffectCell): Unit =
     if !cell.queued then
       cell.queued = true
       if cell.layout then layoutEffects += cell else passiveEffects += cell

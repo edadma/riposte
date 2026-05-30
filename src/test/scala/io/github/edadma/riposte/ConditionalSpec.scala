@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // Conditional-render ergonomics: `when` / `unless`, and the `Option[VNode]`
 // child conversion. The subtle guarantee is that a hidden branch leaves an empty

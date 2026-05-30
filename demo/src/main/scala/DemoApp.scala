@@ -1,4 +1,4 @@
-import io.github.edadma.vdom.*
+import io.github.edadma.riposte.*
 import org.scalajs.dom
 
 // A small showcase of the basics: local state via useState, event handlers, a
@@ -111,7 +111,7 @@ object DemoApp:
 
   val App = view {
     div(
-      h1("vdom demo"),
+      h1("riposte demo"),
       Counter(),
       TodoList(),
       Dashboard(),

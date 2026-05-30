@@ -1,4 +1,4 @@
-package io.github.edadma.vdom
+package io.github.edadma.riposte
 
 // Keyed children: reuse-by-key across reorders, inserts, and removes, moving
 // only the DOM blocks that are actually out of place.
