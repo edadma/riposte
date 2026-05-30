@@ -1,0 +1,177 @@
+/*
+ * salle.css — the default look for salle's components (the SalleSkin vocabulary).
+ *
+ * Include this once in your app (link it in your HTML or import it through your
+ * bundler), then put any overrides AFTER it. Every rule lives in `@layer salle`,
+ * a low-priority cascade layer, so your own unlayered CSS always wins — no
+ * `!important`, no specificity battles.
+ *
+ * Two ways to retheme, both pure CSS:
+ *   1. Values — override the `--salle-*` custom properties (colors, radius, …).
+ *   2. Rules  — restyle a selector directly (e.g. add a shadow to `.salle-btn`).
+ *
+ * Classes follow a BEM-ish convention: a base `.salle-btn` plus independent
+ * modifiers for colour (`--primary`), variant (`--outline`), and size (`--sm`).
+ * Each colour modifier sets a single `--_c` custom property; the variant rules then
+ * reinterpret that one colour (filled, outlined, soft, …), so colour × variant
+ * combine without an entry per pair.
+ */
+
+@layer salle {
+  /* Design tokens. Override any of these at `:root` or under a `[data-theme=…]`
+   * block to re-theme the whole app without touching a single selector. */
+  :root {
+    --salle-radius: 0.5rem;
+    --salle-focus: #93c5fd;
+
+    --salle-color-primary: #2563eb;
+    --salle-color-secondary: #e2e8f0;
+    --salle-color-accent: #7c3aed;
+    --salle-color-neutral: #334155;
+    --salle-color-info: #0ea5e9;
+    --salle-color-success: #16a34a;
+    --salle-color-warning: #d97706;
+    --salle-color-error: #dc2626;
+  }
+
+  .salle-btn {
+    --_c: var(--salle-color-neutral);
+    --_fg: #ffffff;
+    --_py: 0.55rem;
+    --_px: 1.1rem;
+    --_fs: 1rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font: inherit;
+    font-size: var(--_fs);
+    font-weight: 600;
+    line-height: 1;
+    padding: var(--_py) var(--_px);
+    border: 1px solid transparent;
+    border-radius: var(--salle-radius);
+    background: var(--_c);
+    color: var(--_fg);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease, opacity 0.15s ease;
+  }
+
+  .salle-btn:hover {
+    background: color-mix(in srgb, var(--_c) 85%, #000);
+  }
+  .salle-btn:focus-visible {
+    outline: 2px solid var(--salle-focus);
+    outline-offset: 2px;
+  }
+  .salle-btn:disabled,
+  .salle-btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* Colour modifiers — each sets the one `--_c` the rules above consume. */
+  .salle-btn--primary {
+    --_c: var(--salle-color-primary);
+  }
+  .salle-btn--secondary {
+    --_c: var(--salle-color-secondary);
+    --_fg: #0f172a;
+  }
+  .salle-btn--accent {
+    --_c: var(--salle-color-accent);
+  }
+  .salle-btn--neutral {
+    --_c: var(--salle-color-neutral);
+  }
+  .salle-btn--info {
+    --_c: var(--salle-color-info);
+  }
+  .salle-btn--success {
+    --_c: var(--salle-color-success);
+  }
+  .salle-btn--warning {
+    --_c: var(--salle-color-warning);
+    --_fg: #1c1917;
+  }
+  .salle-btn--error {
+    --_c: var(--salle-color-error);
+  }
+
+  /* Variant modifiers — reinterpret `--_c` as fill, outline, soft tint, … */
+  .salle-btn--outline {
+    background: transparent;
+    color: var(--_c);
+    border-color: var(--_c);
+  }
+  .salle-btn--outline:hover {
+    background: color-mix(in srgb, var(--_c) 12%, transparent);
+  }
+
+  .salle-btn--dash {
+    background: transparent;
+    color: var(--_c);
+    border: 1px dashed var(--_c);
+  }
+  .salle-btn--dash:hover {
+    background: color-mix(in srgb, var(--_c) 12%, transparent);
+  }
+
+  .salle-btn--soft {
+    background: color-mix(in srgb, var(--_c) 16%, transparent);
+    color: var(--_c);
+  }
+  .salle-btn--soft:hover {
+    background: color-mix(in srgb, var(--_c) 26%, transparent);
+  }
+
+  .salle-btn--ghost {
+    background: transparent;
+    color: var(--_c);
+  }
+  .salle-btn--ghost:hover {
+    background: color-mix(in srgb, var(--_c) 12%, transparent);
+  }
+
+  .salle-btn--link {
+    background: transparent;
+    color: var(--_c);
+    border: none;
+    padding-inline: 0;
+    text-decoration: underline;
+  }
+  .salle-btn--link:hover {
+    background: transparent;
+    text-decoration: none;
+  }
+
+  /* Size modifiers — set the padding/font-size custom properties the base uses. */
+  .salle-btn--xs {
+    --_py: 0.25rem;
+    --_px: 0.6rem;
+    --_fs: 0.75rem;
+  }
+  .salle-btn--sm {
+    --_py: 0.4rem;
+    --_px: 0.85rem;
+    --_fs: 0.875rem;
+  }
+  .salle-btn--md {
+    --_py: 0.55rem;
+    --_px: 1.1rem;
+    --_fs: 1rem;
+  }
+  .salle-btn--lg {
+    --_py: 0.7rem;
+    --_px: 1.4rem;
+    --_fs: 1.125rem;
+  }
+  .salle-btn--xl {
+    --_py: 0.85rem;
+    --_px: 1.7rem;
+    --_fs: 1.25rem;
+  }
+}

@@ -10,7 +10,7 @@ ThisBuild / version      := "0.0.1"
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(riposte, atoms, router, demo)
+  .aggregate(riposte, atoms, router, salle, demo)
   .settings(
     name           := "riposte-root",
     publish / skip := true,
@@ -85,6 +85,21 @@ lazy val router = project
   .dependsOn(riposte)
   .settings(
     name := "riposte-router",
+    scalacOptions ++= commonScalacOptions,
+    Test / jsEnv := new JSDOMNodeJSEnv(),
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+
+// salle — a component library for riposte (the fencing salle: the hall where the
+// components live). A separate artifact built on the core's public DSL and hooks;
+// no core changes required. Named components compose the core element builders into
+// reusable, styled widgets.
+lazy val salle = project
+  .in(file("salle"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(riposte)
+  .settings(
+    name := "salle",
     scalacOptions ++= commonScalacOptions,
     Test / jsEnv := new JSDOMNodeJSEnv(),
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
