@@ -56,15 +56,18 @@ object DemoApp:
     )
   }
 
-  // A child component that takes props. Using a named tuple gives the props
-  // field names without declaring a case class.
-  val Stat: Component[(label: String, value: Int)] = component { p =>
-    div(
-      cls := "stat",
-      span(cls := "label", p.label),
-      span(": "),
-      strong(p.value),
-    )
+  // A child component that takes props. The tuple is destructured in the lambda
+  // so the body uses bare `label`/`value` (no field access), while the call
+  // sites below still pass named literals — a named tuple conforms to its
+  // unnamed counterpart, so `(label = …, value = …)` fits `(String, Int)`.
+  val Stat: Component[(String, Int)] = component {
+    case (label, value) =>
+      div(
+        cls := "stat",
+        span(cls := "label", label),
+        span(": "),
+        strong(value),
+      )
   }
 
   // A parent that renders the props-taking child twice, feeding each its own
