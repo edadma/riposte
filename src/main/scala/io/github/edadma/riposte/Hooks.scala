@@ -39,6 +39,12 @@ def useId()(using h: Hooks): String =
 def useContext[T](ctx: Context[T])(using h: Hooks): T =
   h.useContext(ctx)
 
+def useSyncExternalStore[T](
+    subscribe:   (() => Unit) => (() => Unit),
+    getSnapshot: () => T,
+)(using h: Hooks): T =
+  h.useSyncExternalStore(subscribe, getSnapshot)
+
 // Per-component hook state. Each mounted function component owns one Hooks
 // instance whose cells persist for the life of the component. Within a render,
 // hook calls bind positionally to cells in call order — so, as in React, hooks
@@ -199,6 +205,42 @@ final class Hooks private[riposte] ():
   // seeing an intermediate frame.
   def useLayoutEffect(body: () => Cleanup, deps: Array[Any] | Null): Unit =
     scheduleEffect(body, deps, layout = true)
+
+  // -- useSyncExternalStore -------------------------------------------------
+
+  // Subscribe to a store that lives outside the component tree and re-render when
+  // its snapshot changes — the bridge for app-state libraries and signals.
+  // `subscribe` registers a callback the store invokes on every change and
+  // returns an unsubscribe; `getSnapshot` reads the current value. Pass a STABLE
+  // `subscribe` (a val/method on the store, not a fresh lambda each render) so the
+  // subscription isn't torn down and rebuilt every render.
+  //
+  // The component re-renders only when the snapshot actually changes (`!=`), so a
+  // `getSnapshot` that selects a slice bails out when that slice is unchanged even
+  // if the store fired. A fresh snapshot is read every render, and re-checked once
+  // when the subscription is established, so a change landing between render and
+  // subscribe is caught rather than lost. Subscribing in a layout effect means
+  // that catch-up re-render commits in the same flush, before paint.
+  def useSyncExternalStore[T](subscribe: (() => Unit) => (() => Unit), getSnapshot: () => T): T =
+    val value             = getSnapshot()
+    val (_, _, forceTick) = useState(0)
+    val ref               = useRef[(T, () => T)]((value, getSnapshot))
+    ref.current           = (value, getSnapshot)
+    useLayoutEffect(
+      () => {
+        // Read the latest snapshot and last-rendered value through the ref, so a
+        // notification always compares against what is currently on screen.
+        val onChange: () => Unit = () => {
+          val (last, snap) = ref.current
+          if snap() != last then forceTick(_ + 1)
+        }
+        onChange()
+        val unsubscribe = subscribe(onChange)
+        () => unsubscribe()
+      },
+      Array(subscribe),
+    )
+    value
 
   private def scheduleEffect(body: () => Cleanup, deps: Array[Any] | Null, layout: Boolean): Unit =
     val slot = index

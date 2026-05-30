@@ -127,6 +127,24 @@ Children are the component's props, so identity, surviving hook state, and
 `memo` all behave as for any other component. A container can hold its own
 state — e.g. a collapsible that shows the children it's given only when open.
 
+## External state
+
+App-level state lives *outside* the component tree, in a store of your choosing.
+`useSyncExternalStore(subscribe, getSnapshot)` is the seam that connects any such
+store to the re-render model:
+
+```scala
+val count = useSyncExternalStore(store.subscribe, () => store.get.count)
+```
+
+`subscribe` registers a callback the store fires on every change (and returns an
+unsubscribe); `getSnapshot` reads the current value. The component re-renders
+only when the snapshot actually changes (`!=`), so a `getSnapshot` that selects a
+slice **bails out** when that slice is unchanged — the basis for efficient
+selector-based stores. This is the integration point for a hand-rolled store, a
+reducer-over-context, or a reactive library like Airstream (a thin bridge hook
+wraps a `Signal`/`Var`), none of which the core needs to know about.
+
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.
@@ -138,7 +156,7 @@ state — e.g. a collapsible that shows the children it's given only when open.
   blocks that are actually out of place (so focus and cursor survive).
 - **Hooks** — `useState` (returns `(state, set, update)`), `useEffect`,
   `useLayoutEffect`, `useRef`, `useMemo`, `useCallback`, `useReducer`, `useId`,
-  and `useContext`.
+  `useContext`, and `useSyncExternalStore`.
 - **Refs to DOM nodes** — `ref := someRefBox` writes the live element into a
   `useRef` box (`.current`), cleared to null on unmount; `ref := (node => …)`
   takes a callback instead. For focus, measurement, and other imperative work.
