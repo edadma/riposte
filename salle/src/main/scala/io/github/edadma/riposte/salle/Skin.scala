@@ -22,6 +22,10 @@ trait Skin:
   /** Classes for a [[Button]] with the given colour, variant, and size. */
   def button(color: Color, variant: ButtonVariant, size: Size): String
 
+  /** Classes for an [[Input]] of the given colour and size; `invalid` overrides the
+    * colour with the error treatment. */
+  def input(color: Color, size: Size, invalid: Boolean): String
+
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
   * `--salle-*` custom properties for value changes, or the rules themselves for
@@ -32,6 +36,9 @@ trait Skin:
 object SalleSkin extends Skin:
   def button(color: Color, variant: ButtonVariant, size: Size): String =
     bem("salle-btn", color.token, variant.token, size.token)
+
+  def input(color: Color, size: Size, invalid: Boolean): String =
+    bem("salle-input", if invalid then "error" else color.token, size.token)
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
   * the classes (`btn btn-primary btn-outline btn-sm`); the styles come from DaisyUI
@@ -44,6 +51,11 @@ object SalleSkin extends Skin:
 object DaisySkin extends Skin:
   def button(color: Color, variant: ButtonVariant, size: Size): String =
     daisy("btn", color.token, variant.token, size.token)
+
+  // AsterUI's Input maps `status=error|warning` over the colour; salle's `invalid`
+  // is the error case, which wins over the colour just as it does there.
+  def input(color: Color, size: Size, invalid: Boolean): String =
+    daisy("input", if invalid then "error" else color.token, size.token)
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
 // `base--token` convention (`salle-btn salle-btn--primary`).

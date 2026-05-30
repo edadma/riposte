@@ -174,4 +174,89 @@
     --_px: 1.7rem;
     --_fs: 1.25rem;
   }
+
+  /* --- Input -------------------------------------------------------------- */
+
+  .salle-input {
+    --_c: var(--salle-color-primary); /* accent for the focus ring */
+    --_py: 0.5rem;
+    --_px: 0.75rem;
+    --_fs: 1rem;
+
+    font: inherit;
+    font-size: var(--_fs);
+    padding: var(--_py) var(--_px);
+    border: 1px solid var(--salle-input-border, #cbd5e1);
+    border-radius: var(--salle-radius);
+    background: var(--salle-input-bg, #ffffff);
+    color: var(--salle-input-fg, #0f172a);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  }
+  .salle-input::placeholder {
+    color: var(--salle-input-placeholder, #94a3b8);
+  }
+  .salle-input:focus-visible {
+    border-color: var(--_c);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--_c) 25%, transparent);
+  }
+  .salle-input:disabled,
+  .salle-input[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* Colour modifiers tint the focus ring via `--_c`. */
+  .salle-input--primary {
+    --_c: var(--salle-color-primary);
+  }
+  .salle-input--secondary {
+    --_c: var(--salle-color-secondary);
+  }
+  .salle-input--accent {
+    --_c: var(--salle-color-accent);
+  }
+  .salle-input--neutral {
+    --_c: var(--salle-color-neutral);
+  }
+  .salle-input--info {
+    --_c: var(--salle-color-info);
+  }
+  .salle-input--success {
+    --_c: var(--salle-color-success);
+  }
+  .salle-input--warning {
+    --_c: var(--salle-color-warning);
+  }
+  .salle-input--error {
+    --_c: var(--salle-color-error);
+    border-color: var(--salle-color-error);
+  }
+
+  /* Size modifiers. */
+  .salle-input--xs {
+    --_py: 0.25rem;
+    --_px: 0.5rem;
+    --_fs: 0.75rem;
+  }
+  .salle-input--sm {
+    --_py: 0.4rem;
+    --_px: 0.65rem;
+    --_fs: 0.875rem;
+  }
+  .salle-input--md {
+    --_py: 0.5rem;
+    --_px: 0.75rem;
+    --_fs: 1rem;
+  }
+  .salle-input--lg {
+    --_py: 0.65rem;
+    --_px: 0.9rem;
+    --_fs: 1.125rem;
+  }
+  .salle-input--xl {
+    --_py: 0.8rem;
+    --_px: 1.1rem;
+    --_fs: 1.25rem;
+  }
 }
