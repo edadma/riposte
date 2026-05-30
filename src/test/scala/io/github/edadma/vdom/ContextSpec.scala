@@ -5,7 +5,7 @@ package io.github.edadma.vdom
 class ContextSpec extends DomSuite:
 
   private val Theme = createContext("light")
-  private val Label = view("Label") {
+  private val Label = view {
     val theme = useContext(Theme)
     span(cls := "t", theme)
   }

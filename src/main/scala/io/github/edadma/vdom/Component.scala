@@ -5,15 +5,14 @@ package io.github.edadma.vdom
 // the top-level `useState` / `useEffect` / … functions directly without naming
 // or threading a `hooks` parameter.
 //
-// A `Component` is a stable value created once (e.g.
-// `val Counter = view("Counter") { … }`); the reconciler matches mounted
-// instances by component identity plus key, so the SAME `Component` value across
-// renders means "update in place", a different one means "unmount and remount".
+// A `Component` is a stable value created once (e.g. `val Counter = view { … }`);
+// the reconciler matches mounted instances by component identity (reference
+// equality) plus key, so the SAME `Component` value across renders means
+// "update in place", a different one means "unmount and remount".
 //
 // Props travel as plain data on each `VComponent`; hook state lives on the
 // mounted instance and survives re-renders.
 final class Component[P](
-    val name:     String,
     val render:   P => (Hooks ?=> VNode),
     val memoized: Boolean = false,
 ):
@@ -22,21 +21,21 @@ final class Component[P](
 
 // Build a component that takes props.
 //
-//   val Greeting = component[String]("Greeting") { who =>
+//   val Greeting = component[String] { who =>
 //     div(s"Hello, $who")          // hooks usable here too, implicitly
 //   }
 //   Greeting("world")
-def component[P](name: String)(render: P => (Hooks ?=> VNode)): Component[P] =
-  new Component(name, render)
+def component[P](render: P => (Hooks ?=> VNode)): Component[P] =
+  new Component(render)
 
 // A no-props component. Call it with `Counter()`.
 //
-//   val Counter = view("Counter") {
+//   val Counter = view {
 //     val (n, _, update) = useState(0)
 //     button(onClick := (_ => update(_ + 1)), s"clicked $n")
 //   }
-def view(name: String)(render: Hooks ?=> VNode): Component[Unit] =
-  new Component(name, _ => render)
+def view(render: Hooks ?=> VNode): Component[Unit] =
+  new Component(_ => render)
 
 extension (c: Component[Unit]) def apply(): VNode = c.apply(())
 
@@ -47,12 +46,12 @@ extension (c: Component[Unit]) def apply(): VNode = c.apply(())
 // Define the memoized component once as a stable value; don't call `memo`
 // inline in a render, or each render produces a new identity and remounts.
 //
-//   val Row = memo(component[RowProps]("Row") { props => … })
+//   val Row = memo(component[RowProps] { props => … })
 //
 // Note: props that contain freshly-allocated closures compare unequal each
 // render and defeat the bailout — stabilize handlers with `useCallback`.
 def memo[P](c: Component[P]): Component[P] =
-  new Component(c.name, c.render, memoized = true)
+  new Component(c.render, memoized = true)
 
 // --- multi-argument components ---------------------------------------------
 //
@@ -61,7 +60,7 @@ def memo[P](c: Component[P]): Component[P] =
 // Under the hood the args are stored as a tuple, so component identity and
 // `memo` (structural `==` on the tuple) behave exactly as for one prop.
 //
-//   val Stat = component[String, Int]("Stat") { (label, value) =>
+//   val Stat = component[String, Int] { (label, value) =>
 //     div(span(label), strong(value))
 //   }
 //   Stat("Clicks", clicks)
@@ -69,7 +68,7 @@ def memo[P](c: Component[P]): Component[P] =
 // When you'd rather have field names without declaring a case class, pass a
 // single named tuple to `component[P]` instead:
 //
-//   val Card = component[(title: String, count: Int)]("Card") { p =>
+//   val Card = component[(title: String, count: Int)] { p =>
 //     div(span(p.title), strong(p.count))
 //   }
 //   Card((title = "Hi", count = 3))
@@ -86,14 +85,14 @@ final class Component4[A, B, C, D] private[vdom] (private[vdom] val underlying: 
   def apply(a: A, b: B, c: C, d: D): VNode              = underlying((a, b, c, d))
   def apply(a: A, b: B, c: C, d: D, key: String): VNode = underlying((a, b, c, d), key)
 
-def component[A, B](name: String)(render: (A, B) => (Hooks ?=> VNode)): Component2[A, B] =
-  new Component2(new Component[(A, B)](name, t => render(t._1, t._2)))
+def component[A, B](render: (A, B) => (Hooks ?=> VNode)): Component2[A, B] =
+  new Component2(new Component[(A, B)](t => render(t._1, t._2)))
 
-def component[A, B, C](name: String)(render: (A, B, C) => (Hooks ?=> VNode)): Component3[A, B, C] =
-  new Component3(new Component[(A, B, C)](name, t => render(t._1, t._2, t._3)))
+def component[A, B, C](render: (A, B, C) => (Hooks ?=> VNode)): Component3[A, B, C] =
+  new Component3(new Component[(A, B, C)](t => render(t._1, t._2, t._3)))
 
-def component[A, B, C, D](name: String)(render: (A, B, C, D) => (Hooks ?=> VNode)): Component4[A, B, C, D] =
-  new Component4(new Component[(A, B, C, D)](name, t => render(t._1, t._2, t._3, t._4)))
+def component[A, B, C, D](render: (A, B, C, D) => (Hooks ?=> VNode)): Component4[A, B, C, D] =
+  new Component4(new Component[(A, B, C, D)](t => render(t._1, t._2, t._3, t._4)))
 
 def memo[A, B](c: Component2[A, B]): Component2[A, B] =
   new Component2(memo(c.underlying))

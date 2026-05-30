@@ -7,7 +7,7 @@ class StateSpec extends DomSuite:
 
   test("useState drives DOM updates through events"):
     val c = container()
-    val Counter = view("Counter") {
+    val Counter = view {
       val (n, _, update) = useState(0)
       button(onClick := (_ => update(_ + 1)), s"n=$n")
     }
@@ -21,7 +21,7 @@ class StateSpec extends DomSuite:
 
   test("the setter replaces and the updater transforms"):
     val c = container()
-    val Both = view("Both") {
+    val Both = view {
       val (n, set, update) = useState(10)
       div(
         span(cls := "n", n),
@@ -38,7 +38,7 @@ class StateSpec extends DomSuite:
 
   test("controlled input round-trips through useState"):
     val c = container()
-    val Field = view("Field") {
+    val Field = view {
       val (v, set, _) = useState("")
       div(
         input(value := v, onInput := (e => set(targetValue(e)))),
@@ -52,7 +52,7 @@ class StateSpec extends DomSuite:
   test("multiple updates in one tick collapse into a single commit"):
     val c = container()
     var renders = 0
-    val Multi = view("Multi") {
+    val Multi = view {
       val (n, _, update) = useState(0)
       renders += 1
       button(onClick := (_ => { update(_ + 1); update(_ + 1); update(_ + 1) }), s"n=$n")

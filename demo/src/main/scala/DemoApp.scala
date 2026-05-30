@@ -6,7 +6,7 @@ import org.scalajs.dom
 // the default (empty) package — it's a self-contained app, imported by nobody.
 object DemoApp:
 
-  val Counter = view("Counter") {
+  val Counter = view {
     val (count, _, update) = useState(0)
     div(
       cls := "card",
@@ -20,7 +20,7 @@ object DemoApp:
     )
   }
 
-  val TodoList = view("TodoList") {
+  val TodoList = view {
     val (items, setItems, updateItems) = useState(Vector("milk", "eggs", "coffee"))
     val (draft, setDraft, _)           = useState("")
 
@@ -58,7 +58,7 @@ object DemoApp:
 
   // A child component that takes props. Using a named tuple gives the props
   // field names without declaring a case class.
-  val Stat = component[(label: String, value: Int)]("Stat") { p =>
+  val Stat: Component[(label: String, value: Int)] = component { p =>
     div(
       cls := "stat",
       span(cls := "label", p.label),
@@ -70,7 +70,7 @@ object DemoApp:
   // A parent that renders the props-taking child twice, feeding each its own
   // values from local state. Bumping a counter re-renders the parent, which
   // passes new props down and re-renders just that Stat.
-  val Dashboard = view("Dashboard") {
+  val Dashboard = view {
     val (clicks, _, bumpClicks) = useState(0)
     val (likes,  _, bumpLikes)  = useState(0)
     div(
@@ -86,7 +86,7 @@ object DemoApp:
     )
   }
 
-  val App = view("App") {
+  val App = view {
     div(
       h1("vdom demo"),
       Counter(),

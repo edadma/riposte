@@ -8,11 +8,11 @@ class MemoSpec extends DomSuite:
   test("a memoized child skips re-render when its props are unchanged"):
     val c = container()
     var childRenders = 0
-    val Child = memo(component[String]("Child") { label =>
+    val Child = memo(component[String] { label =>
       childRenders += 1
       span(cls := "c", label)
     })
-    val Parent = view("Parent") {
+    val Parent = view {
       val (n, _, update) = useState(0)
       div(
         Child("fixed"), // props never change
@@ -29,11 +29,11 @@ class MemoSpec extends DomSuite:
   test("a memoized multi-arg child bails when its positional args are unchanged"):
     val c = container()
     var childRenders = 0
-    val Child = memo(component[String, Int]("Child") { (label, value) =>
+    val Child = memo(component[String, Int] { (label, value) =>
       childRenders += 1
       span(cls := "c", s"$label$value")
     })
-    val Parent = view("Parent") {
+    val Parent = view {
       val (n, _, update) = useState(0)
       div(
         Child("fixed", 7), // args never change
@@ -50,11 +50,11 @@ class MemoSpec extends DomSuite:
   test("a memoized child re-renders when its props change"):
     val c = container()
     var childRenders = 0
-    val Child = memo(component[Int]("Child") { v =>
+    val Child = memo(component[Int] { v =>
       childRenders += 1
       span(cls := "c", v)
     })
-    val Parent = view("Parent") {
+    val Parent = view {
       val (n, _, update) = useState(0)
       div(Child(n), button(onClick := (_ => update(_ + 1)), "bump"))
     }
@@ -66,7 +66,7 @@ class MemoSpec extends DomSuite:
 
   test("a memoized component still re-renders on its own state change"):
     val c = container()
-    val Comp = memo(view("Comp") {
+    val Comp = memo(view {
       val (n, _, update) = useState(0)
       button(onClick := (_ => update(_ + 1)), s"$n")
     })
@@ -80,11 +80,11 @@ class MemoSpec extends DomSuite:
     val Theme = createContext("light")
     var midRenders = 0
     // Leaf consumes the context; Mid is memoized and does NOT consume it.
-    val Leaf = view("Leaf") {
+    val Leaf = view {
       val theme = useContext(Theme)
       span(cls := "t", theme)
     }
-    val Mid = memo(view("Mid") {
+    val Mid = memo(view {
       midRenders += 1
       div(cls := "mid", Leaf())
     })

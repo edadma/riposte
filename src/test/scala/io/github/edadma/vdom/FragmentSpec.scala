@@ -26,7 +26,7 @@ class FragmentSpec extends DomSuite:
 
   test("a component may render a fragment"):
     val c = container()
-    val Two = view("Two") {
+    val Two = view {
       fragment(span(cls := "a", "A"), span(cls := "b", "B"))
     }
     render(div(Two(), span(cls := "c", "C")), c)

@@ -11,7 +11,7 @@ local state through positional hooks. Built on
 import io.github.edadma.vdom.*
 import org.scalajs.dom
 
-val Counter = view("Counter") {
+val Counter = view {
   val (count, _, update) = useState(0)
   div(
     p(s"Count: $count"),
@@ -36,7 +36,7 @@ A component with one prop uses `component[P]`. For several props, pass them
 positionally — no wrapper type:
 
 ```scala
-val Stat = component[String, Int]("Stat") { (label, value) =>
+val Stat = component[String, Int] { (label, value) =>
   div(span(label), strong(value))
 }
 Stat("Clicks", clicks)
@@ -46,7 +46,7 @@ When you want field names without declaring a case class, use a named tuple as
 the single prop:
 
 ```scala
-val Card = component[(title: String, count: Int)]("Card") { p =>
+val Card = component[(title: String, count: Int)] { p =>
   div(span(p.title), strong(p.count))
 }
 Card((title = "Hi", count = 3))

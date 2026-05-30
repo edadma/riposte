@@ -7,7 +7,7 @@ class RefMemoSpec extends DomSuite:
 
   test("useRef persists across renders and writes don't re-render"):
     val c = container()
-    val Comp = view("R") {
+    val Comp = view {
       val ref            = useRef(0)
       val (_, _, update) = useState(0)
       div(
@@ -28,7 +28,7 @@ class RefMemoSpec extends DomSuite:
   test("useMemo recomputes only when its deps change"):
     val c = container()
     var computes = 0
-    val Comp = view("M") {
+    val Comp = view {
       val (a, _, updateA) = useState(0)
       val (_, _, updateB) = useState(0)
       val doubled = useMemo(() => { computes += 1; a * 2 }, Array(a))
@@ -56,7 +56,7 @@ class RefMemoSpec extends DomSuite:
         case "inc" => s + 1
         case "dec" => s - 1
         case _     => s
-    val Counter = view("Rd") {
+    val Counter = view {
       val (n, dispatch) = useReducer(reducer, 0)
       div(
         span(cls := "n", n),
@@ -75,7 +75,7 @@ class RefMemoSpec extends DomSuite:
   test("useId is stable across renders"):
     val c        = container()
     val captured = ArrayBuffer.empty[String]
-    val Comp = view("I") {
+    val Comp = view {
       val (n, _, update) = useState(0)
       captured += useId()
       button(onClick := (_ => update(_ + 1)), s"$n")
@@ -88,7 +88,7 @@ class RefMemoSpec extends DomSuite:
   test("useId is unique across component instances"):
     val c   = container()
     val ids = ArrayBuffer.empty[String]
-    val Comp = view("I") {
+    val Comp = view {
       ids += useId()
       div()
     }

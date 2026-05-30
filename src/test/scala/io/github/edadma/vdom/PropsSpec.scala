@@ -6,7 +6,7 @@ package io.github.edadma.vdom
 // props).
 class PropsSpec extends DomSuite:
 
-  private val Card = component[String, Int]("Card") { (title, count) =>
+  private val Card = component[String, Int] { (title, count) =>
     div(cls := "card", span(cls := "title", title), span(cls := "count", count))
   }
 
@@ -18,7 +18,7 @@ class PropsSpec extends DomSuite:
 
   test("a three-arg positional component receives all three props"):
     val c = container()
-    val Row = component[String, Int, Boolean]("Row") { (label, n, on) =>
+    val Row = component[String, Int, Boolean] { (label, n, on) =>
       div(span(cls := "l", label), span(cls := "n", n), span(cls := "on", on.toString))
     }
     render(Row("x", 5, true), c)
@@ -28,7 +28,7 @@ class PropsSpec extends DomSuite:
 
   test("a named-tuple child receives its props by name"):
     val c = container()
-    val Badge = component[(text: String, tone: String)]("Badge") { p =>
+    val Badge = component[(text: String, tone: String)] { p =>
       div(cls := "badge", span(cls := "text", p.text), span(cls := "tone", p.tone))
     }
     render(Badge((text = "new", tone = "info")), c)
@@ -37,7 +37,7 @@ class PropsSpec extends DomSuite:
 
   test("a child re-renders when the parent passes new props"):
     val c = container()
-    val Parent = view("Parent") {
+    val Parent = view {
       val (n, _, update) = useState(0)
       div(
         Card("n", n),
@@ -52,7 +52,7 @@ class PropsSpec extends DomSuite:
   test("a child keeps its own hook state across prop changes"):
     val c = container()
     // Child takes a single Int prop and also owns local state.
-    val Child = component[Int]("Child") { p =>
+    val Child = component[Int] { p =>
       val (local, _, bump) = useState(0)
       div(
         span(cls := "prop", p),
@@ -60,7 +60,7 @@ class PropsSpec extends DomSuite:
         button(cls := "bump-local", onClick := (_ => bump(_ + 1)), "local"),
       )
     }
-    val Parent = view("Parent") {
+    val Parent = view {
       val (n, _, update) = useState(0)
       div(
         Child(n),
