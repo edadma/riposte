@@ -3,6 +3,7 @@ package io.github.edadma.riposte.atoms
 import io.github.edadma.riposte.*
 import org.scalajs.dom
 import org.scalatest.funsuite.AnyFunSuite
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 // Jotai-inspired atoms on top of riposte. Two layers: the Store (the reactive
 // dependency graph — primitive/derived reads, precise propagation, change-gated
@@ -299,3 +300,54 @@ class AtomSpec extends AnyFunSuite:
     fireClick(c.querySelector("button"))
     assert(c.querySelector("span.v").textContent == "changed")
     assert(dom.window.localStorage.getItem("riposte-test-pref") == "changed") // persisted
+
+  // --- async / loadable atoms ----------------------------------------------
+  //
+  // The parasitic EC runs a future's completion callback synchronously on the
+  // thread that completes it, so these cases settle deterministically within a
+  // flushSync — no real async waiting.
+
+  private def loadableText(l: Loadable[Int]): String = l match
+    case Loadable.Loading      => "loading"
+    case Loadable.Data(n)      => s"data:$n"
+    case Loadable.Errored(e)   => s"err:${e.getMessage}"
+
+  test("a loadable atom resolves to Data when its future succeeds"):
+    given ExecutionContext = ExecutionContext.parasitic
+    val c    = host()
+    val data = atomLoadable(Future.successful(42))
+    val Show = view {
+      val v = useAtomValue(data)
+      span(cls := "v", loadableText(v))
+    }
+    render(Show(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "data:42")
+
+  test("a loadable atom stays Loading until its future completes"):
+    given ExecutionContext = ExecutionContext.parasitic
+    val c    = host()
+    val p    = Promise[Int]()
+    val data = atomLoadable(p.future)
+    val Show = view {
+      val v = useAtomValue(data)
+      span(cls := "v", loadableText(v))
+    }
+    render(Show(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "loading")
+    p.success(7) // parasitic runs the completion callback now
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "data:7")
+
+  test("a loadable atom resolves to Errored when its future fails"):
+    given ExecutionContext = ExecutionContext.parasitic
+    val c    = host()
+    val data = atomLoadable(Future.failed[Int](new RuntimeException("boom")))
+    val Show = view {
+      val v = useAtomValue(data)
+      span(cls := "v", loadableText(v))
+    }
+    render(Show(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "err:boom")
