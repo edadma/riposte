@@ -82,3 +82,78 @@ class DslSpec extends DomSuite:
     c.querySelector("button").dispatchEvent(new dom.Event("dblclick"))
     Scheduler.flushSync()
     assert(hits == 1)
+
+  test("a Double attribute value renders as its string form"):
+    val c = host()
+    render(svg(circle(cx := 1.5, cy := 2.5, r := 0.25)), c)
+    Scheduler.flushSync()
+    val circ = c.querySelector("circle")
+    assert(circ.getAttribute("cx") == "1.5")
+    assert(circ.getAttribute("cy") == "2.5")
+    assert(circ.getAttribute("r") == "0.25")
+
+  // A `<select>`'s `value` is a DOM property that only "takes" once the matching
+  // `<option>` exists, so the reconciler mounts children before applying props.
+
+  test("a controlled <select> selects the right option on first mount"):
+    val c = host()
+    render(
+      select(
+        value := "b",
+        option(value := "a", "A"),
+        option(value := "b", "B"),
+        option(value := "c", "C"),
+      ),
+      c,
+    )
+    Scheduler.flushSync()
+    assert(c.querySelector("select").asInstanceOf[dom.html.Select].value == "b")
+
+  test("a controlled <select> selects a value whose <option> is added in the same patch"):
+    val c = host()
+    val Sel = view {
+      val (n, _, update) = useState(2)
+      div(
+        select(
+          value := s"o${n - 1}",
+          (0 until n).map(i => option(key := i, value := s"o$i", s"O$i")): Seq[VNode],
+        ),
+        button(onClick := (_ => update(_ + 1)), "more"),
+      )
+    }
+    render(Sel(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("select").asInstanceOf[dom.html.Select].value == "o1")
+    fireClick(c.querySelector("button"))
+    // n is now 3 → value "o2", whose <option> is mounted in this very patch.
+    assert(c.querySelector("select").asInstanceOf[dom.html.Select].value == "o2")
+
+  test("unsafeHtml sets the element's inner HTML verbatim"):
+    val c = host()
+    render(div(cls := "rich", unsafeHtml("<b>hi</b> <i>there</i>")), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("div.rich")
+    assert(el.innerHTML == "<b>hi</b> <i>there</i>")
+    assert(el.querySelector("b").textContent == "hi")
+
+  test("unsafeHtml updates when the html changes and clears when removed"):
+    val c = host()
+    val Rich = view {
+      val (n, _, update) = useState(0)
+      div(
+        span(
+          cls := "box",
+          if n == 0 then unsafeHtml("<b>a</b>")
+          else if n == 1 then unsafeHtml("<i>b</i>")
+          else NoMod,
+        ),
+        button(onClick := (_ => update(_ + 1)), "next"),
+      )
+    }
+    render(Rich(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.box").innerHTML == "<b>a</b>")
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("span.box").innerHTML == "<i>b</i>")
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("span.box").innerHTML == "")

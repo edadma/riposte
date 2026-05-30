@@ -66,13 +66,18 @@ case object VEmpty extends VNode
 // A property attached to a VElement. The reconciler decides how each kind
 // reaches the DOM: most attributes go through setAttribute, a few well-known
 // names (value, checked) are set as live properties, handlers become event
-// listeners, and styles are written onto element.style.
+// listeners, styles are written onto element.style, and RawHtml is assigned to
+// innerHTML.
 sealed trait Prop
 
 final case class Attr(value: String)              extends Prop
 final case class BoolAttr(value: Boolean)         extends Prop
 final case class Handler(fn: dom.Event => Unit)   extends Prop
 final case class StyleProp(decls: Map[String, String]) extends Prop
+
+// Inner HTML set verbatim from a trusted string (via `unsafeHtml`). Written to
+// `element.innerHTML`, replacing the element's content. Trusted input only.
+final case class RawHtml(html: String) extends Prop
 
 // Binds a VElement to its live DOM node. `attach` runs once the element is
 // created (on mount) with the real node; `detach` runs on unmount, and before a

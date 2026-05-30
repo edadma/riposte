@@ -67,8 +67,12 @@ object Reconciler:
     val el   = if svg then document.createElementNS(SvgNs, e.tag) else document.createElement(e.tag)
     val inst = new ElementInstance(e, el, Vector.empty, Map.empty)
     link(inst, parent)
-    inst.listeners = applyProps(el, Map.empty, e.props, Map.empty)
+    // Children before props: a property whose validity depends on the children
+    // being present — a controlled `<select>`'s `value`, which only "takes" once
+    // its `<option>`s exist — would otherwise be set against an empty element and
+    // silently lost.
     inst.children  = e.children.map(c => mount(c, el, null, inst))
+    inst.listeners = applyProps(el, Map.empty, e.props, Map.empty)
     if e.ref != null then e.ref.attach(el)
     inst
 
@@ -172,8 +176,11 @@ object Reconciler:
 
   private def patchElement(e: ElementInstance, next: VElement): Unit =
     val old = e.vnode.asInstanceOf[VElement]
-    e.listeners = applyProps(e.node, old.props, next.props, e.listeners)
+    // Children before props, for the same reason as on mount: a controlled
+    // `<select>` whose options and `value` change together must have the new
+    // options in place before `value` is reapplied, or the selection is lost.
     e.children  = diffChildren(e, e.children, next.children, e.node, null)
+    e.listeners = applyProps(e.node, old.props, next.props, e.listeners)
     // The node is reused across a same-tag patch, so a stable ref needs no
     // action. Only a change of ref identity re-points the handle: clear the old,
     // bind the new to this same node. Equality is structural, so the same
@@ -480,9 +487,11 @@ object Reconciler:
       val styleObj = el.asInstanceOf[dom.html.Element].style
       styleObj.cssText = ""
       decls.foreach((k, v) => styleObj.setProperty(k, v))
-    case Handler(_) => ()
+    case RawHtml(html) => el.innerHTML = html
+    case Handler(_)    => ()
 
   private def removeStatic(el: dom.Element, name: String): Unit =
     if isProperty(name) then el.asInstanceOf[js.Dynamic].updateDynamic(name)("")
     else if name == "style" then el.asInstanceOf[dom.html.Element].style.cssText = ""
+    else if name == "innerHTML" then el.innerHTML = ""
     else el.removeAttribute(name)

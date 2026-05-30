@@ -93,6 +93,7 @@ def errorBoundary(fallback: Throwable => VNode)(child: VNode): VNode =
 final class AttrKey(val name: String):
   def :=(v: String):  Mod = PropMod(name, Attr(v))
   def :=(v: Int):     Mod = PropMod(name, Attr(v.toString))
+  def :=(v: Double):  Mod = PropMod(name, Attr(v.toString))
   def :=(v: Boolean): Mod = PropMod(name, BoolAttr(v))
 
 // An event name plus the DOM event type it delivers, so a handler is typed at
@@ -108,6 +109,14 @@ object style:
   def :=(decls: Map[String, String]): Mod = PropMod("style", StyleProp(decls))
 
 def css(decls: (String, String)*): Mod = PropMod("style", StyleProp(decls.toMap))
+
+// Set the element's inner HTML directly from a trusted string — React's
+// `dangerouslySetInnerHTML`. For rendering already-sanitized markup (markdown
+// output, CMS content) that you'd otherwise have no way to inject. The string is
+// written verbatim, so it MUST be trusted/sanitized — an attacker-controlled
+// value here is an XSS hole. It replaces the element's content, so don't give the
+// same element VNode children as well.
+def unsafeHtml(html: String): Mod = PropMod("innerHTML", RawHtml(html))
 
 // Tags a sibling with a stable identity so the reconciler preserves its state
 // and DOM across reorders, inserts, and removes.
@@ -169,7 +178,9 @@ val size         = AttrKey("size")
 val maxLength    = AttrKey("maxlength")
 val minLength    = AttrKey("minlength")
 val accept       = AttrKey("accept")
-val action       = AttrKey("action")
+// `<form action>` is reached via `attr("action")` rather than a named val: the
+// bare `action` would collide with `riposte.atoms.action` (the action-atom
+// factory) for anyone importing both modules.
 val method       = AttrKey("method")
 val encType      = AttrKey("enctype")
 val target       = AttrKey("target")

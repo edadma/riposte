@@ -182,12 +182,19 @@ scoping state to a subtree, `selectAtom` / `atomFamily` / `onMount` /
   (`video`/`audio`/`canvas`/`iframe`/…), with attributes (`cls`, `href`,
   `required`, `min`/`max`/`step`, `colSpan`, …), the open-ended `aria("…") := …`
   / `data("…") := …` helpers, `key := …`, `css(…)`, and a full event set
-  (mouse/pointer/keyboard/focus/drag/touch/clipboard). `attr("…")` / `on("…")`
-  reach anything not given a named val. Strings, VNodes, and `Seq[VNode]` become
-  children automatically.
-- **Reconciler** — mount / patch / unmount, attribute-vs-property handling,
-  event-listener swapping, and a keyed child diff that moves only the DOM
-  blocks that are actually out of place (so focus and cursor survive).
+  (mouse/pointer/keyboard/focus/drag/touch/clipboard). Attribute values take
+  `String`, `Int`, `Double`, or `Boolean`; `attr("…")` / `on("…")` reach anything
+  not given a named val. Strings, VNodes, and `Seq[VNode]` become children
+  automatically.
+- **Raw HTML** — `unsafeHtml(trustedString)` sets an element's inner HTML
+  verbatim (React's `dangerouslySetInnerHTML`), for injecting already-sanitized
+  markup such as rendered markdown. Trusted input only — it is an XSS hole
+  otherwise — and it replaces the element's children.
+- **Reconciler** — mount / patch / unmount, attribute-vs-property handling
+  (children mount before props, so a controlled `<select>`'s `value` lands once
+  its `<option>`s exist), event-listener swapping, and a keyed child diff that
+  moves only the DOM blocks that are actually out of place (so focus and cursor
+  survive).
 - **Hooks** — `useState` (returns `(state, set, update)`), `useEffect`,
   `useLayoutEffect`, `useRef`, `useMemo`, `useCallback`, `useReducer`, `useId`,
   `useContext`, `useSyncExternalStore`, and `useTransition` (eased animation —
