@@ -175,9 +175,16 @@ scoping state to a subtree, `selectAtom` / `atomFamily` / `onMount` /
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.
-- **Builder DSL** — `div`/`span`/`button`/… with `cls := …`, `onClick := …`,
-  `key := …`, `css(…)`; Strings, VNodes, and `Seq[VNode]` become children
-  automatically.
+- **Builder DSL** — the everyday HTML surface as functions and keys:
+  sectioning (`nav`/`article`/`aside`/`mainTag`/`h1`–`h6`), grouping and lists,
+  text-level (`b`/`i`/`mark`/`time`/…), forms (`form`/`select`/`option`/
+  `textarea`/`fieldset`/…), tables (`table`/`thead`/`tr`/`td`/…), and media
+  (`video`/`audio`/`canvas`/`iframe`/…), with attributes (`cls`, `href`,
+  `required`, `min`/`max`/`step`, `colSpan`, …), the open-ended `aria("…") := …`
+  / `data("…") := …` helpers, `key := …`, `css(…)`, and a full event set
+  (mouse/pointer/keyboard/focus/drag/touch/clipboard). `attr("…")` / `on("…")`
+  reach anything not given a named val. Strings, VNodes, and `Seq[VNode]` become
+  children automatically.
 - **Reconciler** — mount / patch / unmount, attribute-vs-property handling,
   event-listener swapping, and a keyed child diff that moves only the DOM
   blocks that are actually out of place (so focus and cursor survive).
