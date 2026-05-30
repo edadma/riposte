@@ -48,6 +48,13 @@ final case class VComponent[P](
 // provider it reads the context's default. Built via `ctx.provide(value, …)`.
 final case class VProvider[T](ctx: Context[T], value: T, child: VNode) extends VNode
 
+// Renders `child` into a different DOM container (`target`) while leaving a
+// placeholder anchor at this position in the tree. The child still belongs to the
+// component tree here — context, events, and re-renders flow normally — but its
+// DOM lives under `target`. For overlays, modals, and tooltips that must escape an
+// ancestor's clipping or stacking context. Built via `portal(target, child)`.
+final case class VPortal(target: dom.Element, child: VNode) extends VNode
+
 case object VEmpty extends VNode
 
 // A property attached to a VElement. The reconciler decides how each kind

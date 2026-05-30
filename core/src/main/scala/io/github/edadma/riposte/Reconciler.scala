@@ -32,6 +32,7 @@ object Reconciler:
       case f: VFragment  => mountFragment(f, parentDom, before, parent)
       case c: VComponent[?] => mountComponent(c, parentDom, before, parent)
       case pr: VProvider[?] => mountProvider(pr, parentDom, before, parent)
+      case p: VPortal    => mountPortal(p, parentDom, before, parent)
       case VEmpty        => mountEmpty()
     // Element / Text / Empty create a detached node above and insert here;
     // Fragment / Component insert their own pieces during construction.
@@ -92,6 +93,18 @@ object Reconciler:
     inst.child = mount(p.child, parentDom, before, inst)
     inst
 
+  // Insert the anchor at the normal position in the main tree, then mount the
+  // child into the portal's foreign target (appended — a portal does not position
+  // among the target's existing content). The child's parent is this instance, so
+  // it participates in the component tree normally.
+  private def mountPortal(p: VPortal, parentDom: dom.Node, before: dom.Node | Null, parent: Instance | Null): Instance =
+    val anchor = document.createComment("portal")
+    parentDom.insertBefore(anchor, before)
+    val inst = new PortalInstance(p, anchor, null)
+    link(inst, parent)
+    inst.child = mount(p.child, p.target, null, inst)
+    inst
+
   // Run a component's render function against its hook state.
   private def renderComponent[P](inst: ComponentInstance[P]): VNode =
     val prev = current
@@ -111,6 +124,7 @@ object Reconciler:
         case f: FragmentInstance  => patchFragment(f, next.asInstanceOf[VFragment]); f
         case c: ComponentInstance[?] => patchComponent(c, next); c
         case pr: ProviderInstance => patchProvider(pr, next.asInstanceOf[VProvider[?]]); pr
+        case pt: PortalInstance   => patchPortal(pt, next.asInstanceOf[VPortal]); pt
         case e: EmptyInstance     => e
     else replace(inst, next)
 
@@ -120,6 +134,9 @@ object Reconciler:
     case (_: FragmentInstance, _: VFragment) => true
     case (c: ComponentInstance[?], v: VComponent[?]) => c.component eq v.component
     case (p: ProviderInstance, v: VProvider[?]) => p.ctx eq v.ctx
+    // A portal whose target changed is a different type: replace, so the child is
+    // torn out of the old container and remounted under the new one.
+    case (p: PortalInstance, v: VPortal)     => p.vnode.asInstanceOf[VPortal].target eq v.target
     case (_: EmptyInstance, VEmpty)          => true
     case _                                   => false
 
@@ -164,6 +181,13 @@ object Reconciler:
     pr.vnode = next
     pr.child = patch(pr.child.asInstanceOf[Instance], next.child)
     if changed then invalidateContextConsumers(pr.child.asInstanceOf[Instance], pr.ctx)
+
+  // Same target (sameType already checked): reconcile the child in place. The
+  // child's own DOM node lives in `target`, and the child diff resolves its
+  // container from that node, so no target needs to be threaded here.
+  private def patchPortal(pt: PortalInstance, next: VPortal): Unit =
+    pt.child = patch(pt.child.asInstanceOf[Instance], next.child)
+    pt.vnode = next
 
   // Mark every still-mounted component in this subtree that reads `ctx` for
   // re-render. Recursion stops at a nested provider for the same context: that
@@ -323,6 +347,12 @@ object Reconciler:
         c.hooks.runUnmountCleanups()
       case pr: ProviderInstance =>
         unmount(pr.child.asInstanceOf[Instance], removeDom)
+      case pt: PortalInstance =>
+        // The child lives in a foreign target, so removing an ancestor element in
+        // the main tree does not take it with it — force its DOM removal. The
+        // anchor sits in the main tree and follows the caller's removeDom.
+        unmount(pt.child.asInstanceOf[Instance], removeDom = true)
+        if removeDom then removeNode(pt.anchor)
 
   private def removeNode(n: dom.Node): Unit =
     val p = n.parentNode

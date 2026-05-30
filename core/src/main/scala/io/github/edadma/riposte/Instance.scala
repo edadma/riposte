@@ -72,6 +72,19 @@ final class ProviderInstance(
   def collectDomNodes(buf: scala.collection.mutable.Builder[dom.Node, ?]): Unit =
     child.asInstanceOf[Instance].collectDomNodes(buf)
 
+// A portal: its `child` is mounted under a foreign `target` container, but a
+// comment `anchor` holds this instance's slot in the main tree. Crucially,
+// `collectDomNodes` reports ONLY the anchor — the child's nodes are not here, so
+// a parent diff positioning this slot must never try to move them.
+final class PortalInstance(
+    var vnode:  VNode,
+    val anchor: dom.Comment,
+    var child:  Instance | Null,
+) extends Instance:
+  def firstDomNode = anchor
+  def lastDomNode  = anchor
+  def collectDomNodes(buf: scala.collection.mutable.Builder[dom.Node, ?]): Unit = buf += anchor
+
 final class ComponentInstance[P](
     var vnode:     VNode,
     val component: Component[P],

@@ -72,6 +72,12 @@ val empty: VNode = VEmpty
 def when(cond: Boolean)(node: => VNode): VNode   = if cond then node else VEmpty
 def unless(cond: Boolean)(node: => VNode): VNode = if cond then VEmpty else node
 
+// Render `child` into a different DOM container while keeping its place in the
+// component tree here. The child's DOM lands under `target` (events, context, and
+// re-renders still flow as if it were in place) — for modals, overlays, tooltips,
+// and anything that must escape an ancestor's overflow or stacking context.
+def portal(target: dom.Element, child: VNode): VNode = VPortal(target, child)
+
 // --- attribute & event keys ------------------------------------------------
 
 // An attribute name that becomes a `PropMod` via `:=`. Overloads cover the
