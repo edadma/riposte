@@ -235,15 +235,48 @@ scoping state to a subtree, `selectAtom` / `atomFamily` / `onMount` /
   on the mount, parent-patch, and state-update re-render paths; recovers when a
   later render succeeds.
 
+## Routing
+
+Client-side routing lives in the **`riposte-router`** module (in `router/`, a
+separate artifact), built entirely on the core's public API — `useLocation` is a
+thin `useSyncExternalStore`, route params travel by context, and `Link` is an
+ordinary anchor. History mode (clean `/users/7` paths) and hash mode (`/#/users/7`,
+no server fallback) are one flag apart.
+
+```scala
+import io.github.edadma.riposte.router.*
+
+val App = view {
+  div(
+    nav(Link("/", "home"), Link("/users/7", "user 7")),
+    Routes(
+      route("/")(Home()),
+      route("/users/:id")(p => User(p("id"))),  // p: Params (Map[String, String])
+      route("*")(NotFound()),                    // catch-all
+    ),
+  )
+}
+```
+
+The most *specific* matching route wins regardless of declaration order
+(`/users/new` beats `/users/:id`), `useParams()` reads the matched params from any
+descendant, and `navigate("/path")` / `useNavigate()` move imperatively. Data
+loading is deliberately *not* the router's job — use `riposte-atoms`
+(`atomLoadable`) for that, so navigation and data stay decoupled.
+
 ## Not yet
 
-`foreignObject` HTML re-entry inside SVG, and form helpers.
+`foreignObject` HTML re-entry inside SVG, and form helpers. The router covers
+flat routes; nested layouts (`Outlet`), `NavLink` active-state, `useSearchParams`,
+and lazy route chunks are planned.
 
 ## Layout
 
 - `core/` — the `riposte` library (the published artifact)
 - `atoms/` — `riposte-atoms`, a Jotai-inspired atomic-state module (a separate
   artifact) built on the core's `useSyncExternalStore`
+- `router/` — `riposte-router`, client-side routing (a separate artifact) built
+  on the same public seam
 - `demo/` — a runnable showcase in its own subproject that depends on the
   library, so no demo code ends up in the published artifact
 - the repo root is a thin aggregator project (not published); a task run there

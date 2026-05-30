@@ -10,7 +10,7 @@ ThisBuild / version      := "0.0.1"
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(riposte, atoms, demo)
+  .aggregate(riposte, atoms, router, demo)
   .settings(
     name           := "riposte-root",
     publish / skip := true,
@@ -70,6 +70,21 @@ lazy val atoms = project
   .dependsOn(riposte)
   .settings(
     name := "riposte-atoms",
+    scalacOptions ++= commonScalacOptions,
+    Test / jsEnv := new JSDOMNodeJSEnv(),
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+
+// riposte-router — client-side routing for SPAs, a separate artifact built on the
+// core's public API only (useSyncExternalStore for the location, context for route
+// params, the DSL for Link). History and hash modes; route matching with params and
+// specificity ranking. No core changes needed — the router touches no internals.
+lazy val router = project
+  .in(file("router"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(riposte)
+  .settings(
+    name := "riposte-router",
     scalacOptions ++= commonScalacOptions,
     Test / jsEnv := new JSDOMNodeJSEnv(),
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
