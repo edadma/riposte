@@ -258,8 +258,12 @@ val App = view {
         index(UsersIndex()),             // renders at the layout's Outlet() for /users
         route(":id")(p => User(p("id"))),// …and for /users/7  (p: Map[String, String])
       ),
+      route("/reports")(                 // code-split: the chunk loads on first visit
+        lazyView(() => js.dynamicImport(Reports()).toFuture, fallback = Spinner()),
+      ).catchErrors(e => ErrorPage(e)),  // contain a failed render with a fallback
       route("*")(NotFound()),            // catch-all
     ),
+    ScrollRestoration(),                 // top on a new page, restore on back
   )
 }
 
@@ -273,15 +277,18 @@ The most *specific* matching route wins regardless of declaration order
 A layout route renders its matched child wherever it calls `Outlet()`; `useParams()`
 reads the params accumulated down the branch from any descendant; `useSearchParams()`
 returns the parsed query plus a setter that navigates with a new one; and
-`navigate("/path")` / `useNavigate()` move imperatively. Data loading is
-deliberately *not* the router's job — use `riposte-atoms` (`atomLoadable`) for that,
-so navigation and data stay decoupled.
+`navigate("/path")` / `useNavigate()` move imperatively. `lazyView` defers a view's
+chunk until first visit (bridge `js.dynamicImport` with `.toFuture`), `.catchErrors`
+wraps a route in an error boundary, and `ScrollRestoration()` scrolls to the top of a
+new page while restoring your position on back. Data loading is deliberately *not* the
+router's job — use `riposte-atoms` (`atomLoadable`) for that, so navigation and data
+stay decoupled.
 
 ## Not yet
 
-`foreignObject` HTML re-entry inside SVG, and form helpers. The router covers flat
-and nested routes, `NavLink` active-state, and `useSearchParams`; scroll restoration
-and lazy route chunks are planned.
+`foreignObject` HTML re-entry inside SVG, and form helpers. The router covers flat and
+nested routes, `NavLink` active-state, `useSearchParams`, lazy (code-split) routes,
+per-route error boundaries, and scroll restoration.
 
 ## Layout
 
