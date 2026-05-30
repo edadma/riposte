@@ -145,6 +145,27 @@ selector-based stores. This is the integration point for a hand-rolled store, a
 reducer-over-context, or a reactive library like Airstream (a thin bridge hook
 wraps a `Signal`/`Var`), none of which the core needs to know about.
 
+The **`riposte-atoms`** module (in `atoms/`, a separate artifact) is one such
+engine, built entirely on this seam: Jotai-inspired atomic state.
+
+```scala
+val count   = atom(0)                 // a writable primitive atom
+val doubled = atom(g => g(count) * 2) // derives from it, tracking the dependency
+
+val Counter = view {
+  val (n, setN) = useAtom(count)      // read + write, like useState but shared
+  button(onClick := (_ => setN(n + 1)), s"count: $n")
+}
+val Doubled = view {
+  val d = useAtomValue(doubled)       // re-renders only when `doubled` changes
+  span(s"doubled: $d")
+}
+```
+
+Atoms are identity-based units of shared state; a derived atom recomputes when an
+atom it reads changes, and a component re-renders only for the atoms it actually
+reads — fine-grained by construction, no selectors needed.
+
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.
@@ -185,6 +206,8 @@ Error boundaries, SVG namespacing, and portals.
 ## Layout
 
 - `src/` — the `riposte` library (the published artifact)
+- `atoms/` — `riposte-atoms`, a Jotai-inspired atomic-state module (a separate
+  artifact) built on the core's `useSyncExternalStore`
 - `demo/` — a runnable showcase in its own subproject that depends on the
   library, so no demo code ends up in the published artifact
 

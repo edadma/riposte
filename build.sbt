@@ -51,6 +51,21 @@ lazy val demo = project
     publish / skip := true,
   )
 
+// riposte-atoms — Jotai-inspired atomic state, a separate artifact built on the
+// core's `useSyncExternalStore` seam. Atoms are identity-based units of shared
+// state; derived atoms recompute from the atoms they read. scalajs-dom and the
+// macrotask executor come transitively through `riposte`.
+lazy val atoms = project
+  .in(file("atoms"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(riposte)
+  .settings(
+    name := "riposte-atoms",
+    scalacOptions ++= commonScalacOptions,
+    Test / jsEnv := new JSDOMNodeJSEnv(),
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+
 lazy val commonScalacOptions = Seq(
   "-deprecation",
   "-feature",

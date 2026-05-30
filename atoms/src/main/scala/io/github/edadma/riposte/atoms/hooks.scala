@@ -1,0 +1,24 @@
+package io.github.edadma.riposte.atoms
+
+import io.github.edadma.riposte.*
+
+// Hooks that connect atoms to components. They are thin wrappers over the core's
+// `useSyncExternalStore`: reading an atom subscribes the component to just that
+// atom, so it re-renders only when that atom's value changes — fine-grained by
+// construction, no selectors required. `subscribe` is stabilised with
+// `useCallback` keyed on atom identity, so a stable atom never re-subscribes.
+
+// Read an atom's value, subscribing this component to it.
+def useAtomValue[A](a: Atom[A])(using Hooks): A =
+  val store     = Store.default
+  val subscribe = useCallback((cb: () => Unit) => store.sub(a, cb), Array(a))
+  useSyncExternalStore(subscribe, () => store.get(a))
+
+// A stable setter for a primitive atom. Write-only: it does not subscribe, so a
+// component that only sets an atom doesn't re-render when the atom changes.
+def useSetAtom[A](a: PrimitiveAtom[A])(using Hooks): A => Unit =
+  useCallback((v: A) => Store.default.set(a, v), Array(a))
+
+// Read and write a primitive atom — useState's shape, but the state is shared.
+def useAtom[A](a: PrimitiveAtom[A])(using Hooks): (A, A => Unit) =
+  (useAtomValue(a), useSetAtom(a))
