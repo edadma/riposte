@@ -3,6 +3,7 @@ package io.github.edadma.riposte
 import org.scalajs.dom
 import scala.scalajs.js
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 // The diff engine. Three primitives:
 //
@@ -33,6 +34,7 @@ object Reconciler:
       case c: VComponent[?] => mountComponent(c, parentDom, before, parent)
       case pr: VProvider[?] => mountProvider(pr, parentDom, before, parent)
       case p: VPortal    => mountPortal(p, parentDom, before, parent)
+      case eb: VErrorBoundary => mountErrorBoundary(eb, parentDom, before, parent)
       case VEmpty        => mountEmpty()
     // Element / Text / Empty create a detached node above and insert here;
     // Fragment / Component insert their own pieces during construction.
@@ -105,6 +107,20 @@ object Reconciler:
     inst.child = mount(p.child, p.target, null, inst)
     inst
 
+  // Mount the real child, catching a render throw and showing the fallback
+  // instead. (A child that throws partway through mounting could orphan the DOM
+  // it had already inserted; the components this guards against throw from their
+  // render before inserting anything, so the common case is clean.)
+  private def mountErrorBoundary(eb: VErrorBoundary, parentDom: dom.Node, before: dom.Node | Null, parent: Instance | Null): Instance =
+    val inst = new ErrorBoundaryInstance(eb, null, errored = false)
+    link(inst, parent)
+    try inst.child = mount(eb.child, parentDom, before, inst)
+    catch
+      case NonFatal(e) =>
+        inst.errored = true
+        inst.child   = mount(eb.fallback(e), parentDom, before, inst)
+    inst
+
   // Run a component's render function against its hook state.
   private def renderComponent[P](inst: ComponentInstance[P]): VNode =
     val prev = current
@@ -125,6 +141,7 @@ object Reconciler:
         case c: ComponentInstance[?] => patchComponent(c, next); c
         case pr: ProviderInstance => patchProvider(pr, next.asInstanceOf[VProvider[?]]); pr
         case pt: PortalInstance   => patchPortal(pt, next.asInstanceOf[VPortal]); pt
+        case eb: ErrorBoundaryInstance => patchErrorBoundary(eb, next.asInstanceOf[VErrorBoundary]); eb
         case e: EmptyInstance     => e
     else replace(inst, next)
 
@@ -137,6 +154,7 @@ object Reconciler:
     // A portal whose target changed is a different type: replace, so the child is
     // torn out of the old container and remounted under the new one.
     case (p: PortalInstance, v: VPortal)     => p.vnode.asInstanceOf[VPortal].target eq v.target
+    case (_: ErrorBoundaryInstance, _: VErrorBoundary) => true
     case (_: EmptyInstance, VEmpty)          => true
     case _                                   => false
 
@@ -188,6 +206,54 @@ object Reconciler:
   private def patchPortal(pt: PortalInstance, next: VPortal): Unit =
     pt.child = patch(pt.child.asInstanceOf[Instance], next.child)
     pt.vnode = next
+
+  // Reconcile a boundary. While healthy, patch the real child and catch a throw,
+  // swapping in the fallback. While showing the fallback, a fresh patch retries
+  // the real child — so fixing the cause recovers — and falls back again if it
+  // still throws. `eb.vnode` is set first so the fallback/swap helpers read the
+  // new fallback function.
+  private def patchErrorBoundary(eb: ErrorBoundaryInstance, next: VErrorBoundary): Unit =
+    eb.vnode = next
+    if eb.errored then
+      try
+        swapChild(eb, mountNextTo(eb.child.asInstanceOf[Instance], next.child, eb))
+        eb.errored = false
+      catch case NonFatal(e) => showFallback(eb, e)
+    else
+      try eb.child = patch(eb.child.asInstanceOf[Instance], next.child)
+      catch case NonFatal(e) => showFallback(eb, e)
+
+  // Mount `vnode` immediately before `sibling`'s position, returning the fresh
+  // instance without removing the old one (the caller decides when to swap).
+  private def mountNextTo(sibling: Instance, vnode: VNode, parent: Instance): Instance =
+    mount(vnode, sibling.firstDomNode.parentNode, sibling.firstDomNode, parent)
+
+  // Replace the boundary's current child with an already-mounted fresh one,
+  // unmounting (and removing the DOM of) the old.
+  private def swapChild(eb: ErrorBoundaryInstance, fresh: Instance): Unit =
+    val old = eb.child.asInstanceOf[Instance]
+    eb.child = fresh
+    unmount(old, removeDom = true)
+
+  // Tear down whatever the boundary currently shows and mount the fallback for
+  // `e`. Used by both the patch path and the scheduler path (a state update deep
+  // in the subtree whose re-render throws).
+  private[riposte] def showFallback(eb: ErrorBoundaryInstance, e: Throwable): Unit =
+    val fallback = eb.vnode.asInstanceOf[VErrorBoundary].fallback(e)
+    swapChild(eb, mountNextTo(eb.child.asInstanceOf[Instance], fallback, eb))
+    eb.errored = true
+
+  // A render threw during a scheduler-driven re-render of `start` (a state update
+  // in the subtree, not a parent-driven patch). Walk up to the nearest enclosing
+  // boundary and show its fallback; with no boundary the error propagates, since
+  // there is nothing to contain it.
+  private[riposte] def handleRenderError(start: Instance, e: Throwable): Unit =
+    var cur: Instance | Null = start
+    while cur != null do
+      cur match
+        case eb: ErrorBoundaryInstance => showFallback(eb, e); return
+        case _                         => cur = cur.asInstanceOf[Instance].parent
+    throw e
 
   // Mark every still-mounted component in this subtree that reads `ctx` for
   // re-render. Recursion stops at a nested provider for the same context: that
@@ -353,6 +419,8 @@ object Reconciler:
         // anchor sits in the main tree and follows the caller's removeDom.
         unmount(pt.child.asInstanceOf[Instance], removeDom = true)
         if removeDom then removeNode(pt.anchor)
+      case eb: ErrorBoundaryInstance =>
+        unmount(eb.child.asInstanceOf[Instance], removeDom)
 
   private def removeNode(n: dom.Node): Unit =
     val p = n.parentNode

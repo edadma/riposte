@@ -55,6 +55,12 @@ final case class VProvider[T](ctx: Context[T], value: T, child: VNode) extends V
 // ancestor's clipping or stacking context. Built via `portal(target, child)`.
 final case class VPortal(target: dom.Element, child: VNode) extends VNode
 
+// Contains render failures in its subtree. If mounting or re-rendering `child`
+// throws, the boundary catches it and shows `fallback(error)` instead of letting
+// the exception tear down the whole tree. A later re-render retries the real
+// child, so fixing the cause recovers. Built via `errorBoundary(fallback)(child)`.
+final case class VErrorBoundary(fallback: Throwable => VNode, child: VNode) extends VNode
+
 case object VEmpty extends VNode
 
 // A property attached to a VElement. The reconciler decides how each kind

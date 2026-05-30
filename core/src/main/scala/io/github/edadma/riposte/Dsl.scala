@@ -78,6 +78,14 @@ def unless(cond: Boolean)(node: => VNode): VNode = if cond then VEmpty else node
 // and anything that must escape an ancestor's overflow or stacking context.
 def portal(target: dom.Element, child: VNode): VNode = VPortal(target, child)
 
+// Contain render failures in a subtree: if mounting or re-rendering `child`
+// throws, `fallback(error)` is shown instead of the exception propagating. A
+// later re-render retries the real child, so fixing the cause recovers.
+//
+//   errorBoundary(e => p(s"crashed: ${e.getMessage}")) { RiskyWidget() }
+def errorBoundary(fallback: Throwable => VNode)(child: VNode): VNode =
+  VErrorBoundary(fallback, child)
+
 // --- attribute & event keys ------------------------------------------------
 
 // An attribute name that becomes a `PropMod` via `:=`. Overloads cover the

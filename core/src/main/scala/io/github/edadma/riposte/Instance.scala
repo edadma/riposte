@@ -85,6 +85,19 @@ final class PortalInstance(
   def lastDomNode  = anchor
   def collectDomNodes(buf: scala.collection.mutable.Builder[dom.Node, ?]): Unit = buf += anchor
 
+// An error boundary: its single child is either the real subtree or, once a
+// render in that subtree has thrown, the fallback. `errored` records which is
+// currently shown, so a re-render knows whether to retry the real child.
+final class ErrorBoundaryInstance(
+    var vnode:    VNode,
+    var child:    Instance | Null,
+    var errored:  Boolean,
+) extends Instance:
+  def firstDomNode = child.asInstanceOf[Instance].firstDomNode
+  def lastDomNode  = child.asInstanceOf[Instance].lastDomNode
+  def collectDomNodes(buf: scala.collection.mutable.Builder[dom.Node, ?]): Unit =
+    child.asInstanceOf[Instance].collectDomNodes(buf)
+
 final class ComponentInstance[P](
     var vnode:     VNode,
     val component: Component[P],

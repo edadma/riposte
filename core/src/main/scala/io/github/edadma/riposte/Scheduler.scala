@@ -3,6 +3,7 @@ package io.github.edadma.riposte
 import org.scalajs.dom
 import org.scalajs.macrotaskexecutor.MacrotaskExecutor
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 // Batches state updates and effects, mirroring React's commit timing:
 //
@@ -84,7 +85,11 @@ object Scheduler:
       var i = 0
       while i < batch.length do
         val inst = batch(i)
-        if inst.mounted && inst.dirty then Reconciler.rerender(inst)
+        if inst.mounted && inst.dirty then
+          // A throw from this component's render is routed to the nearest enclosing
+          // error boundary (which swaps in its fallback); with none, it propagates.
+          try Reconciler.rerender(inst)
+          catch case NonFatal(e) => Reconciler.handleRenderError(inst, e)
         i += 1
 
   private def drainPassive(): Unit =
