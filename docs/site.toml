@@ -1,0 +1,55 @@
+# Riposte documentation site — built with juicer, juicerdocs theme.
+#
+# Local preview:  cd /Users/ed/dev/juicer && sbt 'juicerJVM/run serve -s /Users/ed/dev/riposte-docs/docs -L'
+# Build:          cd /Users/ed/dev/juicer && sbt 'juicerJVM/run build --source /Users/ed/dev/riposte-docs/docs'
+
+title       = "Riposte"
+author      = "Ed Maxedon"
+baseURL     = "https://riposte.edadma.dev/"
+description = "A React-inspired frontend library for Scala.js."
+
+# Drives the topbar GitHub icon and the homepage hero "Star on GitHub" button.
+repoURL = "https://github.com/edadma/riposte"
+
+theme = "juicerdocs"
+
+# The page <h1> comes from frontmatter title — markdown headings start at h2.
+headingShift = 0
+
+# Static hosts serve the on-disk layout literally, so the URL space must match
+# the file tree. The standard baseline ships htmlDir = "html", which strips a
+# segment from URLs but not from paths and breaks deploys. Force it off.
+htmlDir = ""
+
+# Recompile the theme CSS from SCSS and bundle/minify the theme JS on every
+# build (fingerprinted for cache-busting). When sass/esbuild aren't on PATH the
+# pipeline degrades to a verbatim copy of the source, so the page still renders.
+[assets]
+enabled     = true
+fingerprint = true
+
+[[assets.sass]]
+input  = "themes/juicerdocs/src/scss/juicerdocs.scss"
+output = "/juicerdocs.css"
+minify = true
+
+[[assets.esbuild]]
+input  = "themes/juicerdocs/static/juicerdocs.js"
+output = "/juicerdocs.js"
+minify = true
+
+[juicerdocs]
+version    = "v0.0.1"
+getStarted = true
+
+# Teal palette (overrides the theme's default pink/purple). Light mode.
+brand           = "#0c8599"        # cyan-8 — links, button fills, hero gradient start
+brandStrong     = "#0b7285"        # cyan-9 — hover state
+brandSoft       = "#c5f6fa"        # cyan-1 — soft tint: sidebar hover, badges
+accent          = "#1098ad"        # cyan-7 — hero gradient end, decorative highlights
+
+# Dark-mode overrides (lighter, as dark surfaces need more luminance).
+brandDark       = "#3bc9db"        # cyan-4
+brandStrongDark = "#66d9e8"        # cyan-3
+brandSoftDark   = "rgb(12 133 153 / .14)"
+accentDark      = "#22d3ee"

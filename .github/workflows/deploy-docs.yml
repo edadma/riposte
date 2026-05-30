@@ -1,0 +1,112 @@
+# Build & deploy the Riposte documentation site to GitHub Pages.
+#
+#   Push to `stable`      → builds and deploys to GitHub Pages.
+#   PR targeting `stable` → builds (sanity check), no deploy.
+#   workflow_dispatch     → manual trigger from the Actions tab.
+#
+# `dev` pushes are NOT triggered — local `juicer serve -L` is the preview path.
+# The docs → dev → stable worktree chain means a release reaches `stable` and the
+# site redeploys.
+#
+# Unlike juicer's own docs (which live in the juicer repo), this site is generated
+# by an engine that lives in a separate repo, so the build checks juicer out too.
+
+name: Docs
+
+on:
+  push:
+    branches: ["stable"]
+  pull_request:
+    branches: ["stable"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "docs-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Juicer ships as Scala source, not a published launcher, so the site is
+      # built by checking the engine out and running it the same way it builds its
+      # own docs. Pin a tag or SHA here for a fully reproducible build.
+      JUICER_REPO: edadma/juicer
+      JUICER_REF: stable
+    steps:
+      - name: Check out riposte (docs source)
+        uses: actions/checkout@v6
+
+      - name: Check out juicer (site generator)
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.JUICER_REPO }}
+          ref: ${{ env.JUICER_REF }}
+          path: .juicer
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # actions/setup-java does NOT ship sbt — install it via the official action.
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Cache sbt
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.sbt
+            ~/.cache/coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('.juicer/build.sbt', '.juicer/project/**') }}
+          restore-keys: ${{ runner.os }}-sbt-
+
+      # The juicer asset pipeline shells out to `sass` and `esbuild`. Without them
+      # on PATH it silently degrades to the committed theme copies and skips
+      # fingerprinting — shipping stale CSS/JS and defeating cache busting. Install
+      # both so the production build compiles SCSS fresh and emits fingerprinted
+      # assets, exactly like a local `serve`.
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install asset toolchain (sass + esbuild)
+        run: npm install -g sass esbuild
+
+      - name: Build docs site
+        working-directory: .juicer
+        run: sbt 'juicerJVM/run build -s ${{ github.workspace }}/docs'
+
+      # Custom domain for GitHub Pages. The published site must carry a CNAME
+      # file so Pages keeps serving riposte.edadma.dev (belt-and-suspenders with
+      # the custom domain set in the repo's Settings → Pages).
+      - name: Write CNAME
+        if: github.ref == 'refs/heads/stable'
+        run: echo 'riposte.edadma.dev' > docs/public/CNAME
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/stable'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/public
+
+  deploy:
+    if: github.ref == 'refs/heads/stable'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
