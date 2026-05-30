@@ -25,7 +25,7 @@ pairs a path pattern with an element:
 import io.github.edadma.riposte.*
 import io.github.edadma.riposte.router.*
 
-def App(): Hooks ?=> VNode =
+val App = view {
   Router() {
     Routes(
       route("/")(Home()),
@@ -33,6 +33,7 @@ def App(): Hooks ?=> VNode =
       route("/users/:id")(UserPage()),
     )
   }
+}
 ```
 
 `Router(RouterMode.History)` uses the HTML History API and clean URLs; `Router(RouterMode.Hash)`
@@ -43,9 +44,10 @@ uses `#/…` fragments for static hosting without server rewrites. The default i
 A `:name` segment is a parameter. Read the matched params with `useParams`:
 
 ```scala
-def UserPage(): Hooks ?=> VNode =
+val UserPage = view {
   val id = useParams().getOrElse("id", "")
   p(s"User $id")
+}
 ```
 
 ## Links and navigation
@@ -81,11 +83,12 @@ Routes(
   ),
 )
 
-def Dashboard(): Hooks ?=> VNode =
+val Dashboard = view {
   div(
     h1("Dashboard"),
     Outlet,  // renders Overview, Settings, or UserDetail
   )
+}
 ```
 
 ## Query strings

@@ -5,21 +5,26 @@ weight: 2
 
 # Hooks
 
-Hooks give a function component local state, side effects, and access to the DOM. They
-are available through a `Hooks` context, which Riposte supplies while rendering. Give a
-component the return type `Hooks ?=> VNode` and call hooks at the top level — the `Hooks ?=>`
-is what makes the context available without you passing it explicitly:
+Hooks give a component local state, side effects, and access to the DOM. They are
+available through a `Hooks` context that Riposte supplies while rendering. Build a
+component with `view { … }` and call hooks at the top level of the block — `view` is what
+makes the context available, so you never pass it explicitly:
 
 ```scala
 import io.github.edadma.riposte.*
 
-def Greeting(): Hooks ?=> VNode =
+val Greeting = view {
   val (name, setName, _) = useState("world")
   div(
     input(value := name, onInput := (e => setName(e.target.value))),
     p(s"Hello, $name!"),
   )
+}
 ```
+
+A component that takes props uses `component[P] { props => … }` instead, and one that
+wraps children uses `container { children => … }`. All three run their body with the same
+`Hooks` context, so hooks work the same way in each.
 
 ## The rules
 

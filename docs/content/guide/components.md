@@ -6,10 +6,9 @@ weight: 1
 # Components & the DSL
 
 A Riposte UI is an immutable tree of `VNode`s. You build that tree with the DSL: a set
-of element functions, attribute keys, and event keys. A *component* is a zero-arg function
-returning `Hooks ?=> VNode` — call it (`MyComponent()`) wherever a child is expected, and
-an implicit conversion wraps the result as a node. (A component that uses no hooks can
-just return `VNode`.) See [Hooks](/guide/hooks/) for the `Hooks ?=>` part.
+of element functions, attribute keys, and event keys. A *component* is a value built with
+`view { … }` (or `component[P] { … }` when it takes props — see [Hooks](/guide/hooks/));
+call it (`MyComponent()`) wherever a child is expected.
 
 ## Elements
 

@@ -23,8 +23,8 @@ derived atom computes from the atoms it reads and recomputes when any of them ch
 ```scala
 import io.github.edadma.riposte.atoms.*
 
-val countAtom    = atom(0)                      // WritableAtom[Int]
-val doubledAtom  = atom(get => get(countAtom) * 2)  // derived, read-only
+val countAtom   = atom(0)                          // WritableAtom[Int]
+val doubledAtom = atom(get => get(countAtom) * 2)  // derived, read-only
 ```
 
 Atoms carry no state themselves — they are keys. The actual values and the dependency
@@ -34,11 +34,11 @@ graph live in a `Store`.
 
 The atom hooks mirror `useState`. `useAtom` returns the current value and a setter;
 `useAtomValue` reads only; `useSetAtom` writes only. Each resolves its store from the
-nearest `StoreProvider` ancestor (or a default store if there is none), so the component
-signature is the ordinary `Hooks ?=> VNode` — no extra parameter:
+nearest `StoreProvider` ancestor, falling back to the process-wide `Store.default` — so a
+plain `view` works with no extra wiring:
 
 ```scala
-def Counter(): Hooks ?=> VNode =
+val Counter = view {
   val (count, setCount) = useAtom(countAtom)
   val doubled           = useAtomValue(doubledAtom)
 
@@ -46,15 +46,25 @@ def Counter(): Hooks ?=> VNode =
     p(s"count: $count, doubled: $doubled"),
     button(onClick := (_ => setCount(count + 1)), "Increment"),
   )
-
-def App(): Hooks ?=> VNode =
-  StoreProvider() {
-    Counter()
-  }
+}
 ```
 
 Any component reading `countAtom` re-renders when it changes; `doubledAtom` recomputes
 and its readers re-render too. Components that read neither are untouched.
+
+## Scoping a store
+
+To give a subtree its own isolated state — for tests, or to render the same UI against
+different data — wrap it in a `StoreProvider`. Create a store with `Store.newStore()` and
+the atoms inside resolve to it instead of the default:
+
+```scala
+val App = view {
+  StoreProvider(Store.newStore()) {
+    Counter()
+  }
+}
+```
 
 ## More atom kinds
 
