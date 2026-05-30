@@ -15,6 +15,13 @@ ThisBuild / version      := "0.0.1"
 // subproject below.
 lazy val riposte = project
   .in(file("."))
+  // Aggregate the siblings so root tasks fan out to the whole reactor: `sbt test`
+  // runs riposte + atoms (+ demo, which has no tests but still gets built),
+  // `sbt compile` / `sbt clean` cover everything. Aggregation is not a code
+  // dependency — riposte itself still depends on nothing. The children are named
+  // (LocalProject) rather than referenced as vals: they `.dependsOn(riposte)`, so
+  // referencing the vals here would make the lazy inits mutually recursive.
+  .aggregate(LocalProject("atoms"), LocalProject("demo"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "riposte",
