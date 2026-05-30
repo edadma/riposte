@@ -22,6 +22,14 @@ final case class Route private[router] (
   // index(…) )`. The layout renders the matched child at its `Outlet()`.
   def apply(children: Route*): Route = copy(children = children.toVector)
 
+  // Wrap this route's view in an error boundary: if rendering the route — or any
+  // descendant up to a nested route's own boundary — throws, `fallback(error)`
+  // shows in its place instead of the failure tearing down the tree. The route
+  // keeps matching, so fixing the cause and re-rendering recovers. React Router's
+  // per-route `errorElement`, expressed by composing the core `errorBoundary`.
+  def catchErrors(fallback: Throwable => VNode): Route =
+    copy(build = params => errorBoundary(fallback)(build(params)))
+
 // Declare a route whose view uses the captured params: `route("/users/:id")(p =>
 // User(p("id")))`.
 def route(pattern: String)(build: Params => VNode): Route = Route(pattern, build)

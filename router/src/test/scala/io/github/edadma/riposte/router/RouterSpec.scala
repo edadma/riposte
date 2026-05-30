@@ -2,6 +2,8 @@ package io.github.edadma.riposte.router
 
 import io.github.edadma.riposte.*
 import org.scalajs.dom
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 // The integration: navigation changes the rendered route, the most specific match
 // wins, params reach the view and its descendants, Link clicks navigate in-app,
@@ -201,3 +203,68 @@ class RouterSpec extends RouterSuite:
     navigate("/s?q=hash")
     Scheduler.flushSync()
     assert(c.querySelector("span.q").textContent == "hash")
+
+  test("catchErrors on a route shows its fallback when the view throws"):
+    start()
+    val c    = host()
+    val Boom = view { throw new RuntimeException("kaboom") }
+    render(
+      Routes(
+        route("/")(span(cls := "v", "home")),
+        route("/boom")(Boom())
+          .catchErrors(e => span(cls := "v", s"caught:${e.getMessage}")),
+      ),
+      c,
+    )
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "home")
+    navigate("/boom")
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "caught:kaboom") // boundary contained it
+
+  test("a lazy view shows the fallback until its chunk loads, then the loaded view"):
+    given ExecutionContext = ExecutionContext.parasitic
+    start()
+    val c    = host()
+    val gate = Promise[VNode]()
+    render(lazyView(() => gate.future, fallback = span(cls := "v", "loading")), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "loading")
+    gate.success(span(cls := "v", "loaded")) // parasitic runs the completion now
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "loaded")
+
+  test("a lazy view renders onError when its chunk fails to load"):
+    given ExecutionContext = ExecutionContext.parasitic
+    start()
+    val c    = host()
+    val gate = Promise[VNode]()
+    render(
+      lazyView(
+        () => gate.future,
+        fallback = span(cls := "v", "loading"),
+        onError = e => span(cls := "v", s"err:${e.getMessage}"),
+      ),
+      c,
+    )
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "loading")
+    gate.failure(new RuntimeException("offline")) // parasitic runs the completion now
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "err:offline")
+
+  test("ScrollRestoration scrolls to top on a new path and restores on return"):
+    start()
+    var pos = (0d, 0d)
+    resetScrollRestoration(() => pos, (x, y) => pos = (x, y))
+    val c = host()
+    render(ScrollRestoration(), c)
+    Scheduler.flushSync()                              // mounts on "/", scrolls to top
+    pos = (0d, 320d)                                   // the user scrolls down on "/"
+    dom.window.dispatchEvent(new dom.Event("scroll"))  // ScrollRestoration records it
+    navigate("/b")
+    Scheduler.flushSync()
+    assert(pos == (0d, 0d))                             // a fresh page starts at the top
+    navigate("/")
+    Scheduler.flushSync()
+    assert(pos == (0d, 320d))                           // returning restores where we were
