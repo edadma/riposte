@@ -74,6 +74,58 @@ class DslSpec extends DomSuite:
     assert(el.getAttribute("aria-label") == "close")
     assert(el.getAttribute("data-id") == "x1")
 
+  // ARIA states are enumerated "true"/"false" strings — `:= false` must write
+  // "false", not drop the attribute (absent ≠ "false" to a screen reader).
+
+  test("an ARIA boolean state renders as the string \"true\"/\"false\", never absent"):
+    val c = host()
+    render(
+      div(
+        aria("expanded") := false,
+        aria("hidden")   := true,
+        aria("level")    := 2,        // numeric states still pass through
+        aria("current")  := "page",   // token states still pass through
+      ),
+      c,
+    )
+    Scheduler.flushSync()
+    val el = c.querySelector("div")
+    assert(el.getAttribute("aria-expanded") == "false")
+    assert(el.hasAttribute("aria-expanded")) // present, not dropped
+    assert(el.getAttribute("aria-hidden") == "true")
+    assert(el.getAttribute("aria-level") == "2")
+    assert(el.getAttribute("aria-current") == "page")
+
+  test("an ARIA boolean state stays present as it toggles across a re-render"):
+    val c = host()
+    val Toggle = view {
+      val (open, _, update) = useState(false)
+      button(aria("expanded") := open, onClick := (_ => update(!_)), "menu")
+    }
+    render(Toggle(), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("button").getAttribute("aria-expanded") == "false")
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("button").getAttribute("aria-expanded") == "true")
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("button").getAttribute("aria-expanded") == "false")
+
+  test("draggable is the enumerated \"true\"/\"false\", not presence"):
+    val c = host()
+    render(div(draggable := true), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("div").getAttribute("draggable") == "true")
+
+  test("a genuine HTML boolean attribute still uses presence semantics"):
+    val c = host()
+    render(input(required := true, disabled := false), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("input")
+    // Presence, not the string "true": the attribute exists but its value is "".
+    assert(el.hasAttribute("required"))
+    assert(el.getAttribute("required") == "")
+    assert(!el.hasAttribute("disabled"))
+
   test("an added event (dblclick) fires its handler"):
     val c = host()
     var hits = 0

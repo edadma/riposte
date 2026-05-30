@@ -89,12 +89,28 @@ def errorBoundary(fallback: Throwable => VNode)(child: VNode): VNode =
 // --- attribute & event keys ------------------------------------------------
 
 // An attribute name that becomes a `PropMod` via `:=`. Overloads cover the
-// common value shapes so the call site doesn't sprinkle `.toString`.
+// common value shapes so the call site doesn't sprinkle `.toString`. A `Boolean`
+// is an HTML boolean (presence) attribute: `true` sets the empty attribute,
+// `false` removes it — right for `disabled`, `required`, `hidden`, and the like.
 final class AttrKey(val name: String):
   def :=(v: String):  Mod = PropMod(name, Attr(v))
   def :=(v: Int):     Mod = PropMod(name, Attr(v.toString))
   def :=(v: Double):  Mod = PropMod(name, Attr(v.toString))
   def :=(v: Boolean): Mod = PropMod(name, BoolAttr(v))
+
+// An *enumerated* attribute whose boolean value is the literal string `"true"` /
+// `"false"`, not HTML presence — what every ARIA state/property and the
+// `draggable` / `spellcheck` / `contenteditable` globals require. For these, the
+// attribute being absent is semantically different from `"false"` (a screen
+// reader treats a missing `aria-expanded` as "not expandable", not "collapsed"),
+// so `:= false` must write `"false"` rather than remove the attribute. String /
+// Int / Double values pass through unchanged, for token (`aria-current := "page"`)
+// and numeric (`aria-level := 2`) states.
+final class EnumAttrKey(val name: String):
+  def :=(v: String):  Mod = PropMod(name, Attr(v))
+  def :=(v: Int):     Mod = PropMod(name, Attr(v.toString))
+  def :=(v: Double):  Mod = PropMod(name, Attr(v.toString))
+  def :=(v: Boolean): Mod = PropMod(name, Attr(if v then "true" else "false"))
 
 // An event name plus the DOM event type it delivers, so a handler is typed at
 // the call site with no cast: `onClick := (e => …)` gets a `dom.MouseEvent`,
@@ -158,9 +174,9 @@ val forId       = AttrKey("for")
 val hidden          = AttrKey("hidden")
 val lang            = AttrKey("lang")
 val dir             = AttrKey("dir")
-val draggable       = AttrKey("draggable")
-val spellCheck      = AttrKey("spellcheck")
-val contentEditable = AttrKey("contenteditable")
+val draggable       = EnumAttrKey("draggable")
+val spellCheck      = EnumAttrKey("spellcheck")
+val contentEditable = EnumAttrKey("contenteditable")
 val accessKey       = AttrKey("accesskey")
 val translate       = AttrKey("translate")
 val inputMode       = AttrKey("inputmode")
@@ -234,9 +250,11 @@ def attr(n: String): AttrKey = new AttrKey(n)
 
 // `aria("label") := …` and `data("id") := …` build the `aria-*` / `data-*`
 // attribute of that name — the two open-ended namespaces, so they get a helper
-// rather than one val per possible suffix.
-def aria(n: String): AttrKey = new AttrKey("aria-" + n)
-def data(n: String): AttrKey = new AttrKey("data-" + n)
+// rather than one val per possible suffix. Both are `EnumAttrKey`, so a boolean
+// renders as `"true"`/`"false"` (what ARIA states require, and the sensible
+// reading for a dataset value) rather than HTML presence.
+def aria(n: String): EnumAttrKey = new EnumAttrKey("aria-" + n)
+def data(n: String): EnumAttrKey = new EnumAttrKey("data-" + n)
 
 // --- common events ---------------------------------------------------------
 

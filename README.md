@@ -183,9 +183,12 @@ scoping state to a subtree, `selectAtom` / `atomFamily` / `onMount` /
   `required`, `min`/`max`/`step`, `colSpan`, …), the open-ended `aria("…") := …`
   / `data("…") := …` helpers, `key := …`, `css(…)`, and a full event set
   (mouse/pointer/keyboard/focus/drag/touch/clipboard). Attribute values take
-  `String`, `Int`, `Double`, or `Boolean`; `attr("…")` / `on("…")` reach anything
-  not given a named val. Strings, VNodes, and `Seq[VNode]` become children
-  automatically.
+  `String`, `Int`, `Double`, or `Boolean`; a `Boolean` toggles HTML presence
+  attributes (`disabled`, `required`, …) but renders `"true"`/`"false"` for ARIA
+  states and the enumerated `draggable`/`spellcheck`/`contenteditable` globals,
+  where an absent attribute is not the same as `"false"`. `attr("…")` / `on("…")`
+  reach anything not given a named val. Strings, VNodes, and `Seq[VNode]` become
+  children automatically.
 - **Raw HTML** — `unsafeHtml(trustedString)` sets an element's inner HTML
   verbatim (React's `dangerouslySetInnerHTML`), for injecting already-sanitized
   markup such as rendered markdown. Trusted input only — it is an XSS hole
