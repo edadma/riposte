@@ -180,6 +180,39 @@ class DslSpec extends DomSuite:
     // n is now 3 → value "o2", whose <option> is mounted in this very patch.
     assert(c.querySelector("select").asInstanceOf[dom.html.Select].value == "o2")
 
+  // `defaultValue` / `defaultChecked` seed a field once, then leave it to the
+  // DOM — the uncontrolled counterpart to `value` / `checked`.
+
+  test("defaultValue seeds an input's initial value"):
+    val c = host()
+    render(input(cls := "f", defaultValue := "seed"), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("input.f").asInstanceOf[dom.html.Input].value == "seed")
+
+  test("defaultChecked seeds an uncontrolled checkbox"):
+    val c = host()
+    render(input(typ := "checkbox", defaultChecked := true), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("input").asInstanceOf[dom.html.Input].checked)
+
+  test("a defaultValue field is uncontrolled: a typed value survives a re-render"):
+    val c = host()
+    val Form = view {
+      val (n, _, update) = useState(0)
+      div(
+        input(cls := "f", defaultValue := "seed"),
+        button(onClick := (_ => update(_ + 1)), s"re$n"),
+      )
+    }
+    render(Form(), c)
+    Scheduler.flushSync()
+    val inp = c.querySelector("input.f").asInstanceOf[dom.html.Input]
+    assert(inp.value == "seed")
+    inp.value = "typed"                  // the user edits; the DOM owns the value
+    fireClick(c.querySelector("button")) // an unrelated re-render
+    // Were the field controlled, this would snap back to "seed"; it must not.
+    assert(inp.value == "typed")
+
   test("unsafeHtml sets the element's inner HTML verbatim"):
     val c = host()
     render(div(cls := "rich", unsafeHtml("<b>hi</b> <i>there</i>")), c)

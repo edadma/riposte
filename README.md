@@ -189,6 +189,9 @@ scoping state to a subtree, `selectAtom` / `atomFamily` / `onMount` /
   where an absent attribute is not the same as `"false"`. `attr("…")` / `on("…")`
   reach anything not given a named val. Strings, VNodes, and `Seq[VNode]` become
   children automatically.
+- **Uncontrolled inputs** — `defaultValue := …` / `defaultChecked := …` seed a
+  field's initial value once and then let the DOM own it as the user types — the
+  counterpart to controlling it with `value` / `checked` on every render.
 - **Raw HTML** — `unsafeHtml(trustedString)` sets an element's inner HTML
   verbatim (React's `dangerouslySetInnerHTML`), for injecting already-sanitized
   markup such as rendered markdown. Trusted input only — it is an XSS hole

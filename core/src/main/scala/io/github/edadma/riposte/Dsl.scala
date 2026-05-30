@@ -170,6 +170,14 @@ val role        = AttrKey("role")
 val tabIndex    = AttrKey("tabindex")
 val forId       = AttrKey("for")
 
+// Uncontrolled-input seeds — the opposite of `value` / `checked`, which control
+// a field on every render. `defaultValue` / `defaultChecked` set the field's
+// initial value once, then let the DOM own it as the user types; they map to the
+// DOM properties of the same name. For an `<input>` or `<textarea>` you don't
+// drive from state.
+val defaultValue   = AttrKey("defaultValue")
+val defaultChecked = AttrKey("defaultChecked")
+
 // Global attributes that apply to (almost) any element.
 val hidden          = AttrKey("hidden")
 val lang            = AttrKey("lang")

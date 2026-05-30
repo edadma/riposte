@@ -471,9 +471,11 @@ object Reconciler:
     listeners
 
   // A few attributes must be set as live DOM properties for the element to
-  // behave (a re-rendered controlled input only reflects `value` as a property,
-  // not an attribute).
-  private def isProperty(name: String): Boolean = name == "value" || name == "checked"
+  // behave: a re-rendered controlled input only reflects `value` as a property,
+  // not an attribute, and the uncontrolled seeds `defaultValue` / `defaultChecked`
+  // are properties that initialise the field once and then leave it to the DOM.
+  private def isProperty(name: String): Boolean =
+    name == "value" || name == "checked" || name == "defaultValue" || name == "defaultChecked"
 
   private def setStatic(el: dom.Element, name: String, prop: Prop): Unit = prop match
     case Attr(v) =>
