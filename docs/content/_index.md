@@ -1,9 +1,9 @@
 ---
 title: Riposte
 splash: true
-heroTitle: A React-style virtual DOM for
+heroTitle: A React-inspired frontend library for
 heroHighlight: Scala.js
-summary: An immutable VNode tree describes your UI; a reconciler diffs each new tree against the live DOM and mutates only what changed. Function components, hooks, and a typed DSL — the React model, idiomatic Scala.
+summary: Build user interfaces with function components, hooks, and a typed DSL — the React model, idiomatic Scala. An immutable VNode tree describes your UI; a reconciler diffs each new tree against the live DOM and mutates only what changed.
 ---
 
 ## Why Riposte

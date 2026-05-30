@@ -6,7 +6,7 @@
 title       = "Riposte"
 author      = "Ed Maxedon"
 baseURL     = "https://riposte.edadma.dev/"
-description = "A React-style virtual-DOM library for Scala.js."
+description = "A React-inspired frontend library for Scala.js."
 
 # Drives the topbar GitHub icon and the homepage hero "Star on GitHub" button.
 repoURL = "https://github.com/edadma/riposte"
