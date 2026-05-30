@@ -21,3 +21,7 @@ def useControllable[T](controlled: Option[T], default: T, onChange: T => Unit)(u
     if controlled.isEmpty then setInternal(next)
     onChange(next)
   (current, set)
+
+/** The `data-state` value for a checkable control ([[Checkbox]], [[Toggle]]). */
+private[salle] def stateOf(disabled: Boolean, checked: Boolean): String =
+  if disabled then "disabled" else if checked then "checked" else "unchecked"
