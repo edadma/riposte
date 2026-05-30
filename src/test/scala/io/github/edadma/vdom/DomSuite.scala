@@ -17,7 +17,7 @@ import org.scalatest.funsuite.AnyFunSuite
 trait DomSuite extends AnyFunSuite:
 
   // A fresh detached container per call, so cases don't bleed into each other.
-  protected def container(): dom.Element =
+  protected def host(): dom.Element =
     val el = dom.document.createElement("div")
     dom.document.body.appendChild(el)
     el

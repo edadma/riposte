@@ -8,7 +8,7 @@ import org.scalajs.dom
 class RefSpec extends DomSuite:
 
   test("an object ref points at the live node after mount"):
-    val c = container()
+    val c = host()
     val r = useRefTop[dom.html.Input | Null](null)
     val Comp = view {
       // the same box each render, supplied by the enclosing test
@@ -20,7 +20,7 @@ class RefSpec extends DomSuite:
     assert(r.current == c.querySelector("input"))
 
   test("an object ref is cleared to null on unmount"):
-    val c = container()
+    val c = host()
     val r = useRefTop[dom.html.Input | Null](null)
     val Comp = view(input(ref := r))
     val root = createRoot(c)
@@ -30,7 +30,7 @@ class RefSpec extends DomSuite:
     assert(r.current == null)
 
   test("a callback ref fires with the node on mount and null on unmount"):
-    val c = container()
+    val c = host()
     var attached: dom.Element | Null = null
     var detachedCalls                = 0
     val cb: (dom.Element | Null) => Unit = n =>
@@ -45,7 +45,7 @@ class RefSpec extends DomSuite:
     assert(detachedCalls == 1)
 
   test("a stable ref is not re-bound across an unrelated re-render"):
-    val c = container()
+    val c = host()
     var binds = 0
     // A hoisted callback — the SAME function reference every render — so the
     // structural equality check sees no change and skips re-binding.
@@ -65,7 +65,7 @@ class RefSpec extends DomSuite:
     assert(binds == 1)                                    // ref untouched
 
   test("the handle moves when the bound ref changes across a patch"):
-    val c = container()
+    val c = host()
     val r1 = useRefTop[dom.html.Element | Null](null)
     val r2 = useRefTop[dom.html.Element | Null](null)
     val Comp = view {
@@ -86,7 +86,7 @@ class RefSpec extends DomSuite:
     assert(r2.current == node)
 
   test("a ref is cleared when its element is conditionally removed"):
-    val c = container()
+    val c = host()
     val r = useRefTop[dom.html.Input | Null](null)
     val Comp = view {
       val (show, _, update) = useState(true)

@@ -7,19 +7,19 @@ package io.github.edadma.vdom
 class ConditionalSpec extends DomSuite:
 
   test("when(true) shows the node and when(false) shows nothing"):
-    val c = container()
+    val c = host()
     render(div(when(true)(span(cls := "a", "yes")), when(false)(span(cls := "b", "no"))), c)
     assert(c.querySelector("span.a") != null)
     assert(c.querySelector("span.b") == null)
 
   test("unless is the negation of when"):
-    val c = container()
+    val c = host()
     render(div(unless(false)(span(cls := "a", "yes")), unless(true)(span(cls := "b", "no"))), c)
     assert(c.querySelector("span.a") != null)
     assert(c.querySelector("span.b") == null)
 
   test("when's node is built only when the condition holds"):
-    val c = container()
+    val c = host()
     var built = 0
     val Comp = view {
       val (show, _, update) = useState(false)
@@ -35,7 +35,7 @@ class ConditionalSpec extends DomSuite:
     assert(built == 1) // shown → built exactly once
 
   test("toggling a when keeps surrounding siblings' DOM identity"):
-    val c = container()
+    val c = host()
     val Comp = view {
       val (show, _, update) = useState(true)
       div(
@@ -58,7 +58,7 @@ class ConditionalSpec extends DomSuite:
     assert(c.querySelector("input.keep") == keep)
 
   test("an Option[VNode] child renders Some and hides None"):
-    val c = container()
+    val c = host()
     val some: Option[VNode] = Some(span(cls := "s", "here"))
     val none: Option[VNode] = None
     render(div(some, none), c)
@@ -66,7 +66,7 @@ class ConditionalSpec extends DomSuite:
     assert(c.textContent == "here")
 
   test("toggling an Option child between Some and None keeps siblings stable"):
-    val c = container()
+    val c = host()
     val Comp = view {
       val (n, _, update) = useState(0)
       val maybe: Option[VNode] = if n % 2 == 0 then Some(span(cls := "m", n)) else None

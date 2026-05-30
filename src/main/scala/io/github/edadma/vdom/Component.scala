@@ -102,3 +102,47 @@ def memo[A, B, C](c: Component3[A, B, C]): Component3[A, B, C] =
 
 def memo[A, B, C, D](c: Component4[A, B, C, D]): Component4[A, B, C, D] =
   new Component4(memo(c.underlying))
+
+// --- components that accept children (slots) -------------------------------
+//
+// The analogue of React's `props.children`: a component you call with child
+// nodes, which it places wherever it likes in its output. The children arrive
+// as a `Children` (a `Vector[VNode]`); splice them with the usual
+// Seq-as-children conversion — `div(cls := "card", children)`.
+//
+//   val Card = container { children =>
+//     div(cls := "card", children)
+//   }
+//   Card(h2("Title"), p("Body"))            // children passed as varargs
+//
+// Children are stored as the component's props, so identity, hook-state
+// survival, and `memo` (structural `==` on the child vector) work exactly as
+// for any other component. Note that children built with inline event handlers
+// compare unequal each render, so `memo` on a container rarely bails — as in
+// React.
+type Children = Vector[VNode]
+
+final class Container private[vdom] (private[vdom] val underlying: Component[Children]):
+  def apply(children: VNode*): VNode = underlying(children.toVector)
+
+def container(render: Children => (Hooks ?=> VNode)): Container =
+  new Container(new Component[Children](render))
+
+// A container that also takes props. Call it curried — props first, then the
+// children as varargs:
+//
+//   val Panel = container[(title: String)] { (p, children) =>
+//     section(h2(p.title), div(cls := "body", children))
+//   }
+//   Panel((title = "Settings"))(toggle, slider)
+final class ContainerP[P] private[vdom] (private[vdom] val underlying: Component[(P, Children)]):
+  def apply(props: P)(children: VNode*): VNode = underlying((props, children.toVector))
+
+def container[P](render: (P, Children) => (Hooks ?=> VNode)): ContainerP[P] =
+  new ContainerP(new Component[(P, Children)](t => render(t._1, t._2)))
+
+def memo(c: Container): Container =
+  new Container(memo(c.underlying))
+
+def memo[P](c: ContainerP[P]): ContainerP[P] =
+  new ContainerP(memo(c.underlying))

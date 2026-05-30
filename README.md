@@ -96,6 +96,32 @@ child, so flipping the condition never disturbs the DOM or state of the siblings
 around it. The node passed to `when`/`unless` is by-name, so it is built only
 when actually shown.
 
+## Children (slots)
+
+`container` builds a component you call with child nodes — React's
+`props.children`. The body receives them as a `Vector[VNode]` and places them
+wherever it likes:
+
+```scala
+val Card = container { children =>
+  div(cls := "card", children)
+}
+Card(h2("Title"), p("Body"))
+```
+
+For props alongside the children, use `container[P]` and call it curried:
+
+```scala
+val Panel = container[(title: String)] { (p, children) =>
+  section(h2(p.title), div(cls := "body", children))
+}
+Panel((title = "Settings"))(toggle, slider)
+```
+
+Children are the component's props, so identity, surviving hook state, and
+`memo` all behave as for any other component. A container can hold its own
+state — e.g. a collapsible that shows the children it's given only when open.
+
 ## What's here
 
 - **VNode tree** — `VText`, `VElement`, `VFragment`, `VComponent`, `VEmpty`.
@@ -113,6 +139,9 @@ when actually shown.
   takes a callback instead. For focus, measurement, and other imperative work.
 - **Conditional children** — `when(cond)(node)` / `unless`, and an
   `Option[VNode]` child; a hidden branch holds its slot so siblings stay put.
+- **Children / slots** — `container { children => … }` (and `container[P]` for
+  props plus children) builds a component you call with child nodes, the
+  analogue of React's `props.children`.
 - **Context** — `createContext` / `ctx.provide(value, child)` / `useContext`,
   resolved by walking up the live tree (nearest provider wins); consumers
   subscribe, so they update even from behind a memoized ancestor.

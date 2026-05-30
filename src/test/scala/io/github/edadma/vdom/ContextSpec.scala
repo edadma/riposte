@@ -11,22 +11,22 @@ class ContextSpec extends DomSuite:
   }
 
   test("reads the nearest provided value"):
-    val c = container()
+    val c = host()
     render(Theme.provide("dark", Label()), c)
     assert(c.querySelector("span.t").textContent == "dark")
 
   test("falls back to the default outside any provider"):
-    val c = container()
+    val c = host()
     render(Label(), c)
     assert(c.querySelector("span.t").textContent == "light")
 
   test("the nearest provider wins when nested"):
-    val c = container()
+    val c = host()
     render(Theme.provide("dark", Theme.provide("solarized", Label())), c)
     assert(c.querySelector("span.t").textContent == "solarized")
 
   test("a changed provided value propagates to consumers"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(Theme.provide("dark", Label()))
     assert(c.querySelector("span.t").textContent == "dark")
@@ -34,6 +34,6 @@ class ContextSpec extends DomSuite:
     assert(c.querySelector("span.t").textContent == "light")
 
   test("a consumer nested below intervening elements still resolves context"):
-    val c = container()
+    val c = host()
     render(Theme.provide("dark", div(cls := "wrap", ul(li(Label())))), c)
     assert(c.querySelector("span.t").textContent == "dark")

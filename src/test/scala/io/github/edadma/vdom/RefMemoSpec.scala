@@ -6,7 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 class RefMemoSpec extends DomSuite:
 
   test("useRef persists across renders and writes don't re-render"):
-    val c = container()
+    val c = host()
     val Comp = view {
       val ref            = useRef(0)
       val (_, _, update) = useState(0)
@@ -26,7 +26,7 @@ class RefMemoSpec extends DomSuite:
     assert(c.querySelector("span.ref").textContent == "1")
 
   test("useMemo recomputes only when its deps change"):
-    val c = container()
+    val c = host()
     var computes = 0
     val Comp = view {
       val (a, _, updateA) = useState(0)
@@ -50,7 +50,7 @@ class RefMemoSpec extends DomSuite:
     assert(c.querySelector("span.d").textContent == "2")
 
   test("useReducer dispatches actions through the reducer"):
-    val c = container()
+    val c = host()
     val reducer: (Int, String) => Int = (s, a) =>
       a match
         case "inc" => s + 1
@@ -73,7 +73,7 @@ class RefMemoSpec extends DomSuite:
     assert(c.querySelector("span.n").textContent == "1")
 
   test("useId is stable across renders"):
-    val c        = container()
+    val c        = host()
     val captured = ArrayBuffer.empty[String]
     val Comp = view {
       val (n, _, update) = useState(0)
@@ -86,7 +86,7 @@ class RefMemoSpec extends DomSuite:
     assert(captured.distinct.length == 1)
 
   test("useId is unique across component instances"):
-    val c   = container()
+    val c   = host()
     val ids = ArrayBuffer.empty[String]
     val Comp = view {
       ids += useId()

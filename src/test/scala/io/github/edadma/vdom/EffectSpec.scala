@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 class EffectSpec extends DomSuite:
 
   test("useEffect runs once after mount with empty deps"):
-    val c = container()
+    val c = host()
     var runs = 0
     val Comp = view {
       useEffect(() => { runs += 1; noCleanup }, Array())
@@ -20,7 +20,7 @@ class EffectSpec extends DomSuite:
     assert(runs == 1)
 
   test("empty-deps effect does not re-run on unrelated state changes"):
-    val c = container()
+    val c = host()
     var runs = 0
     val Comp = view {
       val (n, _, update) = useState(0)
@@ -35,7 +35,7 @@ class EffectSpec extends DomSuite:
     assert(runs == 1)
 
   test("effect re-runs when a dep changes, cleaning up first"):
-    val c = container()
+    val c = host()
     val log = ArrayBuffer.empty[String]
     val Comp = view {
       val (n, _, update) = useState(0)
@@ -51,7 +51,7 @@ class EffectSpec extends DomSuite:
     assert(log.toList == List("run0", "cleanup0", "run1"))
 
   test("null deps re-runs the effect on every render"):
-    val c = container()
+    val c = host()
     var runs = 0
     val Comp = view {
       val (n, _, update) = useState(0)
@@ -67,7 +67,7 @@ class EffectSpec extends DomSuite:
     assert(runs == 3)
 
   test("cleanup runs on unmount"):
-    val c = container()
+    val c = host()
     var cleaned = false
     val Comp = view {
       useEffect(() => () => cleaned = true, Array())
@@ -81,7 +81,7 @@ class EffectSpec extends DomSuite:
     assert(cleaned)
 
   test("layout effects run before passive effects"):
-    val c = container()
+    val c = host()
     val order = ArrayBuffer.empty[String]
     val Comp = view {
       useLayoutEffect(() => { order += "layout"; noCleanup }, Array())

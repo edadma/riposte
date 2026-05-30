@@ -8,7 +8,7 @@ class KeyedListSpec extends DomSuite:
     ul(items.map(i => li(key := i, i)))
 
   test("preserves DOM identity across reordering"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(list(Seq("a", "b", "c")))
     val liA = c.querySelectorAll("li")(0)
@@ -26,7 +26,7 @@ class KeyedListSpec extends DomSuite:
     assert(reordered(1) eq liA)
 
   test("removes dropped items"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(list(Seq("a", "b", "c")))
     assert(c.querySelectorAll("li").length == 3)
@@ -37,7 +37,7 @@ class KeyedListSpec extends DomSuite:
     assert(rest(1).textContent == "c")
 
   test("inserts new items in the right position"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(list(Seq("a", "c")))
     val liA = c.querySelectorAll("li")(0)

@@ -8,7 +8,7 @@ import org.scalajs.dom
 class PatchSpec extends DomSuite:
 
   test("patching updates text without recreating the node"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(p("one"))
     val node1 = c.querySelector("p")
@@ -18,7 +18,7 @@ class PatchSpec extends DomSuite:
     assert(node2 eq node1)
 
   test("changing tag replaces the node"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(div(cls := "x"))
     val first = c.firstChild
@@ -28,7 +28,7 @@ class PatchSpec extends DomSuite:
     assert(!(c.firstChild eq first))
 
   test("empty renders a placeholder and toggles with content"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     def vnode(show: Boolean): VNode =
       div(if show then span(cls := "shown", "yes") else empty)
@@ -40,7 +40,7 @@ class PatchSpec extends DomSuite:
     assert(c.querySelector("span.shown") == null)
 
   test("event listener is removed when the handler prop goes away"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     var clicks = 0
     root.render(button(onClick := (_ => clicks += 1), "x"))
@@ -52,7 +52,7 @@ class PatchSpec extends DomSuite:
     assert(clicks == 1)
 
   test("removed attribute is dropped from the element"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(div(id := "first", title := "t"))
     assert(c.querySelector("div").getAttribute("title") == "t")

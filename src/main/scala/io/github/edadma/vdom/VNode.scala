@@ -13,6 +13,15 @@ import org.scalajs.dom
 //   VEmpty    — renders nothing (a positional placeholder)
 sealed trait VNode
 
+// A bare String or Int used where a VNode is expected becomes a text node — so
+// a string can be passed straight to a component's children (`Card("hello")`)
+// or to `when(cond)("text")`, mirroring how strings already work as element
+// children. (Element children go through `Mod`'s own String/Int conversions; an
+// implicit conversion is never chained, so these don't collide with those.)
+object VNode:
+  given Conversion[String, VNode] = VText(_)
+  given Conversion[Int, VNode]    = i => VText(i.toString)
+
 final case class VText(text: String) extends VNode
 
 final case class VElement(

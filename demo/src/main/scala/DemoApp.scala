@@ -1,16 +1,20 @@
 import io.github.edadma.vdom.*
 import org.scalajs.dom
 
-// A small showcase of the basics: local state via useState, event handlers,
-// a controlled input, and a keyed list that adds and removes items. Lives in
-// the default (empty) package — it's a self-contained app, imported by nobody.
+// A small showcase of the basics: local state via useState, event handlers, a
+// controlled input, a keyed list, a child component with props, a DOM ref, and
+// a `container` (slot) component — `Card` — that every section is framed with.
 object DemoApp:
+
+  // A slot component: a titled frame wrapping whatever children it's handed.
+  // Demonstrates `container` with a prop (the title) plus children.
+  val Card = container[(title: String)] { (p, children) =>
+    div(cls := "card", h2(p.title), children)
+  }
 
   val Counter = view {
     val (count, _, update) = useState(0)
-    div(
-      cls := "card",
-      h2("Counter"),
+    Card((title = "Counter"))(
       p(s"Count: $count"),
       button(onClick := (_ => update(_ - 1)), "−"),
       span(" "),
@@ -30,9 +34,7 @@ object DemoApp:
         updateItems(_ :+ t)
         setDraft("")
 
-    div(
-      cls := "card",
-      h2("Todo (keyed list)"),
+    Card((title = "Todo (keyed list)"))(
       div(
         input(
           value := draft,
@@ -77,9 +79,7 @@ object DemoApp:
   val Dashboard = view {
     val (clicks, _, bumpClicks) = useState(0)
     val (likes,  _, bumpLikes)  = useState(0)
-    div(
-      cls := "card",
-      h2("Dashboard (child component with props)"),
+    Card((title = "Dashboard (child component with props)"))(
       Stat((label = "Clicks", value = clicks)),
       Stat((label = "Likes", value = likes)),
       div(
@@ -94,9 +94,7 @@ object DemoApp:
   // imperatively in a click handler — the thing local state can't do.
   val FocusCard = view {
     val inputRef = useRef[dom.html.Input | Null](null)
-    div(
-      cls := "card",
-      h2("Ref (imperative focus)"),
+    Card((title = "Ref (imperative focus)"))(
       input(ref := inputRef, placeholder := "press focus →"),
       span(" "),
       button(
@@ -122,5 +120,5 @@ object DemoApp:
   }
 
   def main(args: Array[String]): Unit =
-    val container = dom.document.getElementById("app")
-    if container != null then render(App(), container)
+    val el = dom.document.getElementById("app")
+    if el != null then render(App(), el)

@@ -7,14 +7,14 @@ import org.scalajs.dom
 class RenderSpec extends DomSuite:
 
   test("renders text and nested elements"):
-    val c = container()
+    val c = host()
     render(div(cls := "box", h1("hi"), p("there")), c)
     assert(c.querySelector("h1").textContent == "hi")
     assert(c.querySelector("p").textContent == "there")
     assert(c.querySelector("div.box") != null)
 
   test("applies attributes and the controlled value property"):
-    val c = container()
+    val c = host()
     render(input(typ := "text", placeholder := "name", value := "bob"), c)
     val in = c.querySelector("input").asInstanceOf[dom.html.Input]
     assert(in.getAttribute("type") == "text")
@@ -22,12 +22,12 @@ class RenderSpec extends DomSuite:
     assert(in.value == "bob")
 
   test("repeated class mods are space-joined"):
-    val c = container()
+    val c = host()
     render(div(cls := "a", cls := "b"), c)
     assert(c.querySelector("div").getAttribute("class") == "a b")
 
   test("inline styles are written onto element.style"):
-    val c = container()
+    val c = host()
     render(div(css("color" -> "red", "font-weight" -> "bold")), c)
     val el = c.querySelector("div").asInstanceOf[dom.html.Element]
     assert(el.style.getPropertyValue("color") == "red")

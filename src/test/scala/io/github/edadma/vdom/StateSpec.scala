@@ -6,7 +6,7 @@ package io.github.edadma.vdom
 class StateSpec extends DomSuite:
 
   test("useState drives DOM updates through events"):
-    val c = container()
+    val c = host()
     val Counter = view {
       val (n, _, update) = useState(0)
       button(onClick := (_ => update(_ + 1)), s"n=$n")
@@ -20,7 +20,7 @@ class StateSpec extends DomSuite:
     assert(btn.textContent == "n=2")
 
   test("the setter replaces and the updater transforms"):
-    val c = container()
+    val c = host()
     val Both = view {
       val (n, set, update) = useState(10)
       div(
@@ -37,7 +37,7 @@ class StateSpec extends DomSuite:
     assert(c.querySelector("span.n").textContent == "0")
 
   test("controlled input round-trips through useState"):
-    val c = container()
+    val c = host()
     val Field = view {
       val (v, set, _) = useState("")
       div(
@@ -50,7 +50,7 @@ class StateSpec extends DomSuite:
     assert(c.querySelector("span.echo").textContent == "hello")
 
   test("multiple updates in one tick collapse into a single commit"):
-    val c = container()
+    val c = host()
     var renders = 0
     val Multi = view {
       val (n, _, update) = useState(0)

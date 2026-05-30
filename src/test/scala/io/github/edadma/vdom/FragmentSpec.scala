@@ -5,7 +5,7 @@ package io.github.edadma.vdom
 class FragmentSpec extends DomSuite:
 
   test("splices children into the parent without a wrapper"):
-    val c = container()
+    val c = host()
     render(div(cls := "row", fragment(span("a"), span("b")), span("c")), c)
     val spans = c.querySelectorAll("span")
     assert(spans.length == 3)
@@ -16,7 +16,7 @@ class FragmentSpec extends DomSuite:
     assert(c.querySelectorAll("div.row > span").length == 3)
 
   test("fragment content updates in place"):
-    val c = container()
+    val c = host()
     val root = createRoot(c)
     root.render(div(fragment(span(cls := "x", "one"))))
     val node = c.querySelector("span.x")
@@ -25,7 +25,7 @@ class FragmentSpec extends DomSuite:
     assert(c.querySelector("span.x") eq node)
 
   test("a component may render a fragment"):
-    val c = container()
+    val c = host()
     val Two = view {
       fragment(span(cls := "a", "A"), span(cls := "b", "B"))
     }

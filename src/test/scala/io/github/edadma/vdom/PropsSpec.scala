@@ -11,13 +11,13 @@ class PropsSpec extends DomSuite:
   }
 
   test("a positional multi-arg child receives its props"):
-    val c = container()
+    val c = host()
     render(Card("hello", 3), c)
     assert(c.querySelector("span.title").textContent == "hello")
     assert(c.querySelector("span.count").textContent == "3")
 
   test("a three-arg positional component receives all three props"):
-    val c = container()
+    val c = host()
     val Row = component[String, Int, Boolean] { (label, n, on) =>
       div(span(cls := "l", label), span(cls := "n", n), span(cls := "on", on.toString))
     }
@@ -27,7 +27,7 @@ class PropsSpec extends DomSuite:
     assert(c.querySelector("span.on").textContent == "true")
 
   test("a named-tuple child receives its props by name"):
-    val c = container()
+    val c = host()
     val Badge = component[(text: String, tone: String)] { p =>
       div(cls := "badge", span(cls := "text", p.text), span(cls := "tone", p.tone))
     }
@@ -36,7 +36,7 @@ class PropsSpec extends DomSuite:
     assert(c.querySelector("span.tone").textContent == "info")
 
   test("a child re-renders when the parent passes new props"):
-    val c = container()
+    val c = host()
     val Parent = view {
       val (n, _, update) = useState(0)
       div(
@@ -50,7 +50,7 @@ class PropsSpec extends DomSuite:
     assert(c.querySelector("span.count").textContent == "1")
 
   test("a child keeps its own hook state across prop changes"):
-    val c = container()
+    val c = host()
     // Child takes a single Int prop and also owns local state.
     val Child = component[Int] { p =>
       val (local, _, bump) = useState(0)

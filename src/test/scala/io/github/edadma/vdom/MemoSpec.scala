@@ -6,7 +6,7 @@ package io.github.edadma.vdom
 class MemoSpec extends DomSuite:
 
   test("a memoized child skips re-render when its props are unchanged"):
-    val c = container()
+    val c = host()
     var childRenders = 0
     val Child = memo(component[String] { label =>
       childRenders += 1
@@ -27,7 +27,7 @@ class MemoSpec extends DomSuite:
     assert(childRenders == 1)                            // memoized child did not
 
   test("a memoized multi-arg child bails when its positional args are unchanged"):
-    val c = container()
+    val c = host()
     var childRenders = 0
     val Child = memo(component[String, Int] { (label, value) =>
       childRenders += 1
@@ -48,7 +48,7 @@ class MemoSpec extends DomSuite:
     assert(childRenders == 1) // tuple ("fixed", 7) compared equal → bailed
 
   test("a memoized child re-renders when its props change"):
-    val c = container()
+    val c = host()
     var childRenders = 0
     val Child = memo(component[Int] { v =>
       childRenders += 1
@@ -65,7 +65,7 @@ class MemoSpec extends DomSuite:
     assert(childRenders == 2)
 
   test("a memoized component still re-renders on its own state change"):
-    val c = container()
+    val c = host()
     val Comp = memo(view {
       val (n, _, update) = useState(0)
       button(onClick := (_ => update(_ + 1)), s"$n")
@@ -76,7 +76,7 @@ class MemoSpec extends DomSuite:
     assert(c.querySelector("button").textContent == "1")
 
   test("a consumer below a bailed-out memo still sees context changes"):
-    val c = container()
+    val c = host()
     val Theme = createContext("light")
     var midRenders = 0
     // Leaf consumes the context; Mid is memoized and does NOT consume it.
