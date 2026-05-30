@@ -239,35 +239,48 @@ scoping state to a subtree, `selectAtom` / `atomFamily` / `onMount` /
 
 Client-side routing lives in the **`riposte-router`** module (in `router/`, a
 separate artifact), built entirely on the core's public API — `useLocation` is a
-thin `useSyncExternalStore`, route params travel by context, and `Link` is an
-ordinary anchor. History mode (clean `/users/7` paths) and hash mode (`/#/users/7`,
-no server fallback) are one flag apart.
+thin `useSyncExternalStore`, route params and the outlet travel by context, and the
+links are ordinary anchors. History mode (clean `/users/7` paths) and hash mode
+(`/#/users/7`, no server fallback) are one flag apart.
 
 ```scala
 import io.github.edadma.riposte.router.*
 
 val App = view {
   div(
-    nav(Link("/", "home"), Link("/users/7", "user 7")),
+    nav(
+      NavLink("/", end = true)("home"),  // gets the "active" class on a match
+      NavLink("/users")("users"),
+    ),
     Routes(
       route("/")(Home()),
-      route("/users/:id")(p => User(p("id"))),  // p: Params (Map[String, String])
-      route("*")(NotFound()),                    // catch-all
+      route("/users")(UsersLayout())(   // a layout route with nested children
+        index(UsersIndex()),             // renders at the layout's Outlet() for /users
+        route(":id")(p => User(p("id"))),// …and for /users/7  (p: Map[String, String])
+      ),
+      route("*")(NotFound()),            // catch-all
     ),
   )
+}
+
+val UsersLayout = view {
+  div(cls := "users", h2("Users"), Outlet())  // the matched child renders here
 }
 ```
 
 The most *specific* matching route wins regardless of declaration order
-(`/users/new` beats `/users/:id`), `useParams()` reads the matched params from any
-descendant, and `navigate("/path")` / `useNavigate()` move imperatively. Data
-loading is deliberately *not* the router's job — use `riposte-atoms`
-(`atomLoadable`) for that, so navigation and data stay decoupled.
+(`/users/new` beats `/users/:id`, a matched nested branch beats a shallower one).
+A layout route renders its matched child wherever it calls `Outlet()`; `useParams()`
+reads the params accumulated down the branch from any descendant; `useSearchParams()`
+returns the parsed query plus a setter that navigates with a new one; and
+`navigate("/path")` / `useNavigate()` move imperatively. Data loading is
+deliberately *not* the router's job — use `riposte-atoms` (`atomLoadable`) for that,
+so navigation and data stay decoupled.
 
 ## Not yet
 
-`foreignObject` HTML re-entry inside SVG, and form helpers. The router covers
-flat routes; nested layouts (`Outlet`), `NavLink` active-state, `useSearchParams`,
+`foreignObject` HTML re-entry inside SVG, and form helpers. The router covers flat
+and nested routes, `NavLink` active-state, and `useSearchParams`; scroll restoration
 and lazy route chunks are planned.
 
 ## Layout

@@ -111,3 +111,93 @@ class RouterSpec extends RouterSuite:
     dom.window.dispatchEvent(new dom.Event("popstate"))
     Scheduler.flushSync()
     assert(c.querySelector("span.v").textContent == "x")
+
+  test("nested routes render the matched child at the layout's Outlet"):
+    start()
+    val c       = host()
+    val Layout  = view { div(cls := "layout", span(cls := "tag", "L"), Outlet()) }
+    render(
+      Routes(
+        route("/users")(Layout())(
+          index(span(cls := "v", "index")),
+          route(":id")(p => span(cls := "v", p("id"))),
+        ),
+      ),
+      c,
+    )
+    navigate("/users")
+    Scheduler.flushSync()
+    assert(c.querySelector("div.layout span.tag").textContent == "L")
+    assert(c.querySelector("span.v").textContent == "index") // the index route
+    navigate("/users/7")
+    Scheduler.flushSync()
+    assert(c.querySelector("div.layout") != null)            // layout persists
+    assert(c.querySelector("span.v").textContent == "7")     // only the child swapped
+
+  test("nested params accumulate down the branch"):
+    start()
+    val c    = host()
+    val Team = view {
+      val p = useParams()
+      span(cls := "v", s"${p("org")}/${p("team")}")
+    }
+    val Org = view { div(Outlet()) }
+    render(
+      Routes(
+        route("/org/:org")(Org())(
+          route("team/:team")(Team()),
+        ),
+      ),
+      c,
+    )
+    navigate("/org/acme/team/7")
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "acme/7")
+
+  test("NavLink adds its active class only while its path matches"):
+    start()
+    val c = host()
+    render(
+      div(
+        NavLink("/users")("users"),
+        NavLink("/about", end = true)("about"),
+      ),
+      c,
+    )
+    navigate("/users/7")
+    Scheduler.flushSync()
+    assert(c.querySelectorAll("a.active").length == 1)       // prefix match keeps /users lit
+    assert(c.querySelector("a.active").textContent == "users")
+    navigate("/about")
+    Scheduler.flushSync()
+    assert(c.querySelector("a.active").textContent == "about") // exact (end) match
+
+  test("useSearchParams reads the query and its setter navigates with a new one"):
+    start()
+    val c    = host()
+    val View = view {
+      val (params, setParams) = useSearchParams()
+      div(
+        span(cls := "q", params.getOrElse("q", "-")),
+        button(onClick := (_ => setParams(Map("q" -> "hi"), false)), "set"),
+      )
+    }
+    render(View(), c)
+    navigate("/search?q=hello")
+    Scheduler.flushSync()
+    assert(c.querySelector("span.q").textContent == "hello")
+    click(c.querySelector("button"))
+    assert(c.querySelector("span.q").textContent == "hi")
+    assert(dom.window.location.search == "?q=hi")
+
+  test("hash mode separates the path from the query"):
+    start(RouterMode.Hash)
+    val c    = host()
+    val View = view {
+      val (params, _) = useSearchParams()
+      span(cls := "q", params.getOrElse("q", "-"))
+    }
+    render(Routes(route("/s")(View())), c)
+    navigate("/s?q=hash")
+    Scheduler.flushSync()
+    assert(c.querySelector("span.q").textContent == "hash")

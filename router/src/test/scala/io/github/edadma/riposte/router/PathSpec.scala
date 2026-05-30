@@ -34,3 +34,24 @@ class PathSpec extends AnyFunSuite:
     assert(ord.gt(specificity("/users/new"), specificity("/users/:id")))
     assert(ord.gt(specificity("/users/:id"), specificity("/users/*")))
     assert(ord.gt(specificity("/"), specificity("*")))
+
+  test("matchPrefix consumes a prefix and returns the remainder"):
+    assert(matchPrefix(segments("/users"), segments("/users/7/posts")) ==
+      Some((Map.empty, Vector("7", "posts"))))
+    assert(matchPrefix(segments("/users/:id"), segments("/users/7/posts")) ==
+      Some((Map("id" -> "7"), Vector("posts"))))
+
+  test("an empty (index) pattern consumes nothing"):
+    assert(matchPrefix(segments(""), segments("/x/y")) == Some((Map.empty, Vector("x", "y"))))
+    assert(matchPrefix(segments(""), segments("/")) == Some((Map.empty, Vector.empty)))
+
+  test("matchPrefix fails when a literal segment differs"):
+    assert(matchPrefix(segments("/users"), segments("/posts/1")) == None)
+
+  test("query strings round-trip through parse and encode"):
+    assert(parseQuery("q=hello&page=2") == Map("q" -> "hello", "page" -> "2"))
+    assert(parseQuery("") == Map.empty)
+    assert(parseQuery("flag") == Map("flag" -> ""))
+    assert(parseQuery("q=a+b%26c") == Map("q" -> "a b&c")) // '+' is space, %26 is '&'
+    assert(parseQuery(encodeQuery(Map("q" -> "a b&c", "n" -> "1"))) ==
+      Map("q" -> "a b&c", "n" -> "1"))
