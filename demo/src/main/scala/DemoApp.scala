@@ -109,6 +109,26 @@ object DemoApp:
     )
   }
 
+  // Eases a bar's width toward a target that a button toggles. useTransition
+  // re-renders this component each animation frame until the value settles.
+  val TransitionCard = view {
+    val (open, _, toggle) = useState(false)
+    val width             = useTransition(if open then 100.0 else 8.0, 400)
+    Card((title = "Transition (eased width)"))(
+      div(
+        css(
+          "background"    -> "#4f46e5",
+          "height"        -> "0.75rem",
+          "border-radius" -> "4px",
+          "width"         -> s"$width%",
+        )
+      ),
+      div(
+        button(onClick := (_ => toggle(o => !o)), "toggle"),
+      ),
+    )
+  }
+
   val App = view {
     div(
       h1("riposte demo"),
@@ -116,6 +136,7 @@ object DemoApp:
       TodoList(),
       Dashboard(),
       FocusCard(),
+      TransitionCard(),
     )
   }
 

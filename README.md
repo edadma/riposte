@@ -156,7 +156,8 @@ wraps a `Signal`/`Var`), none of which the core needs to know about.
   blocks that are actually out of place (so focus and cursor survive).
 - **Hooks** — `useState` (returns `(state, set, update)`), `useEffect`,
   `useLayoutEffect`, `useRef`, `useMemo`, `useCallback`, `useReducer`, `useId`,
-  `useContext`, and `useSyncExternalStore`.
+  `useContext`, `useSyncExternalStore`, and `useTransition` (eased animation —
+  returns the current value on its way to a target, driving its own frames).
 - **Refs to DOM nodes** — `ref := someRefBox` writes the live element into a
   `useRef` box (`.current`), cleared to null on unmount; `ref := (node => …)`
   takes a callback instead. For focus, measurement, and other imperative work.

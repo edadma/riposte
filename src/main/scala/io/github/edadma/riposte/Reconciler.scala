@@ -147,14 +147,30 @@ object Reconciler:
   // Update the provided value and reconcile the child. Patching the child
   // re-renders the subtree top-down, which covers ordinary consumers — but a
   // memoized ancestor may bail and skip consumers below it, so when the value
-  // actually changes we also enqueue every subscriber of this context directly.
+  // actually changes we also walk the subtree and wake every component that
+  // reads this context.
   private def patchProvider(pr: ProviderInstance, next: VProvider[?]): Unit =
     val changed = pr.value != next.value
     pr.value = next.value
     pr.vnode = next
     pr.child = patch(pr.child.asInstanceOf[Instance], next.child)
-    if changed then
-      pr.ctx.subscribers.foreach(sub => if sub.mounted then Scheduler.enqueueUpdate(sub))
+    if changed then invalidateContextConsumers(pr.child.asInstanceOf[Instance], pr.ctx)
+
+  // Mark every still-mounted component in this subtree that reads `ctx` for
+  // re-render. Recursion stops at a nested provider for the same context: that
+  // sub-subtree resolves to the inner provider's (unchanged) value, so it is
+  // shielded and must not be woken — which is why a global subscriber set would
+  // over-invalidate here.
+  private def invalidateContextConsumers(inst: Instance, ctx: Context[?]): Unit =
+    inst match
+      case c: ComponentInstance[?] =>
+        if c.mounted && c.hooks.subscribedContexts.contains(ctx) then Scheduler.enqueueUpdate(c)
+        invalidateContextConsumers(c.rendered.asInstanceOf[Instance], ctx)
+      case e: ElementInstance  => e.children.foreach(invalidateContextConsumers(_, ctx))
+      case f: FragmentInstance => f.children.foreach(invalidateContextConsumers(_, ctx))
+      case p: ProviderInstance =>
+        if !(p.ctx eq ctx) then invalidateContextConsumers(p.child.asInstanceOf[Instance], ctx)
+      case _ => () // text / empty — no children, never a consumer
 
   private def patchComponent(c: ComponentInstance[?], next: VNode): Unit =
     val v  = next.asInstanceOf[VComponent[Any]]
@@ -296,7 +312,6 @@ object Reconciler:
         // Children first, then this component's own effect cleanups (bottom-up).
         unmount(c.rendered.asInstanceOf[Instance], removeDom)
         c.hooks.runUnmountCleanups()
-        c.hooks.clearContextSubscriptions()
       case pr: ProviderInstance =>
         unmount(pr.child.asInstanceOf[Instance], removeDom)
 

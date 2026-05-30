@@ -1,5 +1,6 @@
 package io.github.edadma.riposte
 
+import org.scalajs.dom
 import scala.collection.mutable.ArrayBuffer
 
 // An effect's optional teardown, run before the effect re-runs and on unmount.
@@ -36,6 +37,9 @@ def useReducer[S, A](reducer: (S, A) => S, initial: S)(using h: Hooks): (S, A =>
 def useId()(using h: Hooks): String =
   h.useId()
 
+def useTransition(target: Double, durationMs: Int)(using h: Hooks): Double =
+  h.useTransition(target, durationMs)
+
 def useContext[T](ctx: Context[T])(using h: Hooks): T =
   h.useContext(ctx)
 
@@ -57,6 +61,29 @@ object Hooks:
     idSeq += 1
     s"riposte-$idSeq"
 
+  // The eased value of an in-flight transition at time `now`, using easeOutCubic.
+  // Before the start it is `startValue`; at or past `startMs + durationMs` it is
+  // exactly `target` (so a transition settles cleanly). A non-positive duration
+  // jumps straight to the target.
+  private[riposte] def transitionCurrent(cell: TransitionCell, now: Double): Double =
+    if cell.durationMs <= 0 then cell.target
+    else
+      val raw = (now - cell.startMs) / cell.durationMs.toDouble
+      if raw >= 1.0 then cell.target
+      else
+        val t = if raw < 0.0 then 0.0 else raw
+        val u = 1.0 - t
+        val k = 1.0 - u * u * u // easeOutCubic
+        cell.startValue + (cell.target - cell.startValue) * k
+
+// Timing for useTransition, indirected so tests can install a deterministic
+// clock and frame pump. In the browser these are `performance.now()` and
+// `requestAnimationFrame` / `cancelAnimationFrame`.
+private[riposte] object Transition:
+  var now:          () => Double          = () => dom.window.performance.now()
+  var requestFrame: (() => Unit) => Int    = cb => dom.window.requestAnimationFrame((_: Double) => cb())
+  var cancelFrame:  Int => Unit            = id => dom.window.cancelAnimationFrame(id)
+
 final class Hooks private[riposte] ():
 
   // Back-reference to the owning component instance, set at mount. Hooks use
@@ -66,7 +93,8 @@ final class Hooks private[riposte] ():
   private val cells          = ArrayBuffer.empty[Any]
   private var index          = 0
 
-  // Contexts this component reads, so its subscriptions can be dropped on unmount.
+  // Contexts this component reads. The reconciler consults this when a provider
+  // value changes, to wake the component even if a memoized ancestor bailed.
   private[riposte] val subscribedContexts = scala.collection.mutable.HashSet.empty[Context[?]]
 
   private[riposte] def beginRender(): Unit = index = 0
@@ -153,19 +181,59 @@ final class Hooks private[riposte] ():
     index = slot + 1
     cells(slot).asInstanceOf[String]
 
+  // -- useTransition --------------------------------------------------------
+
+  // Animate a value toward `target` over `durationMs`, returning the eased
+  // current value on every render. When `target` changes the transition restarts
+  // from wherever the value was at that moment. While in flight, the hook drives
+  // its own re-renders by requesting animation frames; reaching the target
+  // settles it and stops the frames. The frame still pending at unmount is
+  // cancelled by `runUnmountCleanups`.
+  def useTransition(target: Double, durationMs: Int): Double =
+    val slot = index
+    index = slot + 1
+    val now = Transition.now()
+    if slot >= cells.length then
+      cells += new TransitionCell(target, target, now, durationMs, -1)
+      return target
+    val cell = cells(slot).asInstanceOf[TransitionCell]
+    if cell.target != target then
+      cell.startValue = Hooks.transitionCurrent(cell, now)
+      cell.target     = target
+      cell.startMs    = now
+      cell.durationMs = durationMs
+    val current = Hooks.transitionCurrent(cell, now)
+    // Keep a frame pending while the value hasn't settled; cancel any pending one
+    // the moment it has, so a stable transition isn't holding the frame loop open.
+    if current != cell.target then ensureTransitionFrame(cell)
+    else cancelTransitionFrame(cell)
+    current
+
+  private def ensureTransitionFrame(cell: TransitionCell): Unit =
+    if cell.rafId < 0 then
+      cell.rafId = Transition.requestFrame { () =>
+        cell.rafId = -1
+        val inst = instance
+        if inst != null then Scheduler.enqueueUpdate(inst)
+      }
+
+  private def cancelTransitionFrame(cell: TransitionCell): Unit =
+    if cell.rafId >= 0 then
+      Transition.cancelFrame(cell.rafId)
+      cell.rafId = -1
+
   // -- useContext -----------------------------------------------------------
 
   // Read the value of the nearest enclosing provider for `ctx`, or the context's
   // default if there is none. Resolves by walking up the live instance tree from
   // this component, so a re-rendered consumer always sees the current value.
   //
-  // Reading also subscribes this component to the context, so a provider value
-  // change re-renders it even when an intervening memoized ancestor bails out.
+  // Reading also records the context here, so when a provider value changes the
+  // reconciler can find and wake this component — even behind a memoized
+  // ancestor — by walking the provider's subtree.
   def useContext[T](ctx: Context[T]): T =
     val self = instance
-    if self != null then
-      subscribedContexts += ctx
-      ctx.subscribers += self
+    if self != null then subscribedContexts += ctx
     var cur: Instance | Null = self
     while cur != null do
       cur match
@@ -173,14 +241,6 @@ final class Hooks private[riposte] ():
         case _                                    => ()
       cur = cur.parent
     ctx.default
-
-  // Drop this component from every context it subscribed to. Called by the
-  // reconciler on unmount so stale instances aren't notified.
-  private[riposte] def clearContextSubscriptions(): Unit =
-    val self = instance
-    if self != null && subscribedContexts.nonEmpty then
-      subscribedContexts.foreach(_.subscribers.remove(self))
-      subscribedContexts.clear()
 
   // -- useEffect / useLayoutEffect ------------------------------------------
 
@@ -269,6 +329,12 @@ final class Hooks private[riposte] ():
           if c != null then
             e.cleanup = null
             c()
+        case t: TransitionCell =>
+          // Stop the frame loop so a half-finished transition doesn't keep
+          // requesting frames for a component that no longer exists.
+          if t.rafId >= 0 then
+            Transition.cancelFrame(t.rafId)
+            t.rafId = -1
         case _ => ()
       i += 1
 
@@ -299,6 +365,18 @@ private[riposte] final class EffectCell(
 // One useMemo / useCallback cell: the deps it was last computed for and the
 // cached value.
 private final class MemoCell(var deps: Array[Any] | Null, var value: Any)
+
+// One useTransition cell. The value eases from `startValue` to `target` over
+// `durationMs`, starting at `startMs` (on the transition clock). `rafId` is the
+// pending animation-frame handle, or -1 when no frame is in flight — which
+// doubles as the "settled" marker.
+private[riposte] final class TransitionCell(
+    var startValue: Double,
+    var target:     Double,
+    var startMs:    Double,
+    var durationMs: Int,
+    var rafId:      Int,
+)
 
 // A mutable cell whose writes do NOT trigger re-render. Returned by useRef and
 // used internally; assign through `current`.
