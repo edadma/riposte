@@ -4,31 +4,33 @@ ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
 ThisBuild / version      := "0.0.1"
 
-// riposte — a React-style virtual-DOM UI library for Scala.js.
+// Root aggregator. It has no sources of its own and is never published; it exists
+// so that a task run at the repo root (e.g. `sbt test`) fans out to every module.
+// It depends on nothing and nothing depends on it, so there's no cycle between
+// aggregation and the modules' `.dependsOn(riposte)`.
+lazy val root = project
+  .in(file("."))
+  .aggregate(riposte, atoms, demo)
+  .settings(
+    name           := "riposte-root",
+    publish / skip := true,
+  )
+
+// riposte — a React-style virtual-DOM UI library for Scala.js. The published
+// library, in core/ so the repo root can stay a thin aggregator.
 //
 // An immutable VNode tree describes the UI; a reconciler diffs each new tree
 // against the live DOM and mutates the DOM to match. Function components carry
 // local state through positional hooks.
-//
-// This is the library only — no demo code, no main initializer — so the
-// published artifact stays clean. The runnable demo lives in its own `demo`
-// subproject below.
 lazy val riposte = project
-  .in(file("."))
-  // Aggregate the siblings so root tasks fan out to the whole reactor: `sbt test`
-  // runs riposte + atoms (+ demo, which has no tests but still gets built),
-  // `sbt compile` / `sbt clean` cover everything. Aggregation is not a code
-  // dependency — riposte itself still depends on nothing. The children are named
-  // (LocalProject) rather than referenced as vals: they `.dependsOn(riposte)`, so
-  // referencing the vals here would make the lazy inits mutually recursive.
-  .aggregate(LocalProject("atoms"), LocalProject("demo"))
+  .in(file("core"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "riposte",
     scalacOptions ++= commonScalacOptions,
 
     // Tests need a real DOM. jsdom provides one under Node (installed via the
-    // project's package.json); the jsEnv is Test-scoped.
+    // project's package.json at the repo root); the jsEnv is Test-scoped.
     Test / jsEnv := new JSDOMNodeJSEnv(),
 
     libraryDependencies ++= Seq(

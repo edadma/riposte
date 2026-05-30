@@ -205,16 +205,20 @@ Error boundaries, SVG namespacing, and portals.
 
 ## Layout
 
-- `src/` — the `riposte` library (the published artifact)
+- `core/` — the `riposte` library (the published artifact)
 - `atoms/` — `riposte-atoms`, a Jotai-inspired atomic-state module (a separate
   artifact) built on the core's `useSyncExternalStore`
 - `demo/` — a runnable showcase in its own subproject that depends on the
   library, so no demo code ends up in the published artifact
+- the repo root is a thin aggregator project (not published); a task run there
+  fans out to every module
 
 ## Development
 
 ```sh
-sbt test              # run the library's jsdom-backed test suite
+sbt test              # run every module's jsdom-backed suite (core + atoms)
+sbt riposte/test      # just the library (project id is `riposte`, in core/)
+sbt atoms/test        # just the atoms module
 sbt demo/fastLinkJS   # build the demo's JS
 ```
 
