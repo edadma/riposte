@@ -162,6 +162,17 @@ private val badgeDemo = view {
   )
 }
 
+// Controlled pagination over a pretend 485-item result set: the full strip with dots, and
+// a compact "simple" bar, both driven by one shared current-page state.
+private val paginationDemo = view {
+  val (page, setPage, _) = useState(1)
+  div(
+    cls := "demo-grid-stack",
+    Pagination(current = page, total = 485, pageSize = 20, onChange = setPage),
+    Pagination(current = page, total = 485, pageSize = 20, simple = true, onChange = setPage),
+  )
+}
+
 // A view because the Modal is controlled — it needs local open/close state. The dialog
 // portals to document.body, fades its scrim and slides its box in via usePresence, and
 // closes on the button, the scrim, or Escape.
@@ -257,6 +268,9 @@ private def showcase: VNode =
     ),
     section("Badge / Tag — labels, dismissible tags, filter chips")(
       badgeDemo(),
+    ),
+    section("Pagination — controlled page strip (full + simple)")(
+      paginationDemo(),
     ),
     section("Modal — dialog over a scrim (portalled, animated)")(
       modalDemo(),

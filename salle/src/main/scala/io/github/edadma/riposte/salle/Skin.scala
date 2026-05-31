@@ -62,6 +62,16 @@ type TagClasses = (
     close: String,
 )
 
+/** The per-part CSS classes for a [[Pagination]] strip: the `root` nav, each `item` button
+  * (prev/next/page), the `active` modifier added to the current page's button, and the
+  * `dots`/status span. Distinct elements, so the skin returns one class per part. */
+type PaginationClasses = (
+    root: String,
+    item: String,
+    active: String,
+    dots: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -110,6 +120,10 @@ trait Skin:
     * The root mirrors [[badge]]; the close button gets its own class so a skin can size and
     * style the dismiss affordance independently. */
   def tag(color: Color, variant: BadgeVariant, size: Size): TagClasses
+
+  /** Classes for a [[Pagination]] strip of the given size. Returns the nav `root`, each
+    * `item` button, the `active`-page modifier, and the `dots` gap span. */
+  def pagination(size: Size): PaginationClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -176,6 +190,14 @@ object SalleSkin extends Skin:
     (
       root = bem("salle-tag", color.token, variant.token, size.token),
       close = "salle-tag__close",
+    )
+
+  def pagination(size: Size): PaginationClasses =
+    (
+      root = "salle-pagination",
+      item = bem("salle-pagination__item", size.token),
+      active = "salle-pagination__item--active",
+      dots = "salle-pagination__dots",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -264,6 +286,17 @@ object DaisySkin extends Skin:
     (
       root = daisy("badge", color.token, variant.token, size.token) + " gap-1 inline-flex items-center",
       close = "btn btn-xs btn-circle btn-ghost",
+    )
+
+  // DaisyUI groups the buttons with `join`; each is a `btn join-item` at the chosen size,
+  // the active page gets `btn-active`, and the dots reuse the disabled-button look.
+  def pagination(size: Size): PaginationClasses =
+    val btn = daisy("btn", size.token)
+    (
+      root = "join",
+      item = btn + " join-item",
+      active = "btn-active",
+      dots = btn + " join-item btn-disabled",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
