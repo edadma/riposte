@@ -3,7 +3,7 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 
 ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
-ThisBuild / version      := "0.0.1"
+ThisBuild / version      := "0.0.2"
 
 // --- Maven Central publishing ----------------------------------------------
 // Metadata for the generated POM and the Sonatype Central wiring, mirroring the

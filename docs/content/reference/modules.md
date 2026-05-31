@@ -12,9 +12,9 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte`         | `io.github.edadma.riposte.*`            | Components, hooks, the DSL, rendering   |
 | `riposte-atoms`   | `io.github.edadma.riposte.atoms.*`      | Shared atomic state                     |
 | `riposte-router`  | `io.github.edadma.riposte.router.*`     | Client-side routing                     |
-| `salle`           | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
+| `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
-`salle` also depends on `riposte` transitively. The current published version is `0.0.1`.
+`riposte-salle` also depends on `riposte` transitively. The current published version is `0.0.2`.
 
 ## riposte (core)
 
