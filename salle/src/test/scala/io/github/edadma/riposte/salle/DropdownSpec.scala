@@ -175,4 +175,4 @@ class DropdownSpec extends AnyFunSuite:
     assert(trigger(c).className.contains("btn"))
     trigger(c).click()
     Scheduler.flushSync()
-    assert(c.querySelector("[role=menu]").className.contains("menu"))
+    assert(c.querySelector("[role=menu]").asInstanceOf[dom.html.Element].className.contains("menu"))
