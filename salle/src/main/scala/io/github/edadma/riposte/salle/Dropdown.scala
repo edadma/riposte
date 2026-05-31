@@ -53,10 +53,10 @@ private val DropdownImpl =
     val (open, setOpen, _)     = useState(false)
     val (active, setActive, _) = useState(-1)
 
-    val wrapper   = useRef[dom.Element | Null](null)
-    val base      = useId()
-    val triggerId = base + "-trigger"
-    val menuId    = base + "-menu"
+    val wrapper        = useRef[dom.Element | Null](null)
+    val base           = useId()
+    val triggerId      = base + "-trigger"
+    val menuId         = base + "-menu"
     def itemId(i: Int) = base + "-item-" + i.toString
 
     val items = p.items
@@ -64,17 +64,20 @@ private val DropdownImpl =
     // Only non-disabled Item entries take focus; dividers and disabled items are skipped.
     def isSelectable(i: Int): Boolean =
       i >= 0 && i < items.length && (items(i) match
-        case MenuEntry.Item(_, _, _, disabled, _, _) => !disabled
-        case MenuEntry.Divider                       => false)
+        case MenuEntry.Item(_, _, _, d, _, _) => !d
+        case MenuEntry.Divider                => false)
 
-    def firstSelectable: Int = items.indexWhere {
-      case MenuEntry.Item(_, _, _, d, _, _) => !d
-      case _                                => false
-    }
-    def lastSelectable: Int = items.lastIndexWhere {
-      case MenuEntry.Item(_, _, _, d, _, _) => !d
-      case _                                => false
-    }
+    def firstSelectable: Int =
+      items.indexWhere {
+        case MenuEntry.Item(_, _, _, d, _, _) => !d
+        case _                                => false
+      }
+
+    def lastSelectable: Int =
+      items.lastIndexWhere {
+        case MenuEntry.Item(_, _, _, d, _, _) => !d
+        case _                                => false
+      }
 
     // Step to the next selectable entry in `dir` (+1/-1), wrapping; `from` may be -1.
     def nextSelectable(from: Int, dir: Int): Int =
@@ -112,42 +115,43 @@ private val DropdownImpl =
 
     useClickOutside(wrapper, open, () => closeMenu(refocus = false))
 
+    // The trigger opens the menu and, while open, also drives navigation (the test and a
+    // keyboard user both keep focus on the trigger, using aria-activedescendant). Enter/Space
+    // commit the active item when open; ArrowDown/Up move; Escape closes.
     val onTriggerKey: dom.KeyboardEvent => Unit = e =>
       if !p.disabled then
         e.key match
-          case "ArrowDown" | "Enter" | " " | "Spacebar" =>
+          case "ArrowDown" =>
             e.preventDefault()
             if open then setActive(nextSelectable(active, 1)) else openMenu(toLast = false)
           case "ArrowUp" =>
             e.preventDefault()
             if open then setActive(nextSelectable(active, -1)) else openMenu(toLast = true)
+          case "Home" =>
+            if open then { e.preventDefault(); setActive(firstSelectable) }
+          case "End" =>
+            if open then { e.preventDefault(); setActive(lastSelectable) }
+          case "Enter" | " " | "Spacebar" =>
+            e.preventDefault()
+            if open then commit(active) else openMenu(toLast = false)
           case "Escape" =>
             if open then { e.preventDefault(); closeMenu(refocus = false) }
+          case "Tab" =>
+            if open then closeMenu(refocus = false) // let focus move on
           case _ => ()
-
-    val onMenuKey: dom.KeyboardEvent => Unit = e =>
-      e.key match
-        case "ArrowDown"        => e.preventDefault(); setActive(nextSelectable(active, 1))
-        case "ArrowUp"          => e.preventDefault(); setActive(nextSelectable(active, -1))
-        case "Home"             => e.preventDefault(); setActive(firstSelectable)
-        case "End"              => e.preventDefault(); setActive(lastSelectable)
-        case "Enter" | " " | "Spacebar" => e.preventDefault(); commit(active)
-        case "Escape"           => e.preventDefault(); closeMenu(refocus = true)
-        case "Tab"              => closeMenu(refocus = false)
-        case _                  => ()
 
     val triggerNode =
       button(
-        cls                      := parts.trigger,
-        id                       := triggerId,
-        typ                      := "button",
-        data("part")             := "trigger",
-        aria("haspopup")         := "menu",
-        aria("expanded")         := (if open then "true" else "false"),
-        aria("controls")         := menuId,
-        disabled                 := p.disabled,
-        onClick                  := (_ => if !p.disabled then (if open then closeMenu(refocus = false) else openMenu(toLast = false))),
-        onKeyDown                := onTriggerKey,
+        cls              := parts.trigger,
+        id               := triggerId,
+        typ              := "button",
+        data("part")     := "trigger",
+        aria("haspopup") := "menu",
+        aria("expanded") := (if open then "true" else "false"),
+        aria("controls") := menuId,
+        disabled         := p.disabled,
+        onClick := (_ => if !p.disabled then (if open then closeMenu(refocus = false) else openMenu(toLast = false))),
+        onKeyDown := onTriggerKey,
         children,
         span(cls := parts.arrow, aria("hidden") := "true", unsafeHtml(DropdownCaret)),
       )
@@ -185,7 +189,6 @@ private val DropdownImpl =
           role                     := "menu",
           aria("labelledby")       := triggerId,
           aria("activedescendant") := (if active >= 0 then itemId(active) else ""),
-          onKeyDown                := onMenuKey,
           rows,
         )
       else NoMod
@@ -208,8 +211,8 @@ private val DropdownImpl =
   * `data-*`. Submenus and hover-to-open are intentionally out of scope for now. */
 def Dropdown(
     items:    Seq[MenuEntry],
-    disabled: Boolean          = false,
-    onSelect: String => Unit   = _ => (),
+    disabled: Boolean        = false,
+    onSelect: String => Unit = _ => (),
 )(label: VNode*): VNode =
   DropdownImpl((items = items.toVector, disabled = disabled, onSelect = onSelect))(label*)
 
