@@ -28,5 +28,5 @@ the model — components, hooks, shared state, and routing — then look up the 
 surface when you need it.
 
 - **[Getting Started](/getting-started/)** — install Riposte and mount your first component.
-- **[Guide](/guide/)** — the DSL, hooks, atoms, and the router.
+- **[Guide](/guide/)** — the DSL, hooks, atoms, the router, and the salle component library.
 - **[Reference](/reference/)** — the published modules and their APIs.

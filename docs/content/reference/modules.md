@@ -3,17 +3,18 @@ title: "Modules & API"
 weight: 1
 ---
 
-Riposte ships as three independently published artifacts under the `io.github.edadma`
-organization, all at the same version. The two sibling artifacts depend on the core
-transitively, so adding either is enough — you don't list `riposte` separately.
+Riposte ships as four independently published artifacts under the `io.github.edadma`
+organization, all at the same version. The three sibling artifacts depend on the core
+transitively, so adding any of them is enough — you don't list `riposte` separately.
 
 | Artifact          | Import                                  | What it gives you                      |
 |-------------------|-----------------------------------------|----------------------------------------|
 | `riposte`         | `io.github.edadma.riposte.*`            | Components, hooks, the DSL, rendering   |
 | `riposte-atoms`   | `io.github.edadma.riposte.atoms.*`      | Shared atomic state                     |
 | `riposte-router`  | `io.github.edadma.riposte.router.*`     | Client-side routing                     |
+| `salle`           | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
-The current published version is `0.0.1`.
+`salle` also depends on `riposte` transitively. The current published version is `0.0.1`.
 
 ## riposte (core)
 
@@ -108,3 +109,16 @@ Client-side routing built on the core's public API.
   `ScrollRestoration()`.
 
 See [Routing](/guide/routing/).
+
+## salle
+
+A styled component library on top of the core.
+
+- **Skin system** — components express intent (`Color`, `Size`, per-component variant
+  enums like `ButtonVariant`); a `Skin` maps that to CSS classes. Ships `SalleSkin`
+  (default, styled by `salle.css`) and `DaisySkin` (DaisyUI vocabulary). Set one with
+  `SkinProvider(skin) { … }`; read it with `useSkin()`.
+- **Components** — `Button`, `Input`, `Checkbox`, `Toggle`.
+- **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
+
+See [Component library (salle)](/guide/salle/).
