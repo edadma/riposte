@@ -3,8 +3,6 @@ title: "Quick Start"
 weight: 2
 ---
 
-# Quick Start
-
 This walks through a complete, tiny Riposte application: a counter you can click.
 
 ## Describe the UI

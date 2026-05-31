@@ -3,8 +3,6 @@ title: "Installation"
 weight: 1
 ---
 
-# Installation
-
 Riposte targets Scala.js. You need an sbt project with the Scala.js plugin enabled.
 
 ## Requirements

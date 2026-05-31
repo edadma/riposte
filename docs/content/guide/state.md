@@ -3,8 +3,6 @@ title: "State with Atoms"
 weight: 3
 ---
 
-# State with Atoms
-
 `useState` is enough for state owned by one component. When state needs to be **shared**
 across components that aren't in a simple parent-child line — and you'd rather not thread
 props through every layer between them — reach for **riposte-atoms**: a Jotai-inspired

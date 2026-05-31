@@ -3,8 +3,6 @@ title: "Hooks"
 weight: 2
 ---
 
-# Hooks
-
 Hooks give a component local state, side effects, memoized values, and access to the DOM.
 They're available through a `Hooks` context that Riposte supplies while rendering — which
 is exactly what the component constructors (`view`, `component`, `container`) set up. Call

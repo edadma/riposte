@@ -3,8 +3,6 @@ title: "Routing"
 weight: 4
 ---
 
-# Routing
-
 **riposte-router** maps URLs to views for single-page apps. It's built entirely on the
 core's public API — `useSyncExternalStore` for the location, context for route params and
 the outlet, the DSL for links — so it touches no internals and adds nothing you couldn't

@@ -3,8 +3,6 @@ title: "Components & the DSL"
 weight: 1
 ---
 
-# Components & the DSL
-
 A Riposte UI is an immutable tree of `VNode`s. You don't build that tree by hand — you
 describe it with the **DSL** (element functions, attribute keys, event keys) and package
 reusable pieces of it as **components**. This page covers both: first how to describe

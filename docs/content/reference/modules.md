@@ -3,8 +3,6 @@ title: "Modules & API"
 weight: 1
 ---
 
-# Modules & API
-
 Riposte ships as three independently published artifacts under the `io.github.edadma`
 organization, all at the same version. The two sibling artifacts depend on the core
 transitively, so adding either is enough — you don't list `riposte` separately.
