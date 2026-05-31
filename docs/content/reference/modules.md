@@ -141,6 +141,8 @@ A styled component library on top of the core.
   `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon
   button) and `ThemeSelect(themes)`.
 - **Components** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`), `ImageCard`.
+- **Layout** — `Row`/`Col` (24-column grid, responsive spans) and `Masonry` /
+  `MasonryResponsive` (packed columns; pure `layoutMasonry`).
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
 
 See [Component library (salle)](/guide/salle/).
