@@ -3,92 +3,194 @@ title: "Routing"
 weight: 4
 ---
 
-# Routing
+**riposte-router** maps URLs to views for single-page apps. It's built entirely on the
+core's public API — `useSyncExternalStore` for the location, context for route params and
+the outlet, the DSL for links — so it touches no internals and adds nothing you couldn't
+build yourself; it just saves you from doing so.
 
-**riposte-router** maps URLs to views for single-page apps. It is built on the core's
-public API — `useSyncExternalStore` for the location, context for route params, the DSL
-for links — so it touches no internals.
-
-Add the dependency:
+Add the dependency (it pulls in the core transitively):
 
 ```scala
 libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.1"
+
+import io.github.edadma.riposte.*
+import io.github.edadma.riposte.router.*
 ```
 
 ## A router and some routes
 
-`Router` establishes the routing context and tracks the current location. `Routes` picks
-the best match among the routes you give it and renders that route's element. `route`
-pairs a path pattern with an element:
+`Router` establishes the routing context and tracks the current location. Inside it,
+`Routes` picks the best-matching route for the current URL and renders it. `route` pairs a
+path pattern with a view:
 
 ```scala
-import io.github.edadma.riposte.*
-import io.github.edadma.riposte.router.*
-
-def App(using Hooks): VNode =
+val App = view {
   Router() {
     Routes(
-      route("/")(Home),
-      route("/about")(About),
-      route("/users/:id")(UserPage),
+      route("/")(Home()),
+      route("/about")(About()),
+      route("/users/:id")(UserPage()),
+      route("*")(NotFound()),
     )
   }
+}
 ```
 
-`Router(mode = History)` uses the HTML History API and clean URLs; `Router(mode = Hash)`
-uses `#/…` fragments for static hosting without server rewrites.
+`Routes` picks the **most specific** match regardless of declaration order, so a static
+`/users/new` wins over the dynamic `/users/:id` even if `:id` is declared first. A `"*"`
+pattern is a catch-all — the idiomatic not-found route.
+
+### History vs. hash mode
+
+`Router` defaults to **History** mode — clean URLs (`/users/7`) via the History API, which
+needs the server to fall back to `index.html` for unknown paths. For static hosting with
+no such fallback, use **hash** mode, which keeps everything after a `#` (`/#/users/7`):
+
+```scala
+Router(RouterMode.Hash) {
+  Routes(…)
+}
+```
 
 ## Params
 
-A `:name` segment is a parameter. Read the matched params with `useParams`:
+A `:name` segment captures a path parameter. Read the matched params with `useParams`,
+which returns a `Params` (a `Map[String, String]`):
 
 ```scala
-def UserPage(using Hooks, RouterContext): VNode =
-  val id = useParams.getOrElse("id", "")
+val UserPage = view {
+  val id = useParams().getOrElse("id", "")
   p(s"User $id")
+}
+```
+
+`useParams` reads the params of the nearest enclosing route, and params **accumulate down
+a nested branch** — a child route sees its own captures plus all of its ancestors'.
+
+Alternatively, take the params directly in the route declaration:
+
+```scala
+route("/users/:id")(params => UserDetail(params("id")))
 ```
 
 ## Links and navigation
 
-`Link` navigates without a full page reload. `NavLink` adds an active class when its
-target matches the current location (`end = true` matches the path exactly):
+`Link` renders an `<a>` that navigates in-app — no full-page reload:
 
 ```scala
 nav(
-  Link("/")("Home"),
-  NavLink("/about", activeClass = "current")("About"),
+  Link("/", "Home"),
+  Link("/about", "About"),
 )
 ```
 
-To navigate imperatively — say, after a form submit — call `navigate`:
+`NavLink` is a `Link` that adds an active CSS class when its target matches the current
+location. It's curried — options first, then the children — and `end = true` requires an
+exact path match (otherwise a prefix match counts, so `/users` is active on
+`/users/7` too):
+
+```scala
+nav(
+  NavLink("/", activeClass = "current", end = true)("Home"),
+  NavLink("/users", activeClass = "current")("Users"),
+)
+```
+
+To navigate imperatively — after a form submit, say — call `navigate`. Pass
+`replace = true` to replace the current history entry instead of pushing a new one:
 
 ```scala
 button(onClick := (_ => navigate("/users/42")), "Open user 42")
+navigate("/login", replace = true)
 ```
 
 ## Nested routes
 
-A route can take child routes; the parent renders an `Outlet` where the matched child
-goes. `index(...)` is the child shown at the parent's own path. Params accumulate down
-the branch:
+A route can take **child routes**. The parent matches a *prefix* of the path and renders
+its matched child wherever its view places an `Outlet`; the child's pattern is relative to
+the parent. `index(...)` declares the child shown when the parent's own path is matched
+exactly:
 
 ```scala
 Routes(
-  route("/dashboard")(Dashboard)(
-    index(Overview),
-    route("settings")(Settings),
-    route("users/:id")(UserDetail),
+  route("/dashboard")(Dashboard())(
+    index(Overview()),
+    route("settings")(Settings()),
+    route("users/:id")(UserDetail()),
   ),
 )
 
-def Dashboard(using Hooks, RouterContext): VNode =
+val Dashboard = view {
   div(
     h1("Dashboard"),
-    Outlet,  // renders Overview, Settings, or UserDetail
+    nav(
+      NavLink("/dashboard/settings", end = true)("Settings"),
+    ),
+    Outlet,   // Overview, Settings, or UserDetail renders here
   )
+}
 ```
+
+This is how you build shared layouts: the parent route is the chrome (header, sidebar,
+nav), and `Outlet` is the hole the active child fills.
 
 ## Query strings
 
-`useSearchParams` reads (and updates) the query portion of the URL, in both History and
-Hash modes.
+`useSearchParams` reads and updates the query portion of the URL, in both History and hash
+modes. It returns the current params and a setter; the setter takes the new params and a
+`replace` flag:
+
+```scala
+val Search = view {
+  val (params, setParams) = useSearchParams()
+  val q = params.getOrElse("q", "")
+
+  input(
+    value := q,
+    onInput := (e => setParams(Map("q" -> targetValue(e)), true)),
+  )
+}
+```
+
+## Per-route error boundaries
+
+`route(...).catchErrors(fallback)` wraps a route's view in an
+[error boundary](/guide/components/#escape-hatches): if rendering that route — or any
+descendant up to a nested route's own boundary — throws, `fallback(error)` shows in its
+place instead of the failure tearing down the app. The route keeps matching, so fixing the
+cause and re-rendering recovers:
+
+```scala
+route("/report/:id")(Report())
+  .catchErrors(err => div(cls := "error", s"Couldn't load report: ${err.getMessage}"))
+```
+
+## Lazy routes
+
+`lazyView` defers loading a view until it's first rendered, backing onto JavaScript's
+dynamic `import()` so the bundler can split that view into its own chunk. It takes a
+function returning a `js.Promise[VNode]` and an optional fallback shown while loading:
+
+```scala
+route("/admin")(
+  lazyView(() => loadAdminPanel(), fallback = p("Loading…"))
+)
+```
+
+Pair it with code-splitting in your build to keep the initial bundle small and load heavy
+routes on demand.
+
+## Scroll restoration
+
+`ScrollRestoration` is a component that resets (and, for back/forward navigation, restores)
+the scroll position as the location changes — the behavior browsers do for free on full
+page loads but not for in-app navigation. Render it once, inside the `Router`:
+
+```scala
+val App = view {
+  Router() {
+    ScrollRestoration()
+    Routes(…)
+  }
+}
+```

@@ -3,20 +3,18 @@ title: "Quick Start"
 weight: 2
 ---
 
-# Quick Start
-
 This walks through a complete, tiny Riposte application: a counter you can click.
 
 ## Describe the UI
 
-A component is a function returning a `VNode`. The builder DSL gives you HTML tags,
-attributes, and event handlers. Hooks like `useState` are available at the top level of
-a component through a `Hooks` context:
+A component is a value built with `view { … }`. Inside the block you call hooks like
+`useState` at the top level — `view` runs the body with a `Hooks` context in scope — and
+return a `VNode` built with the DSL's HTML tags, attributes, and event handlers:
 
 ```scala
 import io.github.edadma.riposte.*
 
-def Counter(using Hooks): VNode =
+val Counter = view {
   val (count, set, update) = useState(0)
 
   div(
@@ -24,6 +22,7 @@ def Counter(using Hooks): VNode =
     button(onClick := (_ => update(_ + 1)), "Increment"),
     button(onClick := (_ => set(0)), "Reset"),
   )
+}
 ```
 
 `useState` returns three things: the current `state`, a `set` function that replaces it,
@@ -39,8 +38,12 @@ import org.scalajs.dom
 
 @main def main(): Unit =
   val root = dom.document.getElementById("app")
-  render(Counter, root)
+  render(Counter(), root)
 ```
+
+Note the `Counter()` — a `view` is a no-props component, so you call it with empty parens
+to produce a node, whether you're handing it to `render` or nesting it as a child of
+another element.
 
 ```html
 <!-- index.html -->
