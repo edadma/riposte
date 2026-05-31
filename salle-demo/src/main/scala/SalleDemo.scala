@@ -105,6 +105,32 @@ private def masonryDemo: VNode =
     }*,
   )
 
+// A view because the Modal is controlled — it needs local open/close state. The dialog
+// portals to document.body, fades its scrim and slides its box in via usePresence, and
+// closes on the button, the scrim, or Escape.
+private val modalDemo = view {
+  val (open, setOpen, _) = useState(false)
+  div(
+    Button("Open dialog", color = Color.Primary, onClick = () => setOpen(true)),
+    Modal(
+      open = open,
+      onClose = () => setOpen(false),
+      title = Some("Wallpaper details"),
+      footer = Some(
+        fragment(
+          Button("Cancel", variant = ButtonVariant.Ghost, onClick = () => setOpen(false)),
+          Button("Download", color = Color.Primary, onClick = () => setOpen(false)),
+        ),
+      ),
+    )(
+      p(
+        "This dialog renders through a portal into document.body, fades its scrim and ",
+        "slides its box in, traps focus inside, and closes on the button, the scrim, or Escape.",
+      ),
+    ),
+  )
+}
+
 private def showcase: VNode =
   div(
     cls := "demo-stage",
@@ -168,6 +194,9 @@ private def showcase: VNode =
     ),
     section("Masonry — measured shortest-column packing")(
       masonryDemo,
+    ),
+    section("Modal — dialog over a scrim (portalled, animated)")(
+      modalDemo(),
     ),
   )
 
