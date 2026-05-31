@@ -110,7 +110,7 @@ Client-side routing built on the core's public API.
 
 See [Routing](/guide/routing/).
 
-## salle
+## riposte-salle
 
 A styled component library on top of the core.
 
@@ -118,6 +118,9 @@ A styled component library on top of the core.
   enums like `ButtonVariant`); a `Skin` maps that to CSS classes. Ships `SalleSkin`
   (default, styled by `salle.css`) and `DaisySkin` (DaisyUI vocabulary). Set one with
   `SkinProvider(skin) { … }`; read it with `useSkin()`.
+- **Theming** — one open `data-theme` set (ships `light`/`dark`, `system` follows the OS).
+  `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` and
+  `ThemeSelect(themes)`.
 - **Components** — `Button`, `Input`, `Checkbox`, `Toggle`.
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
 

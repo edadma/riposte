@@ -61,6 +61,41 @@ render(
 Writing your own skin is implementing the `Skin` trait — one method per component, mapping
 its semantic props to your classes.
 
+## Light & dark theming
+
+Skins decide *which design system* renders a component; **themes** decide its *light/dark
+palette*. They're orthogonal: a single global theme name drives a `data-theme` attribute on
+the document root, and both skins respond to it — `SalleSkin` through the `[data-theme="…"]`
+token blocks in `salle.css`, `DaisySkin` through DaisyUI's own themes.
+
+The theme set is **open**. salle ships `light` and `dark`; `system` follows the OS
+preference; and any other name selects whatever `[data-theme="…"]` block your app defines
+(`"dracula"`, a brand theme, …).
+
+`useTheme()` is the hook. It returns a named tuple and, on first read, installs salle's
+theme management — setting `data-theme`, persisting the choice to `localStorage`, following
+the OS while on `"system"`, and syncing across tabs:
+
+```scala
+val t = useTheme()
+//  t.theme    : String        — the stored name ("system" / "light" / "dark" / custom)
+//  t.resolved : String        — the concrete theme ("system" resolved to the OS pref)
+//  t.setTheme : String => Unit — select any theme name
+//  t.toggle   : () => Unit     — flip light ⇄ dark
+```
+
+For the common cases salle ships two ready components:
+
+```scala
+ThemeToggle                              // an outline button: light ⇄ dark
+ThemeSelect(Seq("system", "light", "dark"))   // a <select> bound to the active theme
+```
+
+Both follow the active skin, and `ThemeSelect` is the way to surface a larger open theme
+set. To define your own theme, add a `[data-theme="name"]` block (overriding the
+`--salle-*` custom properties) and offer its name through `setTheme`/`ThemeSelect` — see
+[Theming the default look](#theming-the-default-look).
+
 ## The style vocabulary
 
 Two enums are shared by every component that has them, so the same values mean the same
@@ -155,7 +190,17 @@ retheme, both plain CSS:
   --salle-radius: 0.25rem;
   --salle-color-primary: #0c8599;
 }
+
+/* A custom theme, selectable by name through setTheme / ThemeSelect. */
+[data-theme="ocean"] {
+  color-scheme: dark;
+  --salle-color-primary: #0c8599;
+}
 ```
+
+salle's own `light` and `dark` palettes are exactly such blocks, so the
+[theming hook and components](#light-dark-theming) above pick up a custom one with no
+extra wiring.
 
 Classes follow a BEM-ish convention: a base (`.salle-btn`) plus independent modifiers for
 color (`--primary`), variant (`--outline`), and size (`--sm`). Each color modifier sets a
