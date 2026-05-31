@@ -64,6 +64,47 @@ private def wallpaperGrid: VNode =
     },
   )
 
+// A colour block used as Col / Masonry content so the layout is visible at a glance.
+private def block(label: String, height: String = ""): VNode =
+  div(
+    cls := "demo-block",
+    style := (if height.isEmpty then Map.empty[String, String] else Map("height" -> height)),
+    label,
+  )
+
+// The 24-column Row/Col system: a plain split, a gutter, an offset, and responsive
+// columns (resize the window — xs full, sm half, md a third, lg a quarter).
+private def gridDemo: VNode =
+  div(
+    cls := "demo-grid-stack",
+    Row(gutterX = 16)(
+      Col(span = 6)(block("span 6")),
+      Col(span = 6)(block("span 6")),
+      Col(span = 6)(block("span 6")),
+      Col(span = 6)(block("span 6")),
+    ),
+    Row(gutterX = 16)(
+      Col(span = 8)(block("span 8")),
+      Col(span = 8, offset = 8)(block("span 8, offset 8")),
+    ),
+    Row(gutterX = 16)(
+      Col(xs = 24, sm = 12, md = 8, lg = 6)(block("responsive")),
+      Col(xs = 24, sm = 12, md = 8, lg = 6)(block("responsive")),
+      Col(xs = 24, sm = 12, md = 8, lg = 6)(block("responsive")),
+      Col(xs = 24, sm = 12, md = 8, lg = 6)(block("responsive")),
+    ),
+  )
+
+// The measured masonry: blocks of varied heights pack into the shortest column.
+private val masonryHeights = Seq("80px", "140px", "100px", "180px", "120px", "160px", "90px", "150px")
+
+private def masonryDemo: VNode =
+  Masonry(columns = 4, gap = 12)(
+    masonryHeights.zipWithIndex.map { (h, i) =>
+      block(s"#${i + 1}", h)
+    }*,
+  )
+
 private def showcase: VNode =
   div(
     cls := "demo-stage",
@@ -121,6 +162,12 @@ private def showcase: VNode =
     ),
     section("ImageCard — wallpaper grid (lazy-loaded, hover for actions)")(
       wallpaperGrid,
+    ),
+    section("Grid — 24-column Row / Col (resize for responsive)")(
+      gridDemo,
+    ),
+    section("Masonry — measured shortest-column packing")(
+      masonryDemo,
     ),
   )
 

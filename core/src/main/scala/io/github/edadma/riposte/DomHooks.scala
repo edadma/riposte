@@ -125,3 +125,35 @@ def useEventListener(target: dom.EventTarget, event: String, handler: dom.Event 
     ,
     Array(target, event),
   )
+
+/** Call `onResize` whenever the element held by `ref` changes size — the building block
+  * for any layout that must recompute when its container resizes (a measured masonry, a
+  * canvas, a virtualized list). `ResizeObserver` watches the element itself, so it fires
+  * for container resizes that a `window` `resize` listener would miss (a sidebar opening,
+  * a flex sibling growing). The latest `onResize` is always used (kept in a ref) without
+  * re-subscribing, and the observer is disconnected on unmount. Where `ResizeObserver` is
+  * unavailable (notably jsdom), it falls back to a `window` `resize` listener so the
+  * callback still fires for viewport changes — degraded but functional.
+  */
+def useResizeObserver(ref: Ref[dom.Element | Null], onResize: () => Unit)(using Hooks): Unit =
+  val saved = useRef(onResize)
+  saved.current = onResize
+  useLayoutEffect(
+    () =>
+      val el = ref.current
+      if el == null then noCleanup
+      else
+        // Constructing a ResizeObserver throws where the API is absent; there we observe
+        // the viewport instead, which still catches the resizes most layouts care about.
+        try
+          val ro = new dom.ResizeObserver((_, _) => saved.current())
+          ro.observe(el)
+          () => ro.disconnect()
+        catch
+          case _: Throwable =>
+            val listener: js.Function1[dom.Event, Unit] = (_: dom.Event) => saved.current()
+            dom.window.addEventListener("resize", listener)
+            () => dom.window.removeEventListener("resize", listener)
+    ,
+    Array.empty[Any],
+  )
