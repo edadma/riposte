@@ -1,20 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>salle — component showcase</title>
 
-    <!-- Cascade-layer order: salle wins over daisyui. DaisyUI's full.min.css (needed
-         so the DaisyUI skin is styled without a Tailwind build) ships an *unlayered*
-         Tailwind preflight that resets <button>/<input>; left unlayered it would beat
-         salle's native styles, which live in a low-priority @layer salle on purpose.
-         Importing DaisyUI *into* the `daisyui` layer tames its preflight, while its
-         component classes still apply in DaisyUI mode. -->
+    <!-- DaisyUI v5 (matches salle's DaisySkin class vocabulary: btn-soft, btn-dash,
+         btn-xl, …). Its daisyui.css ships components + the light/dark themes but NO
+         Tailwind preflight, so it styles the DaisyUI skin without resetting <button>/
+         <input>. Imported into a `daisyui` layer ordered below `salle` purely as a
+         safety boundary, so the native skin always wins if the two ever overlap. -->
     <style>
       @layer daisyui, salle;
-      @import url("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css")
-        layer(daisyui);
+      @import url("https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css") layer(daisyui);
     </style>
 
     <!-- salle's own look (the SalleSkin) — defines @layer salle, ordered after daisyui. -->

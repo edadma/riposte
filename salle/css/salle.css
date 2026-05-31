@@ -63,6 +63,12 @@
   .salle-btn:hover {
     background: color-mix(in srgb, var(--_c) 85%, #000);
   }
+  /* Press feedback that works for every variant: a 1px nudge plus a slight darken
+     of whatever is rendered (fill, text, or border), so outline/ghost/link react too. */
+  .salle-btn:active {
+    transform: translateY(1px);
+    filter: brightness(0.9);
+  }
   .salle-btn:focus-visible {
     outline: 2px solid var(--salle-focus);
     outline-offset: 2px;
@@ -196,6 +202,12 @@
   .salle-input::placeholder {
     color: var(--salle-input-placeholder, #94a3b8);
   }
+  /* Hover tints the border toward the accent colour — clearly visible, and a preview
+     of the focus state. Declared before :focus-visible (same specificity) so a focused
+     field still gets the full accent border + ring rather than this lighter hover. */
+  .salle-input:hover {
+    border-color: color-mix(in srgb, var(--_c) 55%, var(--salle-input-border, #cbd5e1));
+  }
   .salle-input:focus-visible {
     border-color: var(--_c);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--_c) 25%, transparent);
@@ -230,6 +242,10 @@
   }
   .salle-input--error {
     --_c: var(--salle-color-error);
+    border-color: var(--salle-color-error);
+  }
+  /* Keep the error border red on hover (would otherwise lose to .salle-input:hover). */
+  .salle-input--error:hover {
     border-color: var(--salle-color-error);
   }
 
