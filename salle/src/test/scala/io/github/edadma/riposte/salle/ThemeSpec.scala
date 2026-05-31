@@ -67,3 +67,15 @@ class ThemeSpec extends AnyFunSuite:
     val (snap, _, _) = mountProbe()
     assert(rootTheme == "dark")
     assert(snap() == "dark")
+
+  test("ThemeToggle renders an icon button and clicking it flips the theme"):
+    resetThemeForTest()
+    val c = host()
+    render(ThemeToggle(), c)
+    Scheduler.flushSync()
+    val btn = c.querySelector("button.salle-theme-toggle")
+    assert(btn != null)
+    assert(btn.querySelector("svg") != null) // moon icon in light mode
+    btn.asInstanceOf[dom.html.Button].click()
+    Scheduler.flushSync()
+    assert(rootTheme == "dark")

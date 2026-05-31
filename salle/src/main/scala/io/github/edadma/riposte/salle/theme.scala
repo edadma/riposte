@@ -104,15 +104,27 @@ def useTheme()(using
     toggle = () => ThemeStore.set(if ThemeStore.resolve(ThemeStore.get) == "dark" then "light" else "dark"),
   )
 
-/** A button that toggles between light and dark, labelled with the action it performs.
-  * Styled as an outline [[Button]], so it follows the active skin. */
+// Feather sun/moon icons, drawn with `currentColor` so they take the button's colour.
+// Injected as trusted innerHTML (a static literal) so the SVG parses into real,
+// correctly-namespaced nodes without needing SVG element builders here.
+private val MoonIcon =
+  """<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>"""
+
+private val SunIcon =
+  """<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>"""
+
+/** An icon button that toggles between light and dark: a moon in light mode (tap to go
+  * dark), a sun in dark mode (tap to go light). The glyph uses `currentColor`, so it
+  * inherits the surrounding text colour. */
 val ThemeToggle = view {
   val t    = useTheme()
   val dark = t.resolved == "dark"
-  Button(
-    if dark then "Light mode" else "Dark mode",
-    variant = ButtonVariant.Outline,
-    onClick = () => t.toggle(),
+  button(
+    cls           := "salle-theme-toggle",
+    typ           := "button",
+    aria("label") := (if dark then "Switch to light theme" else "Switch to dark theme"),
+    onClick       := (_ => t.toggle()),
+    unsafeHtml(if dark then SunIcon else MoonIcon),
   )
 }
 
