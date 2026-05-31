@@ -49,9 +49,25 @@ See [Components & the DSL](/guide/components/).
 | `useContext(ctx)`                      | The nearest provided context value                   |
 | `useTransition(target, durationMs)`    | An eased `Double` animated each frame                |
 | `useSyncExternalStore(sub, snapshot)`  | Subscribe to an external store                       |
+| `useImperativeHandle(ref, factory, deps)` | Expose an imperative handle to a parent's `ref`   |
+| `useDeferredValue(value)`              | A copy of `value` that lags one commit               |
+| `useDebouncedValue(value, delayMs)`    | `value` after it stops changing for `delayMs`        |
+| `useThrottledValue(value, intervalMs)` | `value` at most once per `intervalMs` (leading+trailing) |
 
-Dependency arrays: `Array(a, b)` re-runs on change, `Array()` runs once, `null` runs every
-render. Effect cleanups return a function or `noCleanup`. See [Hooks](/guide/hooks/).
+`useState`'s `initial` is by-name (evaluated once), giving lazy initialization through the
+same signature. Dependency arrays: `Array(a, b)` re-runs on change, `Array()` runs once,
+`null` runs every render. Effect cleanups return a function or `noCleanup`.
+
+**DOM hooks** (built on the primitives, for common DOM patterns):
+
+| Hook                                                  | Does                                          |
+|-------------------------------------------------------|-----------------------------------------------|
+| `useEventListener(target, event, handler)`            | Subscribe to a DOM event for the lifetime     |
+| `useClickOutside(ref, active, handler)`               | Fire when a press lands outside `ref`         |
+| `useMediaQuery(query)`                                | Live `Boolean` for a CSS media query          |
+| `useIntersectionObserver(ref, …)`                     | `Boolean` viewport visibility (lazy load)     |
+
+See [Hooks](/guide/hooks/).
 
 ### The DSL
 
@@ -63,7 +79,10 @@ render. Effect cleanups return a function or `noCleanup`. See [Hooks](/guide/hoo
   `aria(name)` / `data(name)` for the long tail; `css(name -> value, …)` for inline styles;
   enumerated booleans render `"true"`/`"false"`.
 - **Events** — typed `EventKey := handler` (`onClick`, `onInput`, `onKeyDown`, …);
-  `on(name)` for the rest; `targetValue(e)` reads an input's value.
+  `on(name)` for the rest; `targetValue(e)` reads an input's value. Chain `.capture`,
+  `.once`, and/or `.passive` for listener options (`onScroll.passive := h`).
+- **Refs** — `ref := box` binds an element to a `useRef` box (or a callback); pass a
+  ref down as a prop to forward it, and `useImperativeHandle` to expose a custom handle.
 - **Keys** — `key := id` on an element (or a second arg to a component) for stable list
   identity.
 - **Conditionals** — `when(cond)(node)`, `unless(cond)(node)`.
@@ -119,9 +138,9 @@ A styled component library on top of the core.
   (default, styled by `salle.css`) and `DaisySkin` (DaisyUI vocabulary). Set one with
   `SkinProvider(skin) { … }`; read it with `useSkin()`.
 - **Theming** — one open `data-theme` set (ships `light`/`dark`, `system` follows the OS).
-  `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` and
-  `ThemeSelect(themes)`.
-- **Components** — `Button`, `Input`, `Checkbox`, `Toggle`.
+  `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon
+  button) and `ThemeSelect(themes)`.
+- **Components** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`), `ImageCard`.
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
 
 See [Component library (salle)](/guide/salle/).

@@ -87,7 +87,7 @@ val t = useTheme()
 For the common cases salle ships two ready components:
 
 ```scala
-ThemeToggle                              // an outline button: light ⇄ dark
+ThemeToggle                              // an icon button (sun/moon): light ⇄ dark
 ThemeSelect(Seq("system", "light", "dark"))   // a <select> bound to the active theme
 ```
 
@@ -158,6 +158,55 @@ Checkbox(label = "Subscribed", defaultChecked = true)
 Toggle(label = "Wi-Fi", defaultChecked = true)
 Toggle(label = "Dark mode", checked = Some(dark), onChange = setDark)
 ```
+
+### Select
+
+A single-select dropdown — built as a custom ARIA combobox (not a native `<select>`), so
+it supports typeahead, keyboard navigation, a clear affordance, and skin-styled options.
+Options are built with `Opt`; the chosen value follows the same controlled/uncontrolled
+model as the form controls above:
+
+```scala
+Select(
+  options = Seq(
+    Opt("us", "United States"),
+    Opt("ca", "Canada"),
+    Opt("mx", "Mexico", disabled = true),
+  ),
+  placeholder = "Country",
+  clearable = true,
+  onChange = setCountry,
+)
+```
+
+`Opt(value, label, disabled)` defaults `label` to `value`. `Select` takes the usual
+`color`/`size`/`disabled`/`invalid`, plus `clearable` (adds a reset button) and `name`
+(emits a hidden input so it participates in native form submission). It's fully
+keyboard-driven (arrows, Home/End, Enter/Space, Escape, type-to-search) and mirrors its
+state to `data-*` (`data-state`, `data-value`, and per-option `data-selected`/`data-active`).
+
+### ImageCard
+
+A single image tile for a media grid. The full image loads lazily — only once the tile
+nears the viewport (built on [`useIntersectionObserver`](/guide/hooks/#dom-hooks)) — showing
+a skeleton until it arrives and fading in on load. If `src` fails it tries `fallback`, then
+shows an error placeholder:
+
+```scala
+ImageCard(
+  src = thumbUrl,
+  alt = "Sunset over the bay",
+  ratio = "16/9",                 // reserves space so the grid doesn't reflow
+  fit = ImageFit.Cover,           // Cover | Contain | Fill | ScaleDown
+  badge = Some(span("4K")),       // a corner tag
+  overlay = Some(downloadButton), // hover content
+  onClick = () => open(fullUrl),
+)
+```
+
+`ratio` is a CSS `aspect-ratio` (`"16/9"`, `"1/1"`); `fit` controls cropping; `rounded`
+(default `true`) rounds the corners; `lazyLoad = false` opts out of deferred loading.
+State is mirrored to `data-state` (`loading`/`loaded`/`error`) and `data-inview`.
 
 ## useControllable
 

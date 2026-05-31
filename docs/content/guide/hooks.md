@@ -67,6 +67,11 @@ val (items, setItems, updateItems) = useState(Vector.empty[String])
 updateItems(_ :+ "new")
 ```
 
+The `initial` argument is **by-name**: it's evaluated only on the first render, when the
+state cell is created, and never again. So an allocating initializer you don't want re-run
+each render just works through the same signature — `useState(new Buffer)` builds the
+buffer once, not on every render. No separate "lazy initializer" form is needed.
+
 ## useReducer
 
 For state with several distinct transitions, `useReducer` centralizes them in one
@@ -239,3 +244,53 @@ val value = useSyncExternalStore(
 You rarely call this directly — it's the foundation the [atoms](/guide/state/) module and
 the router's location tracking are built on. Reach for those higher-level APIs first;
 `useSyncExternalStore` is here for integrating a store Riposte doesn't already wrap.
+
+## DOM hooks
+
+A handful of higher-level hooks wrap common DOM patterns so you don't re-implement the
+`addEventListener`/`removeEventListener` bookkeeping each time. They're built on the
+primitives above and live in the core alongside them.
+
+**`useEventListener(target, event, handler)`** attaches `handler` for `event` on `target`
+for the component's lifetime, removing it on unmount. The latest `handler` is always used
+(it's kept in a ref), so a handler closing over changing state stays current without
+re-subscribing every render:
+
+```scala
+useEventListener(dom.window, "resize", _ => recompute())
+```
+
+**`useClickOutside(ref, active, handler)`** calls `handler` when a pointer press lands
+outside the element held by `ref`, but only while `active` is true — the robust way to
+dismiss an open popup or menu (a real document `pointerdown` listener checking containment,
+not a focus-blur race):
+
+```scala
+val box = useRef[dom.Element | Null](null)
+useClickOutside(box, menuOpen, () => setMenuOpen(false))
+div(ref := box, /* … the menu … */)
+```
+
+**`useMediaQuery(query)`** returns a `Boolean` that tracks a CSS media query live —
+re-rendering when it starts or stops matching:
+
+```scala
+val isWide = useMediaQuery("(min-width: 768px)")
+val prefersDark = useMediaQuery("(prefers-color-scheme: dark)")
+```
+
+**`useIntersectionObserver(ref, rootMargin, threshold, once)`** reports whether the
+element held by `ref` is in (or near) the viewport — for lazy loading and infinite scroll.
+It returns a `Boolean` that flips to `true` when the element intersects the viewport
+(expanded by `rootMargin`, default `"200px"`, so work can start just before it scrolls in).
+With `once = true` (the default) it latches and disconnects — right for lazy-loading an
+image; with `once = false` it tracks visibility both ways. Where `IntersectionObserver`
+isn't available it returns `true`, so dependent content still loads:
+
+```scala
+val tile = useRef[dom.Element | Null](null)
+val visible = useIntersectionObserver(tile)
+div(ref := tile, when(visible)(img(src := heavyImageUrl)))
+```
+
+(salle's [`ImageCard`](/guide/salle/) is built on this hook.)
