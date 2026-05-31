@@ -303,6 +303,19 @@ div(ref := tile, when(visible)(img(src := heavyImageUrl)))
 
 (salle's [`ImageCard`](/guide/salle/) is built on this hook.)
 
+**`useResizeObserver(ref, onResize)`** calls `onResize` whenever the element held by `ref`
+changes size — the building block for any layout that recomputes when its *container*
+resizes (which a `window` `resize` listener misses: a sidebar opening, a flex sibling
+growing). Where `ResizeObserver` is unavailable it falls back to a `window` listener:
+
+```scala
+val box = useRef[dom.Element | Null](null)
+useResizeObserver(box, () => remeasure())
+div(ref := box, /* … */)
+```
+
+(salle's [`Masonry`](/guide/salle/) measures with this hook.)
+
 ## Rate-limiting a value
 
 Three hooks derive a slower-changing copy of a fast-changing value, so expensive renders

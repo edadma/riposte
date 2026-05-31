@@ -208,6 +208,62 @@ ImageCard(
 (default `true`) rounds the corners; `lazyLoad = false` opts out of deferred loading.
 State is mirrored to `data-state` (`loading`/`loaded`/`error`) and `data-inview`.
 
+## Layout
+
+Two layout systems sit alongside the components — one for *precise* column layouts, one for
+*packed* ones.
+
+### Grid (Row / Col)
+
+A 24-column grid in the Ant Design tradition: a `Row` lays out equal column tracks, and each
+`Col` spans some of them, with per-breakpoint spans, offsets, and ordering. Reach for it
+when you want columns to *line up* on a stated grid:
+
+```scala
+Row(gutterX = 24)(
+  Col(span = 16)(main),
+  Col(span = 8)(sidebar),
+)
+
+// Responsive: full width on phones, half on small, a third from medium up.
+Row()(
+  Col(xs = 24, sm = 12, md = 8)(card1),
+  Col(xs = 24, sm = 12, md = 8)(card2),
+  Col(xs = 24, sm = 12, md = 8)(card3),
+)
+```
+
+`Row(cols, gutterX, gutterY, justify, align)` — `cols` defaults to 24; `gutterX`/`gutterY`
+are the pixel gutters; `justify` aligns columns along the row
+(`start`/`end`/`center`/`between`/`around`/`evenly`) and `align` across it
+(`start`/`end`/`center`/`stretch`/`baseline`). `Col(span, offset, order, xs…xxl)` — `span`
+is the base width (full row by default), `offset` pushes it right, `order` overrides visual
+position, and `xs`/`sm`/`md`/`lg`/`xl`/`xxl` set per-breakpoint spans (each inheriting the
+next smaller when unset). Both take their children curried: `Row(…)(cols*)`, `Col(…)(content*)`.
+
+### Masonry
+
+A Pinterest-style packed layout: tiles of differing heights flow into a fixed number of
+equal-width columns, each tile placed into the currently shortest column (balanced columns,
+left-to-right reading order — unlike a CSS multi-column flow). It measures real tile heights
+(via [`useResizeObserver`](/guide/hooks/#dom-hooks)) and re-packs on resize or when children
+change:
+
+```scala
+Masonry(columns = 3, gap = 16)(tiles*)
+
+// Column count follows the viewport:
+Masonry(columns = MasonryColumns.Responsive(base = 1, md = 2, lg = 3))(tiles*)
+// or the shorthand:
+MasonryResponsive(base = 1, sm = 2, lg = 3)(tiles*)
+```
+
+A bare `Int` for `columns` is a fixed count (`Masonry(columns = 3)`); `MasonryColumns.Responsive`
+picks a count by viewport against the standard breakpoints. Tiles should size naturally — an
+[`ImageCard`](#imagecard) with a `ratio` is the canonical cell. The pure packing function,
+`layoutMasonry(heights, columns, gap, containerWidth)`, is exposed too if you need the
+geometry without the component.
+
 ## useControllable
 
 The hook every salle form control is built on, and one you can reuse for your own
