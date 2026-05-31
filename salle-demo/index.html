@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>salle — component showcase</title>
 
-    <!-- DaisyUI's prebuilt CSS so the DaisySkin classes (btn, input, …) are styled
-         without a Tailwind build. Only needed to demo the DaisyUI skin. -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
-    />
+    <!-- Cascade-layer order: salle wins over daisyui. DaisyUI's full.min.css (needed
+         so the DaisyUI skin is styled without a Tailwind build) ships an *unlayered*
+         Tailwind preflight that resets <button>/<input>; left unlayered it would beat
+         salle's native styles, which live in a low-priority @layer salle on purpose.
+         Importing DaisyUI *into* the `daisyui` layer tames its preflight, while its
+         component classes still apply in DaisyUI mode. -->
+    <style>
+      @layer daisyui, salle;
+      @import url("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css")
+        layer(daisyui);
+    </style>
 
-    <!-- salle's own look (the SalleSkin). Loaded after DaisyUI; its rules live in
-         @layer salle, so nothing here fights for specificity. -->
+    <!-- salle's own look (the SalleSkin) — defines @layer salle, ordered after daisyui. -->
     <link rel="stylesheet" href="../salle/css/salle.css" />
 
     <style>
