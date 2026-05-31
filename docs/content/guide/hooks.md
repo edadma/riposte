@@ -260,6 +260,14 @@ re-subscribing every render:
 useEventListener(dom.window, "resize", _ => recompute())
 ```
 
+An overload takes `EventListenerOptions(capture, passive, once)`, mirroring the DOM's
+`addEventListener` options — e.g. `passive = true` to promise the handler won't
+`preventDefault` (so the browser can scroll without waiting):
+
+```scala
+useEventListener(dom.window, "scroll", onScroll, EventListenerOptions(passive = true))
+```
+
 **`useClickOutside(ref, active, handler)`** calls `handler` when a pointer press lands
 outside the element held by `ref`, but only while `active` is true — the robust way to
 dismiss an open popup or menu (a real document `pointerdown` listener checking containment,
@@ -294,3 +302,39 @@ div(ref := tile, when(visible)(img(src := heavyImageUrl)))
 ```
 
 (salle's [`ImageCard`](/guide/salle/) is built on this hook.)
+
+## Rate-limiting a value
+
+Three hooks derive a slower-changing copy of a fast-changing value, so expensive renders
+downstream don't fire on every keystroke or scroll tick. Each returns a value of the same
+type:
+
+- **`useDeferredValue(value)`** lets the returned value *lag* the input — it catches up on
+  a later macrotask when the main thread is idle, and a burst of updates collapses to the
+  last one. For a search box driving a heavy results list, where you want the input itself
+  to stay responsive.
+- **`useDebouncedValue(value, delayMs)`** updates only after `delayMs` of quiet — each new
+  value resets the timer. For a query that should fire only once typing pauses.
+- **`useThrottledValue(value, intervalMs)`** updates at most once per `intervalMs`, always
+  delivering the trailing value. For scroll/resize-driven state.
+
+```scala
+val (query, setQuery, _) = useState("")
+val debounced = useDebouncedValue(query, 300)
+// …a search effect keyed on `debounced`, not `query`
+useEffect(() => { search(debounced); noCleanup }, Array(debounced))
+```
+
+## useImperativeHandle
+
+`useImperativeHandle(ref, create, deps)` populates a `ref` with a custom handle (rather
+than the raw DOM node), so a parent can call methods a child exposes — `focus()`, `scroll`,
+imperative form APIs. The handle is built after commit and rebuilt when `deps` change, and
+cleared on unmount so a parent never calls into an unmounted child:
+
+```scala
+// In the child, given a `ref: Ref[Controls | Null]` passed down as a prop:
+useImperativeHandle(ref, () => new Controls { def focus() = inputRef.current.focus() }, Array())
+```
+
+Reach for it sparingly — most parent→child communication should be props, not method calls.
