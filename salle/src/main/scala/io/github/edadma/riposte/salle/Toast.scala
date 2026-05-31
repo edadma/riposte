@@ -82,7 +82,7 @@ object ToastStore:
   ): Int =
     seq += 1
     val id = seq
-    entries = entries :+ (
+    val entry: ToastEntry = (
       id = id,
       message = message,
       description = description,
@@ -94,6 +94,7 @@ object ToastStore:
       onClick = onClick,
       onClose = onClose,
     )
+    entries = entries :+ entry
     emit()
     id
 
