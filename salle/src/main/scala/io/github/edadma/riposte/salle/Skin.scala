@@ -86,6 +86,21 @@ type DropdownClasses = (
     icon: String,
 )
 
+/** The per-part CSS classes for a [[toast]] notification: the `item` box (which carries the
+  * type accent), its leading `icon` slot and the `spinner` used by the loading variant, the
+  * `body` column, the `message` (main line) and `description` (secondary line), and the
+  * `close` button. The placement region is styled separately via [[Skin.toastRegion]], since
+  * it depends on placement, not type. */
+type ToastClasses = (
+    item: String,
+    icon: String,
+    spinner: String,
+    body: String,
+    message: String,
+    description: String,
+    close: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -143,6 +158,15 @@ trait Skin:
     * mirrored to `data-*` and styled from there, so this returns the structural classes
     * only. */
   def dropdown: DropdownClasses
+
+  /** The class for a toast placement region — the fixed-position stack anchored at one
+    * corner/edge. Depends only on `placement`, since one region holds toasts of mixed
+    * types ([[ToastPlacement]]). */
+  def toastRegion(placement: ToastPlacement): String
+
+  /** Classes for a toast's parts, by notification `kind`. Otherwise stateless — the
+    * enter/exit phase is mirrored to `data-state` and styled from there. */
+  def toast(kind: ToastType): ToastClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -228,6 +252,20 @@ object SalleSkin extends Skin:
       item = "salle-dropdown__item",
       divider = "salle-dropdown__divider",
       icon = "salle-dropdown__icon",
+    )
+
+  def toastRegion(placement: ToastPlacement): String =
+    bem("salle-toast", placement.token)
+
+  def toast(kind: ToastType): ToastClasses =
+    (
+      item = bem("salle-toast__item", kind.token),
+      icon = "salle-toast__icon",
+      spinner = "salle-toast__spinner",
+      body = "salle-toast__body",
+      message = "salle-toast__message",
+      description = "salle-toast__description",
+      close = "salle-toast__close",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -342,6 +380,36 @@ object DaisySkin extends Skin:
       item = "rounded-lg",
       divider = "divider my-0",
       icon = "inline-flex items-center shrink-0",
+    )
+
+  // DaisyUI's `toast` utility fixes a stack to a corner/edge; `toast-top`/`toast-bottom`
+  // chooses the vertical anchor and `toast-start`/`toast-center`/`toast-end` the horizontal.
+  def toastRegion(placement: ToastPlacement): String =
+    "toast " + (placement match
+      case ToastPlacement.TopLeft      => "toast-top toast-start"
+      case ToastPlacement.TopCenter    => "toast-top toast-center"
+      case ToastPlacement.TopRight     => "toast-top toast-end"
+      case ToastPlacement.BottomLeft   => "toast-bottom toast-start"
+      case ToastPlacement.BottomCenter => "toast-bottom toast-center"
+      case ToastPlacement.BottomRight  => "toast-bottom toast-end"
+    )
+
+  // Each item is an `alert` tinted by type; loading reuses the info tint alongside DaisyUI's
+  // spinner. There is no "alert-loading", so it maps to `alert-info`.
+  def toast(kind: ToastType): ToastClasses =
+    val alertColor = kind match
+      case ToastType.Success => "alert-success"
+      case ToastType.Warning => "alert-warning"
+      case ToastType.Error   => "alert-error"
+      case _                 => "alert-info"
+    (
+      item = "alert " + alertColor + " shadow-lg",
+      icon = "shrink-0",
+      spinner = "loading loading-spinner loading-sm",
+      body = "flex flex-col min-w-0",
+      message = "font-semibold",
+      description = "text-sm opacity-80",
+      close = "btn btn-xs btn-circle btn-ghost",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish

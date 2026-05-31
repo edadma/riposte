@@ -226,6 +226,29 @@ private val modalDemo = view {
   )
 }
 
+// Buttons that fire the imperative toast API — the "Downloaded" / "Added to favourites"
+// confirmations a gallery shows. A single Toaster (added to the showcase below) renders
+// them, portalled to the body and grouped by placement.
+private val toastDemo = view {
+  div(
+    style := Map("display" -> "flex", "gap" -> "0.5rem", "flex-wrap" -> "wrap"),
+    Button(
+      "Downloaded",
+      color = Color.Success,
+      onClick = () => { toast.success("Downloaded", description = Some("wallpaper-4k.jpg saved": VNode)); () },
+    ),
+    Button("Added to favorites", color = Color.Primary, onClick = () => { toast.info("Added to favorites"); () }),
+    Button(
+      "Upload failed",
+      color = Color.Error,
+      onClick = () => { toast.error("Upload failed", description = Some("Network error — try again": VNode)); () },
+    ),
+    Button("Storage warning", color = Color.Warning, onClick = () => { toast.warning("Storage almost full"); () }),
+    Button("Preparing…", onClick = () => { toast.loading("Preparing download…"); () }),
+    Button("Clear all", variant = ButtonVariant.Ghost, onClick = () => { toast.clear(); () }),
+  )
+}
+
 private def showcase: VNode =
   div(
     cls := "demo-stage",
@@ -305,6 +328,11 @@ private def showcase: VNode =
     section("Modal — dialog over a scrim (portalled, animated)")(
       modalDemo(),
     ),
+    section("Toast — notifications (types, auto-dismiss, loading, clear)")(
+      toastDemo(),
+    ),
+    // Mounted once; it portals each toast to document.body, grouped by placement.
+    Toaster(),
   )
 
 private val App = view {
