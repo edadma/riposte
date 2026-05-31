@@ -173,6 +173,33 @@ private val paginationDemo = view {
   )
 }
 
+// A menu button whose chosen sort is shown next to it, plus an "actions" menu with an
+// icon, a divider, and a danger item.
+private val dropdownDemo = view {
+  val (sort, setSort, _) = useState("newest")
+  div(
+    style := Map("display" -> "flex", "gap" -> "1rem", "align-items" -> "center", "flex-wrap" -> "wrap"),
+    Dropdown(
+      items = Seq(
+        MenuItem("newest", "Newest"),
+        MenuItem("popular", "Most popular"),
+        MenuItem("downloads", "Most downloaded"),
+        MenuDivider,
+        MenuItem("oldest", "Oldest"),
+      ),
+      onSelect = setSort,
+    )(s"Sort: $sort"),
+    Dropdown(
+      items = Seq(
+        MenuItem("share", "Share"),
+        MenuItem("favorite", "Add to favorites"),
+        MenuDivider,
+        MenuItem("report", "Report", danger = true),
+      ),
+    )("Actions"),
+  )
+}
+
 // A view because the Modal is controlled — it needs local open/close state. The dialog
 // portals to document.body, fades its scrim and slides its box in via usePresence, and
 // closes on the button, the scrim, or Escape.
@@ -271,6 +298,9 @@ private def showcase: VNode =
     ),
     section("Pagination — controlled page strip (full + simple)")(
       paginationDemo(),
+    ),
+    section("Dropdown — menu button (sort menu, actions with a danger item)")(
+      dropdownDemo(),
     ),
     section("Modal — dialog over a scrim (portalled, animated)")(
       modalDemo(),

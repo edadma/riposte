@@ -72,6 +72,20 @@ type PaginationClasses = (
     dots: String,
 )
 
+/** The per-part CSS classes for a [[Dropdown]]: the `root` wrapper, the `trigger` button,
+  * its `arrow` caret, the `menu` popup, each `item`, the `divider` rule, and an item's
+  * leading `icon` slot. Highlight (`data-active`) and danger (`data-danger`) are styled via
+  * those data attributes rather than classes, mirroring [[Select]]. */
+type DropdownClasses = (
+    root: String,
+    trigger: String,
+    arrow: String,
+    menu: String,
+    item: String,
+    divider: String,
+    icon: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -124,6 +138,11 @@ trait Skin:
   /** Classes for a [[Pagination]] strip of the given size. Returns the nav `root`, each
     * `item` button, the `active`-page modifier, and the `dots` gap span. */
   def pagination(size: Size): PaginationClasses
+
+  /** Classes for a [[Dropdown]]'s parts. Stateless — the open/active/danger states are
+    * mirrored to `data-*` and styled from there, so this returns the structural classes
+    * only. */
+  def dropdown: DropdownClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -198,6 +217,17 @@ object SalleSkin extends Skin:
       item = bem("salle-pagination__item", size.token),
       active = "salle-pagination__item--active",
       dots = "salle-pagination__dots",
+    )
+
+  def dropdown: DropdownClasses =
+    (
+      root = "salle-dropdown",
+      trigger = "salle-dropdown__trigger",
+      arrow = "salle-dropdown__arrow",
+      menu = "salle-dropdown__menu",
+      item = "salle-dropdown__item",
+      divider = "salle-dropdown__divider",
+      icon = "salle-dropdown__icon",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -297,6 +327,21 @@ object DaisySkin extends Skin:
       item = btn + " join-item",
       active = "btn-active",
       dots = btn + " join-item btn-disabled",
+    )
+
+  // DaisyUI's `dropdown` wraps a `btn` trigger over a `dropdown-content menu` popup. The
+  // keyboard-active highlight is the known DaisyUI gap (no "active descendant" class), same
+  // as Select; SalleSkin styles it via `data-active`.
+  def dropdown: DropdownClasses =
+    (
+      root = "dropdown",
+      trigger = "btn flex items-center gap-2",
+      arrow = "opacity-60 shrink-0",
+      menu =
+        "dropdown-content menu bg-base-100 rounded-box shadow-lg border border-base-300 min-w-52 mt-1 z-[1] p-1",
+      item = "rounded-lg",
+      divider = "divider my-0",
+      icon = "inline-flex items-center shrink-0",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
