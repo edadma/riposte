@@ -883,4 +883,162 @@
       animation: none;
     }
   }
+
+  /* ======================================================================== */
+  /* Badge / Tag (small label pills)                                          */
+  /* ======================================================================== */
+
+  /* The base is a quiet neutral-tinted pill; `--_c` is the badge's colour, consumed by the
+     colour and variant modifiers below (mirrors the Button/Input `--_c` pattern). */
+  .salle-badge,
+  .salle-tag {
+    --_c: var(--salle-color-neutral);
+    --_fg: var(--salle-btn-fg, #ffffff);
+    --_py: 0.2rem;
+    --_px: 0.55rem;
+    --_fs: 0.8rem;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font: inherit;
+    font-size: var(--_fs);
+    font-weight: 600;
+    line-height: 1.2;
+    padding: var(--_py) var(--_px);
+    border: 1px solid transparent;
+    border-radius: calc(var(--salle-radius) * 0.6);
+    background: var(--_c);
+    color: var(--_fg);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  /* Colour modifiers — each sets the one `--_c` the rules above consume. The two light
+     fills flip to dark text via their *-content token so they stay legible. */
+  .salle-badge--primary,
+  .salle-tag--primary {
+    --_c: var(--salle-color-primary);
+  }
+  .salle-badge--secondary,
+  .salle-tag--secondary {
+    --_c: var(--salle-color-secondary);
+    --_fg: var(--salle-color-secondary-content, #0f172a);
+  }
+  .salle-badge--accent,
+  .salle-tag--accent {
+    --_c: var(--salle-color-accent);
+  }
+  .salle-badge--neutral,
+  .salle-tag--neutral {
+    --_c: var(--salle-color-neutral);
+  }
+  .salle-badge--info,
+  .salle-tag--info {
+    --_c: var(--salle-color-info);
+  }
+  .salle-badge--success,
+  .salle-tag--success {
+    --_c: var(--salle-color-success);
+  }
+  .salle-badge--warning,
+  .salle-tag--warning {
+    --_c: var(--salle-color-warning);
+    --_fg: var(--salle-color-warning-content, #1c1917);
+  }
+  .salle-badge--error,
+  .salle-tag--error {
+    --_c: var(--salle-color-error);
+  }
+
+  /* Variant modifiers — reinterpret `--_c` as outline, soft tint, or dashed border. */
+  .salle-badge--outline,
+  .salle-tag--outline {
+    background: transparent;
+    color: var(--_c);
+    border-color: var(--_c);
+  }
+  .salle-badge--soft,
+  .salle-tag--soft {
+    background: color-mix(in srgb, var(--_c) 16%, transparent);
+    color: var(--_c);
+  }
+  .salle-badge--dash,
+  .salle-tag--dash {
+    background: transparent;
+    color: var(--_c);
+    border: 1px dashed var(--_c);
+  }
+
+  /* Size modifiers — set the padding/font-size custom properties the base uses. */
+  .salle-badge--xs,
+  .salle-tag--xs {
+    --_py: 0.05rem;
+    --_px: 0.35rem;
+    --_fs: 0.65rem;
+  }
+  .salle-badge--sm,
+  .salle-tag--sm {
+    --_py: 0.12rem;
+    --_px: 0.45rem;
+    --_fs: 0.72rem;
+  }
+  .salle-badge--md,
+  .salle-tag--md {
+    --_py: 0.2rem;
+    --_px: 0.55rem;
+    --_fs: 0.8rem;
+  }
+  .salle-badge--lg,
+  .salle-tag--lg {
+    --_py: 0.3rem;
+    --_px: 0.7rem;
+    --_fs: 0.9rem;
+  }
+  .salle-badge--xl,
+  .salle-tag--xl {
+    --_py: 0.4rem;
+    --_px: 0.9rem;
+    --_fs: 1rem;
+  }
+
+  /* The tag's close button: a bare glyph that brightens on hover; it inherits the tag's
+     text colour so it reads correctly across every colour/variant. */
+  .salle-tag__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-start: 0.1rem;
+    margin-inline-end: -0.15rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    border-radius: 50%;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+  }
+  .salle-tag__close:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 20%, transparent);
+  }
+  .salle-tag__close:focus-visible {
+    outline: 2px solid var(--salle-focus);
+    outline-offset: 1px;
+  }
+
+  .salle-tag__icon {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Checkable tags read as interactive: a subtle hover lift and a focus ring. */
+  .salle-tag--checkable {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .salle-tag--checkable:focus-visible {
+    outline: 2px solid var(--salle-focus);
+    outline-offset: 2px;
+  }
 }

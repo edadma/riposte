@@ -125,6 +125,43 @@ private def skeletonDemo: VNode =
     ),
   )
 
+// Badges (resolution + "New"), variants, dismissible category Tags, and a row of
+// CheckableTag filter chips that remember which are on.
+private val badgeDemo = view {
+  val (filters, setFilters, _) = useState(Set("Nature"))
+  def chip(name: String): VNode =
+    CheckableTag(checked = filters.contains(name), onChange = on =>
+      setFilters(if on then filters + name else filters - name),
+    )(name)
+  div(
+    cls := "demo-grid-stack",
+    row(
+      Seq(
+        Badge(color = Color.Primary)("4K"),
+        Badge(color = Color.Accent)("8K"),
+        Badge(color = Color.Success, pill = true)("New"),
+        Badge(color = Color.Error, dot = true)(),
+      ),
+    ),
+    row(
+      Seq(
+        Badge(color = Color.Info, variant = BadgeVariant.Solid)("solid"),
+        Badge(color = Color.Info, variant = BadgeVariant.Outline)("outline"),
+        Badge(color = Color.Info, variant = BadgeVariant.Soft)("soft"),
+        Badge(color = Color.Info, variant = BadgeVariant.Dash)("dash"),
+      ),
+    ),
+    row(
+      Seq(
+        Tag(color = Color.Neutral, closable = true)("Landscape"),
+        Tag(color = Color.Primary, closable = true)("Minimal"),
+        Tag(color = Color.Accent, variant = BadgeVariant.Soft, closable = true)("Dark"),
+      ),
+    ),
+    row(Seq("Nature", "Abstract", "Space", "City").map(chip)),
+  )
+}
+
 // A view because the Modal is controlled — it needs local open/close state. The dialog
 // portals to document.body, fades its scrim and slides its box in via usePresence, and
 // closes on the button, the scrim, or Escape.
@@ -217,6 +254,9 @@ private def showcase: VNode =
     ),
     section("Skeleton — loading placeholders (image, text, avatar, grid)")(
       skeletonDemo,
+    ),
+    section("Badge / Tag — labels, dismissible tags, filter chips")(
+      badgeDemo(),
     ),
     section("Modal — dialog over a scrim (portalled, animated)")(
       modalDemo(),

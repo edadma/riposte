@@ -54,6 +54,14 @@ type ModalClasses = (
     footer: String,
 )
 
+/** The per-part CSS classes for a [[Tag]]. A tag is a badge plus a close button; the root
+  * carries the badge look and the close button needs its own class, so the skin returns
+  * both. (Plain [[Badge]] needs only one class, so it has a `String`-returning method.) */
+type TagClasses = (
+    root: String,
+    close: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -92,6 +100,16 @@ trait Skin:
     * shimmer/pulse; a skin may render a still block when it is false. One class (not a
     * parts tuple) — the composites (text, image) reuse it for each of their pieces. */
   def skeleton(animated: Boolean): String
+
+  /** The class for a [[Badge]] of the given colour, variant, and size. One class — a badge
+    * is a single element. [[Tag]] reuses this look for its root via [[tag]], and
+    * [[CheckableTag]] reuses it directly for its two states. */
+  def badge(color: Color, variant: BadgeVariant, size: Size): String
+
+  /** Classes for a [[Tag]]'s parts: the `root` (the badge look) and the `close` button.
+    * The root mirrors [[badge]]; the close button gets its own class so a skin can size and
+    * style the dismiss affordance independently. */
+  def tag(color: Color, variant: BadgeVariant, size: Size): TagClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -150,6 +168,15 @@ object SalleSkin extends Skin:
   // user prefers reduced motion and the caller passes animated = false).
   def skeleton(animated: Boolean): String =
     bem("salle-skeleton", if animated then "" else "static")
+
+  def badge(color: Color, variant: BadgeVariant, size: Size): String =
+    bem("salle-badge", color.token, variant.token, size.token)
+
+  def tag(color: Color, variant: BadgeVariant, size: Size): TagClasses =
+    (
+      root = bem("salle-tag", color.token, variant.token, size.token),
+      close = "salle-tag__close",
+    )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
   * the classes (`btn btn-primary btn-outline btn-sm`); the styles come from DaisyUI
@@ -227,6 +254,17 @@ object DaisySkin extends Skin:
   // plain muted fill (`bg-base-300 rounded-box`) since there is no "static skeleton" class.
   def skeleton(animated: Boolean): String =
     if animated then "skeleton" else "bg-base-300 rounded-box"
+
+  def badge(color: Color, variant: BadgeVariant, size: Size): String =
+    daisy("badge", color.token, variant.token, size.token)
+
+  // A tag is DaisyUI's badge plus an inline gap for the icon/close; the close button reuses
+  // the tiny circular ghost-button look (matching Modal's close affordance).
+  def tag(color: Color, variant: BadgeVariant, size: Size): TagClasses =
+    (
+      root = daisy("badge", color.token, variant.token, size.token) + " gap-1 inline-flex items-center",
+      close = "btn btn-xs btn-circle btn-ghost",
+    )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
 // `base--token` convention (`salle-btn salle-btn--primary`).
