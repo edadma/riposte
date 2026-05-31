@@ -13,6 +13,33 @@ import io.github.edadma.riposte.*
 // than in the component, as DaisyUI-React libraries do) means the maps are built once
 // and a component's call sites stay identical across every skin.
 
+/** The per-part CSS classes for a [[Select]]. The listbox renders the same DOM under
+  * every skin; this names each stylable piece so a skin can target them independently
+  * (a single class string can't, since the parts are distinct elements). */
+type SelectClasses = (
+    root: String,
+    trigger: String,
+    value: String,
+    arrow: String,
+    clear: String,
+    list: String,
+    option: String,
+)
+
+/** The per-part CSS classes for an [[ImageCard]]. Like [[SelectClasses]], the DOM is
+  * identical across skins; this names each stylable piece (the outer card, the
+  * aspect-ratio frame, the image, the loading skeleton, the error placeholder, and the
+  * badge / hover-overlay slots) so a skin can target them independently. */
+type ImageCardClasses = (
+    root: String,
+    frame: String,
+    img: String,
+    skeleton: String,
+    error: String,
+    badge: String,
+    overlay: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -31,6 +58,16 @@ trait Skin:
 
   /** Classes for a [[Toggle]] (switch) of the given colour and size. */
   def toggle(color: Color, size: Size): String
+
+  /** Classes for a [[Select]]'s parts. A custom listbox has several styled pieces
+    * whose DOM is identical across skins; only the classes differ, so the skin returns
+    * one class string per part rather than a single string. `invalid` overrides the
+    * colour with the error treatment, as on [[input]]. */
+  def select(color: Color, size: Size, invalid: Boolean): SelectClasses
+
+  /** Classes for an [[ImageCard]]'s parts. `rounded` requests rounded corners on the
+    * card; the active skin maps it to whatever radius treatment it uses. */
+  def imageCard(rounded: Boolean): ImageCardClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -51,6 +88,28 @@ object SalleSkin extends Skin:
 
   def toggle(color: Color, size: Size): String =
     bem("salle-toggle", color.token, size.token)
+
+  def select(color: Color, size: Size, invalid: Boolean): SelectClasses =
+    (
+      root = "salle-select",
+      trigger = bem("salle-select__trigger", if invalid then "error" else color.token, size.token),
+      value = "salle-select__value",
+      arrow = "salle-select__arrow",
+      clear = "salle-select__clear",
+      list = "salle-select__list",
+      option = "salle-select__option",
+    )
+
+  def imageCard(rounded: Boolean): ImageCardClasses =
+    (
+      root = bem("salle-image-card", if rounded then "rounded" else ""),
+      frame = "salle-image-card__frame",
+      img = "salle-image-card__img",
+      skeleton = "salle-image-card__skeleton",
+      error = "salle-image-card__error",
+      badge = "salle-image-card__badge",
+      overlay = "salle-image-card__overlay",
+    )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
   * the classes (`btn btn-primary btn-outline btn-sm`); the styles come from DaisyUI
@@ -74,6 +133,39 @@ object DaisySkin extends Skin:
 
   def toggle(color: Color, size: Size): String =
     daisy("toggle", color.token, size.token)
+
+  // DaisyUI has no custom-combobox; we reuse its `input` look for the trigger and
+  // `dropdown`/`menu` utilities for the popup, giving a native-feeling result without
+  // any salle CSS. Keyboard-active highlighting falls back to hover here (DaisyUI has
+  // no class for "active descendant"); SalleSkin styles it via `data-active`.
+  def select(color: Color, size: Size, invalid: Boolean): SelectClasses =
+    val trigger = daisy("input", if invalid then "error" else color.token, size.token)
+    (
+      root = "dropdown w-full",
+      trigger = trigger + " w-full flex items-center gap-2 cursor-pointer",
+      value = "flex-1 text-left truncate",
+      arrow = "opacity-60 shrink-0",
+      clear = "opacity-60 hover:opacity-100 cursor-pointer shrink-0",
+      list =
+        "dropdown-content menu bg-base-100 rounded-box shadow-lg border border-base-300 max-h-60 overflow-auto w-full mt-1 z-[1] flex-nowrap p-1",
+      option = "rounded-lg",
+    )
+
+  // Mapped to DaisyUI's `card` plus utilities; the hover overlay and badge corner are
+  // positioned with Tailwind utilities (best-effort, like `select` — the fully styled
+  // hover transition lives in SalleSkin's CSS). The frame is `relative` so the
+  // absolutely-positioned skeleton/error/badge/overlay anchor to it.
+  def imageCard(rounded: Boolean): ImageCardClasses =
+    (
+      root = "card bg-base-100 shadow-sm overflow-hidden group" + (if rounded then " rounded-box" else ""),
+      frame = "relative overflow-hidden w-full h-full",
+      img = "w-full h-full block",
+      skeleton = "skeleton absolute inset-0 w-full h-full",
+      error = "absolute inset-0 flex items-center justify-center bg-base-200 text-base-content/40",
+      badge = "absolute top-2 right-2 z-10",
+      overlay =
+        "absolute inset-0 flex items-end opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/60 to-transparent",
+    )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
 // `base--token` convention (`salle-btn salle-btn--primary`).

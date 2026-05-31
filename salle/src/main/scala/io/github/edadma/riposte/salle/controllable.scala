@@ -2,8 +2,8 @@ package io.github.edadma.riposte.salle
 
 import io.github.edadma.riposte.*
 
-// Hooks ported from AsterUI's conventions onto riposte's hook seam. They are plain
-// functions over the core hooks, so they compose with any component.
+// Component-specific helpers shared across salle's controls. Generic, app-level hooks
+// (useClickOutside, useIntersectionObserver, …) live in the riposte core, not here.
 
 /** Resolve a value that may be *controlled* by the caller or owned internally — the
   * pattern every interactive salle component shares. When `controlled` is `Some`,

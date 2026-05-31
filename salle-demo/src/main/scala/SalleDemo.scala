@@ -19,10 +19,50 @@ private val variants = Seq(
 
 private val sizes = Seq(Size.Xs, Size.Sm, Size.Md, Size.Lg, Size.Xl)
 
+private val countries = Seq(
+  Opt("us", "United States"),
+  Opt("ca", "Canada"),
+  Opt("mx", "Mexico"),
+  Opt("br", "Brazil"),
+  Opt("xx", "Unavailable", disabled = true),
+)
+
+// A handful of public-domain Picsum images at a wallpaper-ish ratio, to show the grid,
+// lazy-load, badge and hover-overlay slots of ImageCard. The `seed` keeps each tile
+// stable across reloads.
+private val wallpapers = Seq(
+  ("forest", "Forest ridge", "4K"),
+  ("ocean", "Ocean cliffs", "5K"),
+  ("desert", "Desert dunes", "4K"),
+  ("city", "City at night", "8K"),
+  ("aurora", "Aurora", "4K"),
+  ("peaks", "Snow peaks", "6K"),
+)
+
 private def row(children: Seq[VNode]): VNode = div(cls := "demo-row", children)
 
 private def section(title: String)(body: VNode): VNode =
   div(cls := "demo-section", h2(title), body)
+
+private def wallpaperGrid: VNode =
+  div(
+    cls := "demo-grid",
+    wallpapers.map { (seed, title, res) =>
+      ImageCard(
+        src = s"https://picsum.photos/seed/$seed/600/375",
+        alt = title,
+        ratio = "16/10",
+        badge = Some(span(cls := "demo-res-badge", res)),
+        overlay = Some(
+          div(
+            cls := "demo-card-actions",
+            span(cls := "demo-card-title", title),
+            Button("Download", color = Color.Primary, size = Size.Sm),
+          ),
+        ),
+      )
+    },
+  )
 
 private def showcase: VNode =
   div(
@@ -46,6 +86,19 @@ private def showcase: VNode =
         ),
       ),
     ),
+    section("Select")(
+      row(
+        Seq(
+          Select(countries, placeholder = "Pick a country"),
+          Select(countries, defaultValue = "ca"),
+          Select(countries, clearable = true, defaultValue = "us"),
+          Select(countries, color = Color.Primary, defaultValue = "br"),
+          Select(countries, size = Size.Sm),
+          Select(countries, disabled = true, defaultValue = "mx"),
+          Select(countries, invalid = true),
+        ),
+      ),
+    ),
     section("Checkbox")(
       row(
         Seq(
@@ -65,6 +118,9 @@ private def showcase: VNode =
           Toggle(label = "Accent", color = Color.Accent, defaultChecked = true),
         ),
       ),
+    ),
+    section("ImageCard — wallpaper grid (lazy-loaded, hover for actions)")(
+      wallpaperGrid,
     ),
   )
 

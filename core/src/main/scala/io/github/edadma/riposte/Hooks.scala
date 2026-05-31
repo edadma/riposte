@@ -13,7 +13,12 @@ val noCleanup: Cleanup = () => ()
 // the component's `Hooks ?=> VNode` render context — and delegates to it, so a
 // component body calls `useState(0)` rather than naming a `hooks` parameter.
 
-def useState[T](initial: T)(using h: Hooks): (T, T => Unit, (T => T) => Unit) =
+// `initial` is by-name, so it is evaluated only on the first render (when the state
+// cell is created) and never again. Pass a plain value as usual — `useState(0)` — or an
+// allocating expression you don't want re-run each render — `useState(new Buffer)`
+// builds the Buffer once, not on every render (the lazy-initializer form, folded into
+// the one signature rather than a separate `useState(() => …)`).
+def useState[T](initial: => T)(using h: Hooks): (T, T => Unit, (T => T) => Unit) =
   h.useState(initial)
 
 def useEffect(body: () => Cleanup, deps: Array[Any] | Null)(using h: Hooks): Unit =
@@ -112,13 +117,17 @@ final class Hooks private[riposte] ():
   //
   //   setCount(5)
   //   updateCount(_ + 1)
-  def useState[T](initial: T): (T, T => Unit, (T => T) => Unit) =
+  // `initial` is by-name: it is evaluated only here, the once, when the cell is first
+  // created — on every later render the stored value is reused and `initial` is never
+  // touched. That gives lazy initialization for free (an allocating initial expression
+  // isn't re-run each render) through the same signature a plain value uses.
+  def useState[T](initial: => T): (T, T => Unit, (T => T) => Unit) =
     val slot = index
     if slot >= cells.length then cells += initial
     index = slot + 1
     val current = cells(slot).asInstanceOf[T]
-    val set:    T => Unit       = v  => cellSet(slot, v)
-    val update: (T => T) => Unit = f  => cellSet(slot, f(cellGet[T](slot)))
+    val set:    T => Unit        = v => cellSet(slot, v)
+    val update: (T => T) => Unit = f => cellSet(slot, f(cellGet[T](slot)))
     (current, set, update)
 
   private[riposte] def cellGet[T](slot: Int): T = cells(slot).asInstanceOf[T]
