@@ -43,10 +43,10 @@ three siblings depend on the core transitively.
 | `riposte-salle`   | Styled, skinnable component library (Button, Input, Checkbox, Toggle) |
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.0.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.0.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.0.1"
+libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.0.2"
 ```
 
 ## Repository layout
