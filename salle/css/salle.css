@@ -728,4 +728,116 @@
     --_px: 1.1rem;
     --_fs: 1.25rem;
   }
+
+  /* ======================================================================== */
+  /* Modal (dialog over a dimming scrim)                                      */
+  /* ======================================================================== */
+
+  /* The overlay is the full-screen scrim and the positioning context for the box. It
+     fades via data-state; enter and exit share the hidden look so the dialog animates
+     both in and out (usePresence keeps it mounted through the exit). */
+  .salle-modal__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 4rem 1rem 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .salle-modal__overlay--centered {
+    align-items: center;
+    padding: 1rem;
+  }
+  .salle-modal__overlay[data-state="open"] {
+    opacity: 1;
+  }
+  .salle-modal__overlay[data-state="enter"],
+  .salle-modal__overlay[data-state="exit"] {
+    opacity: 0;
+  }
+
+  .salle-modal__box {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 32rem;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 2rem);
+    background: var(--salle-input-bg, #ffffff);
+    color: var(--salle-input-fg, #0f172a);
+    border-radius: var(--salle-radius);
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+    outline: none;
+    opacity: 0;
+    transform: translateY(-1rem) scale(0.97);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .salle-modal__overlay[data-state="open"] .salle-modal__box {
+    opacity: 1;
+    transform: none;
+  }
+
+  .salle-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex: none;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--salle-input-border, #cbd5e1);
+  }
+  .salle-modal__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  .salle-modal__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--salle-radius);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+  }
+  .salle-modal__close:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 12%, transparent);
+  }
+  .salle-modal__close:focus-visible {
+    outline: 2px solid var(--salle-focus);
+    outline-offset: 2px;
+  }
+
+  /* The body is the one scrolling region, so a tall dialog keeps its header and footer
+     pinned while the content scrolls. */
+  .salle-modal__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem;
+  }
+
+  .salle-modal__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex: none;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--salle-input-border, #cbd5e1);
+  }
 }

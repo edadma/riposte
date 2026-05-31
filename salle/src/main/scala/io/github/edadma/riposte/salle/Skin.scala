@@ -40,6 +40,20 @@ type ImageCardClasses = (
     overlay: String,
 )
 
+/** The per-part CSS classes for a [[Modal]]. The dialog renders the same DOM under every
+  * skin; this names each stylable piece — the full-screen scrim/overlay, the dialog box,
+  * the header band, the title, the close affordance, the scrollable body, and the footer
+  * action row — so a skin can target them independently. */
+type ModalClasses = (
+    overlay: String,
+    box: String,
+    header: String,
+    title: String,
+    close: String,
+    body: String,
+    footer: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -68,6 +82,11 @@ trait Skin:
   /** Classes for an [[ImageCard]]'s parts. `rounded` requests rounded corners on the
     * card; the active skin maps it to whatever radius treatment it uses. */
   def imageCard(rounded: Boolean): ImageCardClasses
+
+  /** Classes for a [[Modal]]'s parts. `centered` vertically centres the dialog box
+    * (versus anchoring it toward the top); the active skin maps it to its own
+    * positioning. */
+  def modal(centered: Boolean): ModalClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -109,6 +128,17 @@ object SalleSkin extends Skin:
       error = "salle-image-card__error",
       badge = "salle-image-card__badge",
       overlay = "salle-image-card__overlay",
+    )
+
+  def modal(centered: Boolean): ModalClasses =
+    (
+      overlay = bem("salle-modal__overlay", if centered then "centered" else ""),
+      box = "salle-modal__box",
+      header = "salle-modal__header",
+      title = "salle-modal__title",
+      close = "salle-modal__close",
+      body = "salle-modal__body",
+      footer = "salle-modal__footer",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -165,6 +195,22 @@ object DaisySkin extends Skin:
       badge = "absolute top-2 right-2 z-10",
       overlay =
         "absolute inset-0 flex items-end opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/60 to-transparent",
+    )
+
+  // DaisyUI's `modal` is the full-screen scrim and `modal-box` the dialog; we only render
+  // it while open, so emitting `modal-open` keeps it shown without a native <dialog>. The
+  // close button reuses DaisyUI's circular ghost-button look and the footer its
+  // `modal-action` row. Daisy centres the box by default, so `centered` adds nothing and
+  // the non-centered case nudges it toward the top with `modal-top`.
+  def modal(centered: Boolean): ModalClasses =
+    (
+      overlay = "modal modal-open" + (if centered then "" else " modal-top"),
+      box = "modal-box",
+      header = "flex items-center justify-between gap-4 mb-2",
+      title = "text-lg font-bold",
+      close = "btn btn-sm btn-circle btn-ghost",
+      body = "py-2",
+      footer = "modal-action",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
