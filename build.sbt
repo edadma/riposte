@@ -1,8 +1,49 @@
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
+import xerial.sbt.Sonatype.sonatypeCentralHost
 
 ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
 ThisBuild / version      := "0.0.1"
+
+// --- Maven Central publishing ----------------------------------------------
+// Metadata for the generated POM and the Sonatype Central wiring, mirroring the
+// edadma cross-project template. Credentials live outside the repo (in
+// ~/.sbt/.../sonatype.sbt), so nothing secret is checked in. Only the four real
+// library modules publish; the demos and the root aggregator skip it.
+ThisBuild / organizationName     := "edadma"
+ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
+ThisBuild / licenses             := Seq("ISC" -> url("https://opensource.org/licenses/ISC"))
+ThisBuild / versionScheme        := Some("semver-spec")
+ThisBuild / homepage             := Some(url("https://github.com/edadma/riposte"))
+ThisBuild / description :=
+  "A React-inspired frontend library for Scala.js: function components, hooks, and a " +
+    "typed DSL over an immutable VNode tree diffed against the live DOM by a reconciler."
+ThisBuild / scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/edadma/riposte"),
+    "scm:git@github.com:edadma/riposte.git",
+  ),
+)
+ThisBuild / developers := List(
+  Developer(
+    id = "edadma",
+    name = "Edward A. Maxedon, Sr.",
+    email = "edadma@gmail.com",
+    url = url("https://github.com/edadma"),
+  ),
+)
+
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
+ThisBuild / sonatypeProfileName    := "io.github.edadma"
+ThisBuild / publishTo              := sonatypePublishToBundle.value
+ThisBuild / publishMavenStyle      := true
+ThisBuild / Test / publishArtifact := false
+ThisBuild / publishConfiguration :=
+  publishConfiguration.value.withOverwrite(true).withChecksums(Vector.empty)
+
+// `publishMavenStyle` is read by the publish task rather than another setting, so
+// the unused-key linter flags the ThisBuild form; it is genuinely in effect.
+Global / excludeLintKeys += publishMavenStyle
 
 // Root aggregator. It has no sources of its own and is never published; it exists
 // so that a task run at the repo root (e.g. `sbt test`) fans out to every module.
@@ -12,8 +53,9 @@ lazy val root = project
   .in(file("."))
   .aggregate(riposte, atoms, router, salle, salleDemo, demo)
   .settings(
-    name           := "riposte-root",
-    publish / skip := true,
+    name                := "riposte-root",
+    publish / skip      := true,
+    publishLocal / skip := true,
   )
 
 // riposte — a React-style virtual-DOM UI library for Scala.js. The published
