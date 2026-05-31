@@ -16,7 +16,8 @@ class PaginationSpec extends AnyFunSuite:
     dom.document.body.appendChild(c)
     c
 
-  private def nav(c: dom.Element): dom.Element = c.querySelector("[data-part=pagination]")
+  private def nav(c: dom.Element): dom.html.Element =
+    c.querySelector("[data-part=pagination]").asInstanceOf[dom.html.Element]
   private def pages(c: dom.Element): Seq[Int] =
     val ns = c.querySelectorAll("[data-part=page]")
     (0 until ns.length).map(i => ns(i).asInstanceOf[dom.html.Element].getAttribute("data-page").toInt)
