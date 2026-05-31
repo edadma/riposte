@@ -141,7 +141,8 @@ lazy val salle = project
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(riposte)
   .settings(
-    name := "salle",
+    // Published as `riposte-salle`; the project id stays `salle` for `sbt salle/test`.
+    name := "riposte-salle",
     scalacOptions ++= commonScalacOptions,
     Test / jsEnv := new JSDOMNodeJSEnv(),
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,

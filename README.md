@@ -32,21 +32,21 @@ val Counter = view {
 
 ## Modules
 
-Riposte ships as three independently published artifacts under `io.github.edadma`; the two
-siblings depend on the core transitively.
+Riposte ships as four independently published artifacts under `io.github.edadma`; the
+three siblings depend on the core transitively.
 
 | Artifact          | What it gives you                                  |
 |-------------------|----------------------------------------------------|
 | `riposte`         | The core: components, hooks, the DSL, rendering     |
 | `riposte-atoms`   | Jotai-inspired atomic shared state                  |
 | `riposte-router`  | Client-side routing for single-page apps            |
-| `salle`           | Styled, skinnable component library (Button, Input, Checkbox, Toggle) |
+| `riposte-salle`   | Styled, skinnable component library (Button, Input, Checkbox, Toggle) |
 
 ```scala
 libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.0.1"
 libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.0.1"
 libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.1"
-libraryDependencies += "io.github.edadma" %%% "salle"          % "0.0.1"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.0.1"
 ```
 
 ## Repository layout
@@ -54,7 +54,7 @@ libraryDependencies += "io.github.edadma" %%% "salle"          % "0.0.1"
 - `core/` — the `riposte` library (the published artifact)
 - `atoms/` — `riposte-atoms`, atomic state built on the core's `useSyncExternalStore` seam
 - `router/` — `riposte-router`, client-side routing on the same public seam
-- `salle/` — `salle`, a styled component library built on the core's DSL + hooks
+- `salle/` — `riposte-salle`, a styled component library built on the core's DSL + hooks
 - `demo/` — a runnable showcase (its own subproject, never published)
 - `salle-demo/` — a runnable showcase for salle (its own subproject, never published)
 - the repo root is a thin aggregator; a task run there fans out to every module
