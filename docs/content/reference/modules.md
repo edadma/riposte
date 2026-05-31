@@ -50,8 +50,20 @@ See [Components & the DSL](/guide/components/).
 | `useTransition(target, durationMs)`    | An eased `Double` animated each frame                |
 | `useSyncExternalStore(sub, snapshot)`  | Subscribe to an external store                       |
 
-Dependency arrays: `Array(a, b)` re-runs on change, `Array()` runs once, `null` runs every
-render. Effect cleanups return a function or `noCleanup`. See [Hooks](/guide/hooks/).
+`useState`'s `initial` is by-name (evaluated once), giving lazy initialization through the
+same signature. Dependency arrays: `Array(a, b)` re-runs on change, `Array()` runs once,
+`null` runs every render. Effect cleanups return a function or `noCleanup`.
+
+**DOM hooks** (built on the primitives, for common DOM patterns):
+
+| Hook                                                  | Does                                          |
+|-------------------------------------------------------|-----------------------------------------------|
+| `useEventListener(target, event, handler)`            | Subscribe to a DOM event for the lifetime     |
+| `useClickOutside(ref, active, handler)`               | Fire when a press lands outside `ref`         |
+| `useMediaQuery(query)`                                | Live `Boolean` for a CSS media query          |
+| `useIntersectionObserver(ref, …)`                     | `Boolean` viewport visibility (lazy load)     |
+
+See [Hooks](/guide/hooks/).
 
 ### The DSL
 
@@ -119,9 +131,9 @@ A styled component library on top of the core.
   (default, styled by `salle.css`) and `DaisySkin` (DaisyUI vocabulary). Set one with
   `SkinProvider(skin) { … }`; read it with `useSkin()`.
 - **Theming** — one open `data-theme` set (ships `light`/`dark`, `system` follows the OS).
-  `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` and
-  `ThemeSelect(themes)`.
-- **Components** — `Button`, `Input`, `Checkbox`, `Toggle`.
+  `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon
+  button) and `ThemeSelect(themes)`.
+- **Components** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`), `ImageCard`.
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
 
 See [Component library (salle)](/guide/salle/).
