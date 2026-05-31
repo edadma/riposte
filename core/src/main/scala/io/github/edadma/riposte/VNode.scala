@@ -72,8 +72,15 @@ sealed trait Prop
 
 final case class Attr(value: String)              extends Prop
 final case class BoolAttr(value: Boolean)         extends Prop
-final case class Handler(fn: dom.Event => Unit)   extends Prop
+final case class Handler(fn: dom.Event => Unit, options: EventOptions = EventOptions()) extends Prop
 final case class StyleProp(decls: Map[String, String]) extends Prop
+
+// addEventListener flags for a handler. `capture` listens in the capture phase
+// (and is part of the listener's identity, so a capture and a bubble handler for
+// the same event coexist); `once` auto-removes the listener after one fire; and
+// `passive` promises the handler won't `preventDefault`, letting the browser
+// scroll/touch without blocking on it.
+final case class EventOptions(capture: Boolean = false, once: Boolean = false, passive: Boolean = false)
 
 // Inner HTML set verbatim from a trusted string (via `unsafeHtml`). Written to
 // `element.innerHTML`, replacing the element's content. Trusted input only.

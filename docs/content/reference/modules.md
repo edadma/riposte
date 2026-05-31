@@ -49,6 +49,10 @@ See [Components & the DSL](/guide/components/).
 | `useContext(ctx)`                      | The nearest provided context value                   |
 | `useTransition(target, durationMs)`    | An eased `Double` animated each frame                |
 | `useSyncExternalStore(sub, snapshot)`  | Subscribe to an external store                       |
+| `useImperativeHandle(ref, factory, deps)` | Expose an imperative handle to a parent's `ref`   |
+| `useDeferredValue(value)`              | A copy of `value` that lags one commit               |
+| `useDebouncedValue(value, delayMs)`    | `value` after it stops changing for `delayMs`        |
+| `useThrottledValue(value, intervalMs)` | `value` at most once per `intervalMs` (leading+trailing) |
 
 `useState`'s `initial` is by-name (evaluated once), giving lazy initialization through the
 same signature. Dependency arrays: `Array(a, b)` re-runs on change, `Array()` runs once,
@@ -75,7 +79,10 @@ See [Hooks](/guide/hooks/).
   `aria(name)` / `data(name)` for the long tail; `css(name -> value, …)` for inline styles;
   enumerated booleans render `"true"`/`"false"`.
 - **Events** — typed `EventKey := handler` (`onClick`, `onInput`, `onKeyDown`, …);
-  `on(name)` for the rest; `targetValue(e)` reads an input's value.
+  `on(name)` for the rest; `targetValue(e)` reads an input's value. Chain `.capture`,
+  `.once`, and/or `.passive` for listener options (`onScroll.passive := h`).
+- **Refs** — `ref := box` binds an element to a `useRef` box (or a callback); pass a
+  ref down as a prop to forward it, and `useImperativeHandle` to expose a custom handle.
 - **Keys** — `key := id` on an element (or a second arg to a component) for stable list
   identity.
 - **Conditionals** — `when(cond)(node)`, `unless(cond)(node)`.

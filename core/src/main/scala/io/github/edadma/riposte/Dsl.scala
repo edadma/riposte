@@ -117,8 +117,25 @@ final class EnumAttrKey(val name: String):
 // `onKeyDown` a `dom.KeyboardEvent`. The handler is stored untyped — the DOM
 // hands the listener the matching event subtype, so the cast to `dom.Event =>
 // Unit` is sound (and erases to a no-op, since functions erase to Function1).
-final class EventKey[E <: dom.Event](val name: String):
-  def :=(fn: E => Unit): Mod = PropMod("on:" + name, Handler(fn.asInstanceOf[dom.Event => Unit]))
+// The `.capture` / `.once` / `.passive` builders return a new key carrying the
+// flag, so they chain: `onScroll.passive := h`, `onClick.capture := h`,
+// `onClick.capture.once := h`. A capture key compiles to a distinct listener slot
+// (`on:click:capture`) so a capture and a bubble handler for the same event can
+// both be attached.
+final class EventKey[E <: dom.Event](val name: String, private val options: EventOptions = EventOptions()):
+  def :=(fn: E => Unit): Mod =
+    val key = if options.capture then s"on:$name:capture" else s"on:$name"
+    PropMod(key, Handler(fn.asInstanceOf[dom.Event => Unit], options))
+
+  /** Listen in the capture phase (root → target) instead of bubbling. */
+  def capture: EventKey[E] = new EventKey(name, options.copy(capture = true))
+
+  /** Remove the listener automatically after it fires once. Re-arms on re-render. */
+  def once: EventKey[E] = new EventKey(name, options.copy(once = true))
+
+  /** Mark the listener passive — it won't call `preventDefault`, so the browser
+    * needn't wait on it (a scroll/touch performance win). */
+  def passive: EventKey[E] = new EventKey(name, options.copy(passive = true))
 
 // Inline styles. `style := Map("color" -> "red")` or the variadic `css(...)`.
 object style:

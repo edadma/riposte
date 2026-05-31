@@ -54,6 +54,81 @@ def useSyncExternalStore[T](
 )(using h: Hooks): T =
   h.useSyncExternalStore(subscribe, getSnapshot)
 
+// Expose an imperative handle to the component's parent. The parent owns a ref
+// (`useRef[Handle | Null](null)`) and passes it down as a prop; the child fills it
+// here with a value the parent can then call into — the analogue of React's
+// `useImperativeHandle` (and the "forward a ref" pattern is simply passing a ref
+// prop and binding it to an element with `ref := …`). The handle is (re)built when
+// `deps` change, in a layout effect so it is set before paint — and cleared on
+// unmount, hence the `| Null` handle type.
+def useImperativeHandle[T](ref: Ref[T], factory: () => T, deps: Array[Any] | Null)(using Hooks): Unit =
+  useLayoutEffect(
+    () =>
+      ref.current = factory()
+      () => ref.current = null.asInstanceOf[T],
+    deps,
+  )
+
+// A copy of `value` that lags one commit behind: a render that changes `value`
+// returns the previous deferred value, then a passive effect updates it — so an
+// urgent part of the UI can paint immediately while an expensive consumer of the
+// deferred value catches up just after. The synchronous-reconciler analogue of
+// React's useDeferredValue.
+def useDeferredValue[T](value: T)(using Hooks): T =
+  val (deferred, setDeferred, _) = useState(value)
+  useEffect(() => { setDeferred(value); noCleanup }, Array(value))
+  deferred
+
+// `value` once it has stopped changing for `delayMs`. Each change restarts the
+// timer, so only the final value of a burst is returned — the classic debounce,
+// for search-as-you-type and similar. The pending timer is cancelled on unmount
+// and whenever `value`/`delayMs` change (the effect's cleanup is the canceller).
+def useDebouncedValue[T](value: T, delayMs: Int)(using Hooks): T =
+  val (debounced, setDebounced, _) = useState(value)
+  useEffect(() => Timers.schedule(() => setDebounced(value), delayMs), Array(value, delayMs))
+  debounced
+
+// `value` emitted at most once per `intervalMs`: the first value is reflected
+// immediately (leading edge), further changes within a window are coalesced and
+// the latest is emitted when the window closes (trailing edge). For high-rate
+// sources like scroll, resize, or pointer move.
+def useThrottledValue[T](value: T, intervalMs: Int)(using Hooks): T =
+  val (throttled, setThrottled, _) = useState(value)
+  val started = useRef(false)
+  val cooling = useRef(false)
+  val pending = useRef[Option[T]](None)
+  val cancel  = useRef[() => Unit](() => ())
+
+  def openWindow(): Unit =
+    cancel.current = Timers.schedule(
+      () =>
+        pending.current match
+          case Some(v) =>
+            pending.current = None
+            setThrottled(v)
+            openWindow() // a fresh window so a later change is still rate-limited
+          case None =>
+            cooling.current = false,
+      intervalMs,
+    )
+
+  // Layout effect so the leading edge commits in the same flush as the change,
+  // rather than a tick later — the change reflects at once, as throttling expects.
+  useLayoutEffect(
+    () =>
+      if !started.current then started.current = true // mount: the initial value is already shown
+      else if cooling.current then pending.current = Some(value)
+      else
+        setThrottled(value) // leading edge — reflect the change at once
+        cooling.current = true
+        openWindow()
+      noCleanup,
+    Array(value),
+  )
+  // Cancel a live window when the component goes away.
+  useEffect(() => () => cancel.current(), Array())
+  throttled
+
 // Per-component hook state. Each mounted function component owns one Hooks
 // instance whose cells persist for the life of the component. Within a render,
 // hook calls bind positionally to cells in call order — so, as in React, hooks
@@ -88,6 +163,16 @@ private[riposte] object Transition:
   var now:          () => Double          = () => dom.window.performance.now()
   var requestFrame: (() => Unit) => Int    = cb => dom.window.requestAnimationFrame((_: Double) => cb())
   var cancelFrame:  Int => Unit            = id => dom.window.cancelAnimationFrame(id)
+
+// Timer indirection behind the debounce/throttle hooks: `schedule(fn, delayMs)`
+// runs `fn` after the delay and returns a cancel function. In the browser this is
+// setTimeout/clearTimeout; tests install a manual version that fires pending
+// timers on demand, so debounce/throttle behaviour is deterministic without real
+// waiting.
+private[riposte] object Timers:
+  var schedule: (() => Unit, Int) => (() => Unit) = (fn, delayMs) =>
+    val id = dom.window.setTimeout(() => fn(), delayMs.toDouble)
+    () => dom.window.clearTimeout(id)
 
 final class Hooks private[riposte] ():
 

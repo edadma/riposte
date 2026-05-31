@@ -449,8 +449,8 @@ object Reconciler:
     oldProps.foreach { (k, _) =>
       if !newProps.contains(k) then
         if k.startsWith("on:") then
-          val evt = k.drop(3)
-          listeners.get(k).foreach(el.removeEventListener(evt, _))
+          val (evt, capture) = parseListenerKey(k)
+          listeners.get(k).foreach(l => el.asInstanceOf[js.Dynamic].removeEventListener(evt, l, capture))
           listeners = listeners.removed(k)
         else removeStatic(el, k)
     }
@@ -458,17 +458,31 @@ object Reconciler:
     newProps.foreach { (k, prop) =>
       if k.startsWith("on:") then
         prop match
-          case Handler(fn) =>
-            val evt = k.drop(3)
-            listeners.get(k).foreach(el.removeEventListener(evt, _))
+          case Handler(fn, opts) =>
+            val (evt, capture) = parseListenerKey(k)
+            listeners.get(k).foreach(l => el.asInstanceOf[js.Dynamic].removeEventListener(evt, l, capture))
             val wrapped: js.Function1[dom.Event, Unit] = (e: dom.Event) => fn(e)
-            el.addEventListener(evt, wrapped)
+            el.asInstanceOf[js.Dynamic].addEventListener(evt, wrapped, listenerOptions(opts))
             listeners = listeners.updated(k, wrapped)
           case _ => ()
       else if !oldProps.get(k).contains(prop) then setStatic(el, k, prop)
     }
 
     listeners
+
+  // A listener key is `on:<event>` (bubble) or `on:<event>:capture`. Recover the
+  // DOM event name and the capture flag — the latter must match between add and
+  // remove for the browser to pair them.
+  private def parseListenerKey(k: String): (String, Boolean) =
+    val capture = k.endsWith(":capture")
+    val evt     = (if capture then k.dropRight(":capture".length) else k).drop(3)
+    (evt, capture)
+
+  // The options object for addEventListener. scalajs-dom 2.x doesn't surface
+  // AddEventListenerOptions, so build the plain `{capture, once, passive}` literal
+  // the browser API takes and pass it through js.Dynamic at the call site.
+  private def listenerOptions(opts: EventOptions): js.Any =
+    js.Dynamic.literal(capture = opts.capture, once = opts.once, passive = opts.passive)
 
   // A few attributes must be set as live DOM properties for the element to
   // behave: a re-rendered controlled input only reflects `value` as a property,
@@ -490,7 +504,7 @@ object Reconciler:
       styleObj.cssText = ""
       decls.foreach((k, v) => styleObj.setProperty(k, v))
     case RawHtml(html) => el.innerHTML = html
-    case Handler(_)    => ()
+    case _: Handler    => ()
 
   private def removeStatic(el: dom.Element, name: String): Unit =
     if isProperty(name) then el.asInstanceOf[js.Dynamic].updateDynamic(name)("")
