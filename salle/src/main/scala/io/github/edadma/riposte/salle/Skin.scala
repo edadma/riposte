@@ -88,6 +88,11 @@ trait Skin:
     * positioning. */
   def modal(centered: Boolean): ModalClasses
 
+  /** The class for a [[Skeleton]] placeholder block. `animated` requests the loading
+    * shimmer/pulse; a skin may render a still block when it is false. One class (not a
+    * parts tuple) — the composites (text, image) reuse it for each of their pieces. */
+  def skeleton(animated: Boolean): String
+
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
   * `--salle-*` custom properties for value changes, or the rules themselves for
@@ -140,6 +145,11 @@ object SalleSkin extends Skin:
       body = "salle-modal__body",
       footer = "salle-modal__footer",
     )
+
+  // One class; `--static` drops the shimmer keyframes for a still block (e.g. when the
+  // user prefers reduced motion and the caller passes animated = false).
+  def skeleton(animated: Boolean): String =
+    bem("salle-skeleton", if animated then "" else "static")
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
   * the classes (`btn btn-primary btn-outline btn-sm`); the styles come from DaisyUI
@@ -212,6 +222,11 @@ object DaisySkin extends Skin:
       body = "py-2",
       footer = "modal-action",
     )
+
+  // DaisyUI's `skeleton` is always animated (its own pulse); a still block falls back to a
+  // plain muted fill (`bg-base-300 rounded-box`) since there is no "static skeleton" class.
+  def skeleton(animated: Boolean): String =
+    if animated then "skeleton" else "bg-base-300 rounded-box"
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
 // `base--token` convention (`salle-btn salle-btn--primary`).

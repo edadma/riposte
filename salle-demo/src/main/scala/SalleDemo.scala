@@ -105,6 +105,26 @@ private def masonryDemo: VNode =
     }*,
   )
 
+// The loading placeholders: an image tile, a paragraph of text lines, a circle (avatar),
+// and a row of grid-cell SkeletonImages — what the gallery shows before thumbnails arrive.
+private def skeletonDemo: VNode =
+  div(
+    cls := "demo-grid-stack",
+    div(
+      style := Map("display" -> "flex", "gap" -> "1rem", "align-items" -> "flex-start"),
+      div(style := Map("flex" -> "0 0 12rem"), SkeletonImage(ratio = "16/10")),
+      div(
+        style := Map("flex" -> "1"),
+        SkeletonText(lines = 4),
+      ),
+      Skeleton(width = "3.5rem", height = "3.5rem", circle = true),
+    ),
+    div(
+      cls := "demo-grid",
+      Seq.fill(4)(SkeletonImage(ratio = "16/10")),
+    ),
+  )
+
 // A view because the Modal is controlled — it needs local open/close state. The dialog
 // portals to document.body, fades its scrim and slides its box in via usePresence, and
 // closes on the button, the scrim, or Escape.
@@ -194,6 +214,9 @@ private def showcase: VNode =
     ),
     section("Masonry — measured shortest-column packing")(
       masonryDemo,
+    ),
+    section("Skeleton — loading placeholders (image, text, avatar, grid)")(
+      skeletonDemo,
     ),
     section("Modal — dialog over a scrim (portalled, animated)")(
       modalDemo(),
