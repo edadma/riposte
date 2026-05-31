@@ -16,7 +16,7 @@ package io.github.edadma.riposte.salle
 enum Color:
   case Default, Primary, Secondary, Accent, Neutral, Info, Success, Warning, Error
 
-  /** The lowercase modifier token (`"primary"`); empty for [[Default]], which a
+  /** The lowercase modifier token (`"primary"`); empty for `Default`, which a
     * skin renders as "no colour class". */
   def token: String = this match
     case Default => ""

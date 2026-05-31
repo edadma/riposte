@@ -8,7 +8,7 @@ import io.github.edadma.riposte.*
 enum ButtonVariant:
   case Solid, Outline, Dash, Soft, Ghost, Link
 
-  /** The lowercase modifier token (`"outline"`); empty for [[Solid]], the default
+  /** The lowercase modifier token (`"outline"`); empty for `Solid`, the default
     * fill that needs no modifier class. */
   def token: String = this match
     case Solid => ""
