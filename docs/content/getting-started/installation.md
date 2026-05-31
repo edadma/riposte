@@ -38,7 +38,7 @@ The optional sibling artifacts are added the same way when you need them:
 ```scala
 libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.0.1"
 libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.1"
-libraryDependencies += "io.github.edadma" %%% "salle"          % "0.0.1"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.0.1"
 ```
 
 All three depend on `riposte` transitively, so you do not need to list the core separately.
