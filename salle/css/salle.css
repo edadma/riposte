@@ -1,42 +1,100 @@
 /*
  * salle.css — the default look for salle's components (the SalleSkin vocabulary).
  *
- * Include this once in your app (link it in your HTML or import it through your
- * bundler), then put any overrides AFTER it. Every rule lives in `@layer salle`,
- * a low-priority cascade layer, so your own unlayered CSS always wins — no
- * `!important`, no specificity battles.
+ * Include this once in your app (link it, or import it through your bundler), then
+ * put any overrides AFTER it. Every rule lives in `@layer salle`, a low-priority
+ * cascade layer, so your own unlayered CSS always wins — no `!important`.
  *
- * Two ways to retheme, both pure CSS:
- *   1. Values — override the `--salle-*` custom properties (colors, radius, …).
- *   2. Rules  — restyle a selector directly (e.g. add a shadow to `.salle-btn`).
+ * THEMING
+ * -------
+ * The look is entirely token-driven. Every theme is just a `[data-theme="name"]`
+ * block that sets the `--salle-*` tokens; components read the tokens, so switching
+ * `data-theme` on <html> re-themes everything with no markup change. salle ships
+ * `light` (also the `:root` default) and `dark`. To add your own theme, copy the
+ * token list below into a new block in your CSS — no salle release needed:
  *
- * Classes follow a BEM-ish convention: a base `.salle-btn` plus independent
- * modifiers for colour (`--primary`), variant (`--outline`), and size (`--sm`).
- * Each colour modifier sets a single `--_c` custom property; the variant rules then
- * reinterpret that one colour (filled, outlined, soft, …), so colour × variant
- * combine without an entry per pair.
+ *     [data-theme="dracula"] {
+ *       color-scheme: dark;
+ *       --salle-color-primary: #bd93f9;
+ *       --salle-input-bg: #282a36;
+ *       … the rest of the --salle-* contract …
+ *     }
+ *
+ * Then `useTheme`/`setTheme("dracula")` (or set the attribute yourself) selects it.
+ * "Following the OS" is handled by useTheme (it resolves "system" and sets the
+ * attribute); a no-JS page defaults to light unless you add a prefers-color-scheme
+ * block of your own.
  */
 
 @layer salle {
-  /* Design tokens. Override any of these at `:root` or under a `[data-theme=…]`
-   * block to re-theme the whole app without touching a single selector. */
-  :root {
+  /* ---- light theme (and the default when no data-theme is set) ------------- */
+  :root,
+  [data-theme="light"] {
+    color-scheme: light;
+
     --salle-radius: 0.5rem;
     --salle-focus: #93c5fd;
 
+    /* text painted on a saturated colour fill (primary/accent/…); see the two
+       *-content tokens for fills that need dark text instead. */
+    --salle-btn-fg: #ffffff;
+
     --salle-color-primary: #2563eb;
     --salle-color-secondary: #e2e8f0;
+    --salle-color-secondary-content: #0f172a;
     --salle-color-accent: #7c3aed;
     --salle-color-neutral: #334155;
     --salle-color-info: #0ea5e9;
     --salle-color-success: #16a34a;
     --salle-color-warning: #d97706;
+    --salle-color-warning-content: #1c1917;
     --salle-color-error: #dc2626;
+
+    --salle-input-bg: #ffffff;
+    --salle-input-fg: #0f172a;
+    --salle-input-border: #cbd5e1;
+    --salle-input-border-hover: #94a3b8;
+    --salle-input-placeholder: #94a3b8;
+
+    --salle-toggle-off: #cbd5e1;
   }
+
+  /* ---- dark theme --------------------------------------------------------- */
+  [data-theme="dark"] {
+    color-scheme: dark;
+
+    --salle-radius: 0.5rem;
+    --salle-focus: #3b82f6;
+
+    --salle-btn-fg: #ffffff;
+
+    --salle-color-primary: #3b82f6;
+    --salle-color-secondary: #334155;
+    --salle-color-secondary-content: #e2e8f0;
+    --salle-color-accent: #a78bfa;
+    --salle-color-neutral: #475569;
+    --salle-color-info: #38bdf8;
+    --salle-color-success: #22c55e;
+    --salle-color-warning: #f59e0b;
+    --salle-color-warning-content: #1c1917;
+    --salle-color-error: #ef4444;
+
+    --salle-input-bg: #1e293b;
+    --salle-input-fg: #e2e8f0;
+    --salle-input-border: #475569;
+    --salle-input-border-hover: #64748b;
+    --salle-input-placeholder: #64748b;
+
+    --salle-toggle-off: #475569;
+  }
+
+  /* ======================================================================== */
+  /* Button                                                                   */
+  /* ======================================================================== */
 
   .salle-btn {
     --_c: var(--salle-color-neutral);
-    --_fg: #ffffff;
+    --_fg: var(--salle-btn-fg, #ffffff);
     --_py: 0.55rem;
     --_px: 1.1rem;
     --_fs: 1rem;
@@ -57,7 +115,7 @@
     cursor: pointer;
     user-select: none;
     transition: background-color 0.15s ease, border-color 0.15s ease,
-      color 0.15s ease, opacity 0.15s ease;
+      color 0.15s ease, opacity 0.15s ease, transform 0.05s ease;
   }
 
   .salle-btn:hover {
@@ -79,13 +137,15 @@
     cursor: not-allowed;
   }
 
-  /* Colour modifiers — each sets the one `--_c` the rules above consume. */
+  /* Colour modifiers — each sets the one `--_c` the rules above consume. The two
+     light fills also flip their text colour via a *-content token so it stays legible
+     across themes. */
   .salle-btn--primary {
     --_c: var(--salle-color-primary);
   }
   .salle-btn--secondary {
     --_c: var(--salle-color-secondary);
-    --_fg: #0f172a;
+    --_fg: var(--salle-color-secondary-content, #0f172a);
   }
   .salle-btn--accent {
     --_c: var(--salle-color-accent);
@@ -101,7 +161,7 @@
   }
   .salle-btn--warning {
     --_c: var(--salle-color-warning);
-    --_fg: #1c1917;
+    --_fg: var(--salle-color-warning-content, #1c1917);
   }
   .salle-btn--error {
     --_c: var(--salle-color-error);
@@ -181,7 +241,9 @@
     --_fs: 1.25rem;
   }
 
-  /* --- Input -------------------------------------------------------------- */
+  /* ======================================================================== */
+  /* Input                                                                    */
+  /* ======================================================================== */
 
   .salle-input {
     --_c: var(--salle-color-primary); /* accent for the focus ring */
@@ -276,7 +338,9 @@
     --_fs: 1.25rem;
   }
 
-  /* --- Checkbox ----------------------------------------------------------- */
+  /* ======================================================================== */
+  /* Checkbox                                                                 */
+  /* ======================================================================== */
 
   .salle-check-label {
     display: inline-flex;
@@ -368,7 +432,9 @@
     --_sz: 1.75rem;
   }
 
-  /* --- Toggle ------------------------------------------------------------- */
+  /* ======================================================================== */
+  /* Toggle                                                                   */
+  /* ======================================================================== */
 
   .salle-toggle-label {
     display: inline-flex;

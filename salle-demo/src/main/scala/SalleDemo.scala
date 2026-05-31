@@ -83,6 +83,8 @@ private val App = view {
         variant = ButtonVariant.Outline,
         onClick = () => setSkin(if daisy then SalleSkin else DaisySkin),
       ),
+      ThemeToggle(),
+      ThemeSelect(Seq("system", "light", "dark")),
     ),
     SkinProvider(skin)(showcase),
   )

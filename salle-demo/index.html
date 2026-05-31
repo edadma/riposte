@@ -41,6 +41,7 @@
         display: flex;
         align-items: center;
         gap: 1rem;
+        flex-wrap: wrap;
         margin: 0 0 2rem;
         padding: 0.75rem 1rem;
         background: #ffffff;
@@ -65,6 +66,35 @@
         flex-wrap: wrap;
         gap: 0.6rem;
         align-items: center;
+      }
+      .salle-theme-select {
+        padding: 0.4rem 0.6rem;
+        border-radius: 0.4rem;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: inherit;
+        font: inherit;
+      }
+
+      /* Dark-mode chrome for the demo page itself. salle's components theme via their
+         own tokens; these rules just keep the surrounding page coherent. */
+      [data-theme="dark"] body {
+        background: #0b1220;
+        color: #e2e8f0;
+      }
+      [data-theme="dark"] .demo-root > p {
+        color: #94a3b8;
+      }
+      [data-theme="dark"] .demo-toolbar {
+        background: #1e293b;
+        border-color: #334155;
+      }
+      [data-theme="dark"] .demo-section > h2 {
+        color: #94a3b8;
+      }
+      [data-theme="dark"] .salle-theme-select {
+        background: #1e293b;
+        border-color: #475569;
       }
     </style>
   </head>
