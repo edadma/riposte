@@ -195,3 +195,78 @@ class DomHooksSpec extends AnyFunSuite:
            delete globalThis.__savedIO;
            delete globalThis.__ioInstances;""",
       )
+
+  // -- useResizeObserver ----------------------------------------------------
+
+  test("useResizeObserver calls onResize when the observer reports a resize"):
+    // Install a fake ResizeObserver on globalThis (same technique as the IO test: a bare
+    // `new ResizeObserver` only resolves against a real global binding). The fake records
+    // its instances so the test can drive the callback.
+    js.eval(
+      """globalThis.__savedRO = globalThis.ResizeObserver;
+         globalThis.__roInstances = [];
+         globalThis.ResizeObserver = function (cb) {
+           this._cb = cb;
+           globalThis.__roInstances.push(this);
+         };
+         globalThis.ResizeObserver.prototype.observe = function () {};
+         globalThis.ResizeObserver.prototype.disconnect = function () {};""",
+    )
+    try
+      var resizes = 0
+      val Comp = view {
+        val r = useRef[dom.Element | Null](null)
+        useResizeObserver(r, () => resizes += 1)
+        div(ref := r, "box")
+      }
+      val c = host()
+      render(Comp(), c)
+      Scheduler.flushSync()
+      assert(resizes == 0) // observer hasn't fired yet
+
+      val instances = js.eval("globalThis.__roInstances").asInstanceOf[js.Array[js.Dynamic]]
+      assert(instances.length == 1)
+      val inst = instances(0)
+      inst._cb(js.Array[js.Dynamic](), inst) // drive a resize callback
+      Scheduler.flushSync()
+      assert(resizes == 1)
+    finally
+      js.eval(
+        """globalThis.ResizeObserver = globalThis.__savedRO;
+           delete globalThis.__savedRO;
+           delete globalThis.__roInstances;""",
+      )
+
+  test("useResizeObserver falls back to a window resize listener when ResizeObserver is absent"):
+    // jsdom has no ResizeObserver, so the hook installs a window 'resize' listener instead.
+    var resizes = 0
+    val Comp = view {
+      val r = useRef[dom.Element | Null](null)
+      useResizeObserver(r, () => resizes += 1)
+      div(ref := r, "box")
+    }
+    val c = host()
+    render(Comp(), c)
+    Scheduler.flushSync()
+    dom.window.dispatchEvent(new dom.Event("resize"))
+    Scheduler.flushSync()
+    assert(resizes == 1)
+
+  test("useResizeObserver always calls the latest onResize (fallback path)"):
+    var observed          = -1
+    var bump: Int => Unit = null
+    val Comp = view {
+      val (n, set, _) = useState(0)
+      bump = set
+      val r = useRef[dom.Element | Null](null)
+      useResizeObserver(r, () => observed = n)
+      div(ref := r, s"$n")
+    }
+    val c = host()
+    render(Comp(), c)
+    Scheduler.flushSync()
+    bump(7) // re-render; the handler now closes over n = 7
+    Scheduler.flushSync()
+    dom.window.dispatchEvent(new dom.Event("resize"))
+    Scheduler.flushSync()
+    assert(observed == 7)
