@@ -28,6 +28,7 @@ val Counter = view {
 
 - [Getting started](https://riposte.edadma.dev/getting-started/) — install and mount your first component
 - [Guide](https://riposte.edadma.dev/guide/) — components & the DSL, hooks, shared state, routing
+- [Component library (salle)](https://riposte.edadma.dev/salle/) — styled, skinnable widgets, one page per component
 - [Reference](https://riposte.edadma.dev/reference/) — the published modules and their APIs
 
 ## Modules

@@ -154,4 +154,4 @@ A styled component library on top of the core.
   `MasonryResponsive` (packed columns; pure `layoutMasonry`).
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
 
-See [Component library (salle)](/guide/salle/).
+See [Component library (salle)](/salle/).

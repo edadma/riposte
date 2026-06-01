@@ -42,7 +42,7 @@ libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.0.2"
 ```
 
 All three depend on `riposte` transitively, so you do not need to list the core separately.
-([salle](/guide/salle/) is the styled component library; it also ships a `salle.css` you
+([salle](/salle/) is the styled component library; it also ships a `salle.css` you
 include in your page.)
 
 ## A DOM to render into

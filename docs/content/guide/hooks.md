@@ -250,8 +250,8 @@ else VEmpty
 `phase` is a `PresencePhase` (`Enter` on appear, `Open` once settled, `Exit` while closing);
 its `.token` gives the lowercase string (`"enter"`/`"open"`/`"exit"`) you'd put in a
 `data-state` attribute and key CSS transitions off. Keep `exitMs` in step with the CSS
-transition duration. This is the foundation salle's [`Modal`](/guide/salle/) and
-[`Toast`](/guide/salle/) overlays are built on — both mount and unmount cleanly with a
+transition duration. This is the foundation salle's [`Modal`](/salle/overlays/modal/) and
+[`Toast`](/salle/overlays/toast/) overlays are built on — both mount and unmount cleanly with a
 visible enter and exit.
 
 ## useSyncExternalStore
@@ -327,7 +327,7 @@ val visible = useIntersectionObserver(tile)
 div(ref := tile, when(visible)(img(src := heavyImageUrl)))
 ```
 
-(salle's [`ImageCard`](/guide/salle/) is built on this hook.)
+(salle's [`ImageCard`](/salle/display/image-card/) is built on this hook.)
 
 **`useResizeObserver(ref, onResize)`** calls `onResize` whenever the element held by `ref`
 changes size — the building block for any layout that recomputes when its *container*
@@ -340,7 +340,7 @@ useResizeObserver(box, () => remeasure())
 div(ref := box, /* … */)
 ```
 
-(salle's [`Masonry`](/guide/salle/) measures with this hook.)
+(salle's [`Masonry`](/salle/layout/masonry/) measures with this hook.)
 
 ## Rate-limiting a value
 
