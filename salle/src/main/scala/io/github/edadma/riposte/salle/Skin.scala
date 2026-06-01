@@ -168,6 +168,20 @@ trait Skin:
     * enter/exit phase is mirrored to `data-state` and styled from there. */
   def toast(kind: ToastType): ToastClasses
 
+  /** The class for a [[Spinner]] indicator of the given type, size, and colour. One class —
+    * the mark is a single decorative element; the wrapper/overlay structure around it is plain
+    * layout, the same under any skin. */
+  def spinner(kind: SpinnerType, size: Size, color: Color): String
+
+  /** The class for a linear [[Progress]] bar of the given colour. One class on the native
+    * `<progress>` element; the determinate value and the indeterminate state ride the
+    * element's attributes, not the class. */
+  def progress(color: Color): String
+
+  /** The class for a [[RadialProgress]] ring of the given colour. One class; the value, size,
+    * and thickness ride inline custom properties, not the class. */
+  def radialProgress(color: Color): String
+
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
   * `--salle-*` custom properties for value changes, or the rules themselves for
@@ -267,6 +281,15 @@ object SalleSkin extends Skin:
       description = "salle-toast__description",
       close = "salle-toast__close",
     )
+
+  def spinner(kind: SpinnerType, size: Size, color: Color): String =
+    bem("salle-spinner", kind.token, size.token, color.token)
+
+  def progress(color: Color): String =
+    bem("salle-progress", color.token)
+
+  def radialProgress(color: Color): String =
+    bem("salle-radial-progress", color.token)
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
   * the classes (`btn btn-primary btn-outline btn-sm`); the styles come from DaisyUI
@@ -411,6 +434,20 @@ object DaisySkin extends Skin:
       description = "text-sm opacity-80",
       close = "btn btn-xs btn-circle btn-ghost",
     )
+
+  // DaisyUI's `loading` is the spinner; the type picks the animation and the size scales it.
+  // It has no colour class (the mark inherits currentColor), so a colour maps to a Tailwind
+  // `text-*` utility — the same way AsterUI colours its RadialProgress ring.
+  def spinner(kind: SpinnerType, size: Size, color: Color): String =
+    daisy("loading", kind.token, size.token) + (if color == Color.Default then "" else s" text-${color.token}")
+
+  def progress(color: Color): String =
+    daisy("progress", color.token)
+
+  // DaisyUI's `radial-progress` also takes its ring colour from currentColor, so a colour maps
+  // to a `text-*` utility rather than a `radial-progress-*` class.
+  def radialProgress(color: Color): String =
+    "radial-progress" + (if color == Color.Default then "" else s" text-${color.token}")
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
 // `base--token` convention (`salle-btn salle-btn--primary`).
