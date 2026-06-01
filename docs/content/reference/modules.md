@@ -144,6 +144,8 @@ A styled component library on top of the core.
 - **Form controls** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`).
 - **Display** — `ImageCard`; `Badge`/`Tag`/`CheckableTag` label pills; `Skeleton` /
   `SkeletonText` / `SkeletonImage` loading placeholders.
+- **Feedback** — `Spinner` (indeterminate, with overlay mode), `Progress` (linear),
+  `RadialProgress` (ring).
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
   `Dropdown` menu button (`MenuItem`/`MenuDivider`).
 - **Overlays** — `Modal` (portal dialog) and `Toast`/`Toaster` (imperative `toast` API)

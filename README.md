@@ -40,7 +40,7 @@ three siblings depend on the core transitively.
 | `riposte`         | The core: components, hooks, the DSL, rendering     |
 | `riposte-atoms`   | Jotai-inspired atomic shared state                  |
 | `riposte-router`  | Client-side routing for single-page apps            |
-| `riposte-salle`   | Styled, skinnable component library — form controls, Badge/Tag, Skeleton, Pagination, Dropdown, Modal & Toast, grid + masonry layout, theming |
+| `riposte-salle`   | Styled, skinnable component library — form controls, Badge/Tag, Skeleton, Spinner/Progress, Pagination, Dropdown, Modal & Toast, grid + masonry layout, theming |
 
 ```scala
 libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.0.2"
