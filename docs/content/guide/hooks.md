@@ -228,6 +228,32 @@ div(
 )
 ```
 
+## usePresence
+
+`usePresence(present, exitMs)` keeps an element mounted through its *exit* animation. The
+problem it solves: when `present` flips to `false`, you can't unmount immediately or the
+closing transition never plays. `usePresence` defers the unmount — `mounted` stays `true`
+for `exitMs` after `present` goes false, then flips — and reports a `phase` you drive the
+animation from. It returns a `Presence(mounted, phase)`:
+
+```scala
+val presence = usePresence(open, exitMs = 200)
+
+if presence.mounted then
+  div(
+    data("state") := presence.phase.token,   // "enter" → "open" → "exit"
+    /* … */
+  )
+else VEmpty
+```
+
+`phase` is a `PresencePhase` (`Enter` on appear, `Open` once settled, `Exit` while closing);
+its `.token` gives the lowercase string (`"enter"`/`"open"`/`"exit"`) you'd put in a
+`data-state` attribute and key CSS transitions off. Keep `exitMs` in step with the CSS
+transition duration. This is the foundation salle's [`Modal`](/guide/salle/) and
+[`Toast`](/guide/salle/) overlays are built on — both mount and unmount cleanly with a
+visible enter and exit.
+
 ## useSyncExternalStore
 
 The low-level seam for subscribing a component to an external, mutable data source. You

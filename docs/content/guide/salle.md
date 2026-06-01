@@ -208,6 +208,103 @@ ImageCard(
 (default `true`) rounds the corners; `lazyLoad = false` opts out of deferred loading.
 State is mirrored to `data-state` (`loading`/`loaded`/`error`) and `data-inview`.
 
+### Badge, Tag & CheckableTag
+
+Three label pills built on one look. **`Badge`** is a non-interactive label — a category, a
+resolution, "New". **`Tag`** adds a leading `icon` slot, an `onClick`, and an optional close
+button (`closable`/`onClose`). **`CheckableTag`** is a controlled filter chip that toggles
+on click:
+
+```scala
+Badge(color = Color.Success)("Available")
+Badge(color = Color.Error, pill = true)("4K")
+Badge(color = Color.Primary, dot = true)()        // a bare status dot, no text
+
+Tag(closable = true, onClose = () => remove(id))("Draft")
+Tag(icon = Some(span("★")), onClick = () => open())("Featured")
+
+// A controlled filter chip:
+val (on, setOn, _) = useState(false)
+CheckableTag(checked = on, onChange = setOn)("Nature")
+```
+
+`Color`, `BadgeVariant` (`Solid`/`Outline`/`Soft`/`Dash`), and `Size` set the look; `pill`
+rounds to a full capsule and `dot` collapses a Badge to a tiny indicator circle. `Tag`'s
+close click is kept from bubbling to its `onClick`. `CheckableTag` reads as a filled primary
+pill when checked and a quiet neutral one when not, and is fully keyboard-operable
+(`role=button`, Enter/Space, `aria-pressed`).
+
+### Skeleton
+
+Loading placeholders — the grey, gently shimmering blocks that hold content's space until it
+arrives, so the layout doesn't jump. Three pieces: **`Skeleton`** (one block),
+**`SkeletonText`** (a stack of lines approximating a paragraph), and **`SkeletonImage`** (an
+aspect-ratio tile with a faint picture glyph, for grid cells):
+
+```scala
+Skeleton(width = "12rem", height = "1.25rem")
+Skeleton(width = "3rem", height = "3rem", circle = true)   // an avatar
+
+SkeletonText(lines = 3)                 // last line shortened, reads as a paragraph
+SkeletonImage(ratio = "16/10")          // reserves a gallery cell
+
+// The canonical "loading tile":
+if loaded then ImageCard(src = url, ratio = "16/10")
+else SkeletonImage(ratio = "16/10")
+```
+
+Every block takes `animated` (default `true`, toggles the shimmer) and `rounded`; they're
+purely decorative (`aria-hidden`), so assistive tech announces the eventual content, not the
+placeholder. The shimmer is the one skin-dependent piece (`SalleSkin` sweeps a sheen,
+`DaisySkin` pulses).
+
+### Pagination
+
+A controlled page navigator: prev / numbered buttons with collapsing `…` gaps / next. You
+own `current` (1-indexed) and react to `onChange(page)`; the strip is computed from `total`
+items at `pageSize` per page:
+
+```scala
+val (page, setPage, _) = useState(1)
+Pagination(current = page, total = 240, pageSize = 20, onChange = setPage)
+
+// A compact "‹ 3 / 12 ›" bar:
+Pagination(current = page, total = 240, pageSize = 20, simple = true, onChange = setPage)
+```
+
+`siblingCount` sets how many page buttons flank the current one before the rest collapse to
+`…`; `simple` swaps the full strip for a compact prev / "n / m" / next bar; `disabled` greys
+the control; `Size` scales it. The "which buttons to show" decision is a pure, exported
+function — `paginationRange(current, totalPages, siblingCount)` returning a
+`Vector[PageItem]` (`Page(n)` / `Dots`) — alongside `pageCount(total, pageSize)`, so you can
+unit-test or reuse the logic without a DOM.
+
+### Dropdown
+
+A menu button: a trigger that opens a `role=menu` of actions. Data-driven — you pass the
+`items` and salle renders the popup and handles open/close, keyboard, and dismissal. Unlike
+[`Select`](#select) it has no chosen value; picking an item runs it and closes:
+
+```scala
+Dropdown(
+  items = Seq(
+    MenuItem("edit", "Edit", onSelect = () => edit()),
+    MenuItem("dup", "Duplicate", onSelect = () => duplicate()),
+    MenuDivider,
+    MenuItem("del", "Delete", danger = true, onSelect = () => remove()),
+  ),
+  onSelect = key => log(key),
+)("Actions")
+```
+
+Items are built with `MenuItem(key, label, icon, disabled, danger, onSelect)` and
+`MenuDivider`. Choosing an item runs its own `onSelect` and reports its `key` to the
+dropdown-level `onSelect`. It's fully keyboard-driven (arrows skip dividers and disabled
+items with wrap, Home/End, Enter/Space, Escape refocuses the trigger, Tab closes), dismisses
+on outside click (via core [`useClickOutside`](/guide/hooks/#dom-hooks)), and carries the
+full `aria-haspopup`/`expanded`/`activedescendant` wiring. Submenus and hover-to-open are out
+of scope for now.
+
 ## Layout
 
 Two layout systems sit alongside the components — one for *precise* column layouts, one for
@@ -263,6 +360,70 @@ picks a count by viewport against the standard breakpoints. Tiles should size na
 [`ImageCard`](#imagecard) with a `ratio` is the canonical cell. The pure packing function,
 `layoutMasonry(heights, columns, gap, containerWidth)`, is exposed too if you need the
 geometry without the component.
+
+## Overlays
+
+Two components float above the page, layered through a core
+[`portal`](/guide/components/) into `document.body` and mounted/unmounted with a visible
+enter and exit via the core [`usePresence`](/guide/hooks/#usepresence) hook.
+
+### Modal
+
+A controlled dialog over a dimming scrim. You own `open` and react to `onClose`, which fires
+from the close button, a scrim click (when `maskClosable`), and Escape (when `closeOnEsc`).
+`children` are the body; `title` and `footer` are optional slots:
+
+```scala
+val (open, setOpen, _) = useState(false)
+
+Button("Open", onClick = () => setOpen(true))
+
+Modal(
+  open = open,
+  onClose = () => setOpen(false),
+  title = Some(span("Delete file?")),
+  footer = Some(div(
+    Button("Cancel", onClick = () => setOpen(false)),
+    Button("Delete", color = Color.Error, onClick = () => { remove(); setOpen(false) }),
+  )),
+)(
+  p("This can't be undone."),
+)
+```
+
+It implements the full dialog ARIA pattern: `role="dialog"` (or `alertdialog` with `alert =
+true`) and `aria-modal`, labelled by the title (or an explicit `ariaLabel`), focus moved
+into the dialog on open and **restored to the opener on close**, Tab trapped inside, and
+Escape to close. `centered` vertically centres the box, `width` overrides its width (capped
+at `90vw`), and `closable` toggles the corner close button. `exitMs` (default `200`) is how
+long the close animation runs before unmount — keep it in step with the skin's transition.
+
+### Toast & Toaster
+
+Transient notifications, created **imperatively** — exactly what a "Downloaded" or "Added to
+favourites" handler wants, rather than threading open-state through the view tree. Mount a
+single `Toaster()` once anywhere in the tree, then call the `toast` API from anywhere:
+
+```scala
+// Once, near the root:
+div(App(), Toaster())
+
+// Anywhere, imperatively:
+toast.success("Downloaded")
+toast.error("Upload failed", description = Some(span("Check your connection.")))
+val id = toast.loading("Processing…")     // sticky spinner; dismiss when done
+toast.dismiss(id)
+```
+
+`toast.info`/`success`/`warning`/`error` each take a `message`, optional `description`, and
+`duration` (ms; defaults to 4000). `toast.loading` is a sticky spinner with no auto-dismiss
+until you `dismiss(id)` or `clear()`. The general form `toast.show(message, kind, …)` also
+takes a `placement` (`ToastPlacement` — six corners/edges; each toast carries its own, so one
+`Toaster` can show several stacks), `closable`, a custom `icon`, and an `onClick`. Each toast
+auto-dismisses after its `duration`, **pauses on hover**, and animates out before leaving;
+urgent kinds (`Error`/`Warning`) announce assertively (`role="alert"`), the rest politely.
+The store behind it (`ToastStore`) is a plain external store bridged in through
+[`useSyncExternalStore`](/guide/hooks/#usesyncexternalstore).
 
 ## useControllable
 

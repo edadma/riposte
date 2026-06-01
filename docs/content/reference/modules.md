@@ -48,6 +48,7 @@ See [Components & the DSL](/guide/components/).
 | `useId()`                              | A stable unique id string                            |
 | `useContext(ctx)`                      | The nearest provided context value                   |
 | `useTransition(target, durationMs)`    | An eased `Double` animated each frame                |
+| `usePresence(present, exitMs)`         | Keep an element mounted through its exit animation    |
 | `useSyncExternalStore(sub, snapshot)`  | Subscribe to an external store                       |
 | `useImperativeHandle(ref, factory, deps)` | Expose an imperative handle to a parent's `ref`   |
 | `useDeferredValue(value)`              | A copy of `value` that lags one commit               |
@@ -140,7 +141,13 @@ A styled component library on top of the core.
 - **Theming** — one open `data-theme` set (ships `light`/`dark`, `system` follows the OS).
   `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon
   button) and `ThemeSelect(themes)`.
-- **Components** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`), `ImageCard`.
+- **Form controls** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`).
+- **Display** — `ImageCard`; `Badge`/`Tag`/`CheckableTag` label pills; `Skeleton` /
+  `SkeletonText` / `SkeletonImage` loading placeholders.
+- **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
+  `Dropdown` menu button (`MenuItem`/`MenuDivider`).
+- **Overlays** — `Modal` (portal dialog) and `Toast`/`Toaster` (imperative `toast` API)
+  — both portalled and animated via the core `usePresence` hook.
 - **Layout** — `Row`/`Col` (24-column grid, responsive spans) and `Masonry` /
   `MasonryResponsive` (packed columns; pure `layoutMasonry`).
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
