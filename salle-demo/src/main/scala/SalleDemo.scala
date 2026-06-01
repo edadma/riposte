@@ -331,6 +331,39 @@ private def showcase: VNode =
     section("Toast — notifications (types, auto-dismiss, loading, clear)")(
       toastDemo(),
     ),
+    section("Spinner / Progress — loading affordances")(
+      div(
+        cls := "demo-grid-stack",
+        row(SpinnerType.values.toSeq.map(k => Spinner(kind = k, tip = k.toString.toLowerCase)())),
+        row(
+          Seq(
+            Spinner(size = Size.Sm, color = Color.Primary)(),
+            Spinner(size = Size.Md, color = Color.Accent)(),
+            Spinner(size = Size.Lg, color = Color.Success)(),
+            Spinner(size = Size.Xl, color = Color.Error)(),
+          ),
+        ),
+        div(
+          style := Map(
+            "display"        -> "flex",
+            "flex-direction" -> "column",
+            "gap"            -> "0.75rem",
+            "max-width"      -> "26rem",
+          ),
+          Progress(value = Some(35.0)),
+          Progress(value = Some(70.0), color = Color.Success),
+          Progress(value = None, color = Color.Accent),
+        ),
+        row(
+          Seq(
+            RadialProgress(value = 25, color = Color.Primary)(),
+            RadialProgress(value = 60, color = Color.Accent)(),
+            RadialProgress(value = 90, color = Color.Success)(),
+            RadialProgress(value = 70, showValue = false, color = Color.Info)(),
+          ),
+        ),
+      ),
+    ),
     // Mounted once; it portals each toast to document.body, grouped by placement.
     Toaster(),
   )
