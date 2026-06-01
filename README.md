@@ -1,5 +1,11 @@
 # riposte
 
+![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/riposte_sjs1_3)
+[![Last Commit](https://img.shields.io/github/last-commit/edadma/riposte)](https://github.com/edadma/riposte/commits)
+![GitHub](https://img.shields.io/github/license/edadma/riposte)
+![Scala Version](https://img.shields.io/badge/Scala-3.8.3-blue.svg)
+![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.21.0-blue.svg)
+
 A React-inspired **frontend library for Scala.js**. Build user interfaces with function
 components, hooks, and a typed DSL: an immutable `VNode` tree describes the UI, and a
 reconciler diffs each new tree against the live DOM and patches only what changed.
