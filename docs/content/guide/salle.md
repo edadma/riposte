@@ -9,7 +9,7 @@ where the bouts happen.) It's a separate published artifact that depends only on
 `riposte`'s public API, so it adds no weight to an app that doesn't use it.
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-salle" % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle" % "0.1.0"
 ```
 
 ```scala

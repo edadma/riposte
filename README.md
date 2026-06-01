@@ -43,10 +43,10 @@ three siblings depend on the core transitively.
 | `riposte-salle`   | Styled, skinnable component library — form controls, Badge/Tag, Skeleton, Spinner/Progress, Pagination, Dropdown, Modal & Toast, grid + masonry layout, theming |
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.0.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.0.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.1.0"
 ```
 
 ## Repository layout

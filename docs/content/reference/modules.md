@@ -14,7 +14,7 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte-router`  | `io.github.edadma.riposte.router.*`     | Client-side routing                     |
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
-`riposte-salle` also depends on `riposte` transitively. The current published version is `0.0.2`.
+`riposte-salle` also depends on `riposte` transitively. The current published version is `0.1.0`.
 
 ## riposte (core)
 

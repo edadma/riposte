@@ -11,7 +11,7 @@ build yourself; it just saves you from doing so.
 Add the dependency (it pulls in the core transitively):
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.1.0"
 
 import io.github.edadma.riposte.*
 import io.github.edadma.riposte.router.*
