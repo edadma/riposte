@@ -29,20 +29,20 @@ lazy val app = project
   .in(file("app"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    libraryDependencies += "io.github.edadma" %%% "riposte" % "0.0.2",
+    libraryDependencies += "io.github.edadma" %%% "riposte" % "0.1.0",
   )
 ```
 
 The optional sibling artifacts are added the same way when you need them:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.0.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.0.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.0.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.1.0"
 ```
 
 All three depend on `riposte` transitively, so you do not need to list the core separately.
-([salle](/guide/salle/) is the styled component library; it also ships a `salle.css` you
+([salle](/salle/) is the styled component library; it also ships a `salle.css` you
 include in your page.)
 
 ## A DOM to render into
