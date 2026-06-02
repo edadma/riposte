@@ -1,0 +1,248 @@
+/* salle — Spinner + Progress (linear) + RadialProgress */
+
+/* ======================================================================== */
+/* Spinner                                                                  */
+/* ======================================================================== */
+
+/* The indicator mark. `--_c` is the tint (currentColor by default), `--_sz` the scale. */
+.salle-spinner {
+  --_c: currentColor;
+  --_sz: 1.5rem;
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+  width: var(--_sz);
+  height: var(--_sz);
+  color: var(--_c);
+}
+
+.salle-spinner--xs { --_sz: 1rem; }
+.salle-spinner--sm { --_sz: 1.25rem; }
+.salle-spinner--md { --_sz: 1.5rem; }
+.salle-spinner--lg { --_sz: 2rem; }
+.salle-spinner--xl { --_sz: 2.75rem; }
+
+.salle-spinner--primary   { --_c: var(--salle-color-primary); }
+.salle-spinner--secondary { --_c: var(--salle-color-secondary); }
+.salle-spinner--accent    { --_c: var(--salle-color-accent); }
+.salle-spinner--neutral   { --_c: var(--salle-color-neutral); }
+.salle-spinner--info      { --_c: var(--salle-color-info); }
+.salle-spinner--success   { --_c: var(--salle-color-success); }
+.salle-spinner--warning   { --_c: var(--salle-color-warning); }
+.salle-spinner--error     { --_c: var(--salle-color-error); }
+
+/* spinner / ring / infinity: a rotating arc on a faint track (infinity has no simple
+   one-element form, so it borrows the arc). */
+.salle-spinner--spinner,
+.salle-spinner--ring,
+.salle-spinner--infinity {
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  animation: salle-spin 0.6s linear infinite;
+}
+.salle-spinner--ring { border-width: 3px; }
+
+/* dots: three dots painted as gradients on one box, pulsing in turn. */
+.salle-spinner--dots {
+  height: calc(var(--_sz) * 0.45);
+  background:
+    radial-gradient(circle closest-side, currentColor 90%, transparent) 0%   50% / calc(100% / 3) 100% no-repeat,
+    radial-gradient(circle closest-side, currentColor 90%, transparent) 50%  50% / calc(100% / 3) 100% no-repeat,
+    radial-gradient(circle closest-side, currentColor 90%, transparent) 100% 50% / calc(100% / 3) 100% no-repeat;
+  animation: salle-dots 1s infinite linear;
+}
+
+/* bars: five bars whose heights ripple. */
+.salle-spinner--bars {
+  --_b: calc(var(--_sz) / 7);
+  background:
+    linear-gradient(currentColor 0 0) 0%   50% / var(--_b) 60%  no-repeat,
+    linear-gradient(currentColor 0 0) 25%  50% / var(--_b) 80%  no-repeat,
+    linear-gradient(currentColor 0 0) 50%  50% / var(--_b) 100% no-repeat,
+    linear-gradient(currentColor 0 0) 75%  50% / var(--_b) 80%  no-repeat,
+    linear-gradient(currentColor 0 0) 100% 50% / var(--_b) 60%  no-repeat;
+  animation: salle-bars 1s infinite linear;
+}
+
+/* ball: a single bouncing disc. */
+.salle-spinner--ball {
+  border-radius: 50%;
+  background: currentColor;
+  animation: salle-ball 0.5s alternate infinite ease-in;
+}
+
+@keyframes salle-spin { to { transform: rotate(360deg); } }
+@keyframes salle-ball {
+  from { transform: translateY(-25%); }
+  to   { transform: translateY(25%); }
+}
+@keyframes salle-dots {
+  20% { background-position: 0% 0%,   50% 50%,  100% 50%; }
+  40% { background-position: 0% 100%, 50% 0%,   100% 50%; }
+  60% { background-position: 0% 50%,  50% 100%, 100% 0%; }
+  80% { background-position: 0% 50%,  50% 50%,  100% 100%; }
+}
+@keyframes salle-bars {
+  20% { background-size: var(--_b) 100%, var(--_b) 60%,  var(--_b) 80%,  var(--_b) 60%,  var(--_b) 80%; }
+  40% { background-size: var(--_b) 80%,  var(--_b) 100%, var(--_b) 60%,  var(--_b) 80%,  var(--_b) 60%; }
+  60% { background-size: var(--_b) 60%,  var(--_b) 80%,  var(--_b) 100%, var(--_b) 60%,  var(--_b) 80%; }
+  80% { background-size: var(--_b) 80%,  var(--_b) 60%,  var(--_b) 80%,  var(--_b) 100%, var(--_b) 60%; }
+}
+
+/* standalone wrapper: centre the mark over its caption. */
+.salle-spinner-box {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.salle-spinner-tip {
+  font-size: 0.85rem;
+  color: var(--salle-input-placeholder, #94a3b8);
+}
+.salle-spinner-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* overlay mode: float the mark over dimmed, inert content. */
+.salle-spinner-wrap {
+  position: relative;
+}
+.salle-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: color-mix(in srgb, var(--salle-input-bg, #ffffff) 55%, transparent);
+  backdrop-filter: blur(2px);
+}
+.salle-spinner-content--busy {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ======================================================================== */
+/* Progress (linear)                                                        */
+/* ======================================================================== */
+
+.salle-progress {
+  --_c: var(--salle-color-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  height: 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--_c) 18%, transparent);
+  color: var(--_c);
+  overflow: hidden;
+}
+
+.salle-progress--secondary { --_c: var(--salle-color-secondary); }
+.salle-progress--accent    { --_c: var(--salle-color-accent); }
+.salle-progress--neutral   { --_c: var(--salle-color-neutral); }
+.salle-progress--info      { --_c: var(--salle-color-info); }
+.salle-progress--success   { --_c: var(--salle-color-success); }
+.salle-progress--warning   { --_c: var(--salle-color-warning); }
+.salle-progress--error     { --_c: var(--salle-color-error); }
+
+.salle-progress::-webkit-progress-bar {
+  background: transparent;
+}
+.salle-progress::-webkit-progress-value {
+  background: var(--_c);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+.salle-progress::-moz-progress-bar {
+  background: var(--_c);
+  border-radius: 999px;
+}
+
+/* indeterminate: a band that sweeps across, since there is no value to fill to. */
+.salle-progress:indeterminate {
+  background:
+    linear-gradient(90deg, transparent, var(--_c), transparent) no-repeat,
+    color-mix(in srgb, var(--_c) 18%, transparent);
+  background-size: 40% 100%, 100% 100%;
+  animation: salle-progress-indeterminate 1.2s infinite ease-in-out;
+}
+.salle-progress:indeterminate::-webkit-progress-bar {
+  background: transparent;
+}
+.salle-progress:indeterminate::-webkit-progress-value {
+  background: transparent;
+}
+@keyframes salle-progress-indeterminate {
+  0%   { background-position: -60% 0, 0 0; }
+  100% { background-position: 160% 0, 0 0; }
+}
+
+/* ======================================================================== */
+/* RadialProgress                                                           */
+/* ======================================================================== */
+
+.salle-radial-progress {
+  --value: 0;
+  --size: 5rem;
+  --thickness: calc(var(--size) / 10);
+  --_c: currentColor;
+  position: relative;
+  display: inline-grid;
+  place-content: center;
+  width: var(--size);
+  height: var(--size);
+  color: var(--_c);
+  font-size: calc(var(--size) / 4);
+  font-weight: 600;
+}
+
+.salle-radial-progress--primary   { --_c: var(--salle-color-primary); }
+.salle-radial-progress--secondary { --_c: var(--salle-color-secondary); }
+.salle-radial-progress--accent    { --_c: var(--salle-color-accent); }
+.salle-radial-progress--neutral   { --_c: var(--salle-color-neutral); }
+.salle-radial-progress--info      { --_c: var(--salle-color-info); }
+.salle-radial-progress--success   { --_c: var(--salle-color-success); }
+.salle-radial-progress--warning   { --_c: var(--salle-color-warning); }
+.salle-radial-progress--error     { --_c: var(--salle-color-error); }
+
+.salle-radial-progress::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(farthest-side, currentColor 98%, transparent) top / var(--thickness) var(--thickness) no-repeat,
+    conic-gradient(currentColor calc(var(--value) * 1%), transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(99% - var(--thickness)), #000 calc(100% - var(--thickness)));
+          mask: radial-gradient(farthest-side, transparent calc(99% - var(--thickness)), #000 calc(100% - var(--thickness)));
+}
+.salle-radial-progress__value {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .salle-spinner--spinner,
+  .salle-spinner--ring,
+  .salle-spinner--infinity,
+  .salle-spinner--dots,
+  .salle-spinner--bars,
+  .salle-spinner--ball,
+  .salle-progress:indeterminate {
+    animation-duration: 2s;
+  }
+}

@@ -1,0 +1,105 @@
+/* salle — Dropdown (menu button) */
+
+/* ======================================================================== */
+/* Dropdown (menu button)                                                    */
+/* ======================================================================== */
+
+.salle-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* The trigger is a quiet bordered button; its caret rotates when the menu is open. */
+.salle-dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--salle-input-border, #cbd5e1);
+  border-radius: var(--salle-radius);
+  background: var(--salle-input-bg, #ffffff);
+  color: var(--salle-input-fg, #0f172a);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.salle-dropdown__trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--salle-color-primary) 55%, var(--salle-input-border, #cbd5e1));
+}
+.salle-dropdown__trigger:focus-visible {
+  outline: none;
+  border-color: var(--salle-color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--salle-color-primary) 25%, transparent);
+}
+.salle-dropdown__trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.salle-dropdown__arrow {
+  display: inline-flex;
+  flex: none;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+.salle-dropdown[data-state="open"] .salle-dropdown__arrow {
+  transform: rotate(180deg);
+}
+
+/* The popup: absolutely positioned under the trigger, the page's top layer. */
+.salle-dropdown__menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  min-width: 12rem;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--salle-input-bg, #ffffff);
+  border: 1px solid var(--salle-input-border, #cbd5e1);
+  border-radius: var(--salle-radius);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+}
+
+.salle-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: calc(var(--salle-radius) * 0.7);
+  color: var(--salle-input-fg, #0f172a);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+/* Highlight follows the keyboard/pointer via data-active (skin-independent, also what
+   tests assert on). Danger items read as destructive; disabled items are inert. */
+.salle-dropdown__item[data-active="true"] {
+  background: color-mix(in srgb, var(--salle-color-primary) 14%, transparent);
+}
+.salle-dropdown__item[data-danger="true"] {
+  color: var(--salle-color-error);
+}
+.salle-dropdown__item[data-danger="true"][data-active="true"] {
+  background: color-mix(in srgb, var(--salle-color-error) 14%, transparent);
+}
+.salle-dropdown__item[data-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.salle-dropdown__icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.salle-dropdown__divider {
+  height: 0;
+  margin: 0.25rem 0;
+  border-top: 1px solid var(--salle-input-border, #cbd5e1);
+  list-style: none;
+}

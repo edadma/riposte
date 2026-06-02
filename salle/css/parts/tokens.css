@@ -1,0 +1,63 @@
+/* salle — Theme tokens — the --salle-* contract every component reads. Light is also
+   the :root default; copy a block to add your own [data-theme]. */
+
+/* ---- light theme (and the default when no data-theme is set) ------------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --salle-radius: 0.5rem;
+  --salle-focus: #93c5fd;
+
+  /* text painted on a saturated colour fill (primary/accent/…); see the two
+     *-content tokens for fills that need dark text instead. */
+  --salle-btn-fg: #ffffff;
+
+  --salle-color-primary: #2563eb;
+  --salle-color-secondary: #e2e8f0;
+  --salle-color-secondary-content: #0f172a;
+  --salle-color-accent: #7c3aed;
+  --salle-color-neutral: #334155;
+  --salle-color-info: #0ea5e9;
+  --salle-color-success: #16a34a;
+  --salle-color-warning: #d97706;
+  --salle-color-warning-content: #1c1917;
+  --salle-color-error: #dc2626;
+
+  --salle-input-bg: #ffffff;
+  --salle-input-fg: #0f172a;
+  --salle-input-border: #cbd5e1;
+  --salle-input-border-hover: #94a3b8;
+  --salle-input-placeholder: #94a3b8;
+
+  --salle-toggle-off: #cbd5e1;
+}
+
+/* ---- dark theme --------------------------------------------------------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --salle-radius: 0.5rem;
+  --salle-focus: #3b82f6;
+
+  --salle-btn-fg: #ffffff;
+
+  --salle-color-primary: #3b82f6;
+  --salle-color-secondary: #334155;
+  --salle-color-secondary-content: #e2e8f0;
+  --salle-color-accent: #a78bfa;
+  --salle-color-neutral: #475569;
+  --salle-color-info: #38bdf8;
+  --salle-color-success: #22c55e;
+  --salle-color-warning: #f59e0b;
+  --salle-color-warning-content: #1c1917;
+  --salle-color-error: #ef4444;
+
+  --salle-input-bg: #1e293b;
+  --salle-input-fg: #e2e8f0;
+  --salle-input-border: #475569;
+  --salle-input-border-hover: #64748b;
+  --salle-input-placeholder: #64748b;
+
+  --salle-toggle-off: #475569;
+}

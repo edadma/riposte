@@ -1,0 +1,27 @@
+/* salle — Theme toggle (icon button) */
+
+/* ======================================================================== */
+/* Theme toggle (icon button)                                               */
+/* ======================================================================== */
+
+.salle-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--salle-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.salle-theme-toggle:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.salle-theme-toggle:focus-visible {
+  outline: 2px solid var(--salle-focus);
+  outline-offset: 2px;
+}

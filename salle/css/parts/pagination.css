@@ -1,0 +1,101 @@
+/* salle — Pagination */
+
+/* ======================================================================== */
+/* Pagination                                                               */
+/* ======================================================================== */
+
+/* A horizontal strip of joined buttons. The items butt against each other (shared
+   borders) so the run reads as one control. */
+.salle-pagination {
+  display: inline-flex;
+  align-items: center;
+}
+
+.salle-pagination__item {
+  --_py: 0.4rem;
+  --_px: 0.7rem;
+  --_fs: 0.9rem;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  font: inherit;
+  font-size: var(--_fs);
+  padding: var(--_py) var(--_px);
+  border: 1px solid var(--salle-input-border, #cbd5e1);
+  border-inline-start-width: 0;
+  background: var(--salle-input-bg, #ffffff);
+  color: var(--salle-input-fg, #0f172a);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+/* The first item restores its leading border and both ends get the strip's radius. */
+.salle-pagination__item:first-child {
+  border-inline-start-width: 1px;
+  border-start-start-radius: var(--salle-radius);
+  border-end-start-radius: var(--salle-radius);
+}
+.salle-pagination__item:last-child {
+  border-start-end-radius: var(--salle-radius);
+  border-end-end-radius: var(--salle-radius);
+}
+.salle-pagination__item:hover:not(:disabled):not(.salle-pagination__item--active) {
+  background: color-mix(in srgb, var(--salle-color-primary) 12%, var(--salle-input-bg, #fff));
+}
+.salle-pagination__item:focus-visible {
+  outline: 2px solid var(--salle-focus);
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+.salle-pagination__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.salle-pagination__item--active {
+  background: var(--salle-color-primary);
+  border-color: var(--salle-color-primary);
+  color: var(--salle-btn-fg, #ffffff);
+  font-weight: 600;
+  cursor: default;
+}
+
+/* The … gap and the simple-mode "n / m" status: same height as the buttons, no border. */
+.salle-pagination__dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+  color: var(--salle-input-fg, #0f172a);
+  user-select: none;
+}
+
+/* Size modifiers (mirror the other controls' scale). */
+.salle-pagination__item--xs {
+  --_py: 0.15rem;
+  --_px: 0.4rem;
+  --_fs: 0.72rem;
+  min-width: 1.6rem;
+}
+.salle-pagination__item--sm {
+  --_py: 0.25rem;
+  --_px: 0.55rem;
+  --_fs: 0.8rem;
+  min-width: 1.9rem;
+}
+.salle-pagination__item--lg {
+  --_py: 0.55rem;
+  --_px: 0.9rem;
+  --_fs: 1rem;
+  min-width: 2.6rem;
+}
+.salle-pagination__item--xl {
+  --_py: 0.7rem;
+  --_px: 1.1rem;
+  --_fs: 1.1rem;
+  min-width: 3rem;
+}

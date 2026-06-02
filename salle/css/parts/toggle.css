@@ -1,0 +1,95 @@
+/* salle — Toggle */
+
+/* ======================================================================== */
+/* Toggle                                                                   */
+/* ======================================================================== */
+
+.salle-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.salle-toggle {
+  --_c: var(--salle-color-primary);
+  --_h: 1.4rem;
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(var(--_h) * 1.8);
+  height: var(--_h);
+  margin: 0;
+  border-radius: 999px;
+  background: var(--salle-toggle-off, #cbd5e1);
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.salle-toggle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  transform: translateY(-50%);
+  width: calc(var(--_h) - 0.3rem);
+  height: calc(var(--_h) - 0.3rem);
+  border-radius: 50%;
+  background: #ffffff;
+  transition: left 0.15s ease;
+}
+.salle-toggle:checked {
+  background: var(--_c);
+}
+.salle-toggle:checked::before {
+  left: calc(100% - (var(--_h) - 0.3rem) - 0.15rem);
+}
+.salle-toggle:focus-visible {
+  outline: 2px solid var(--salle-focus);
+  outline-offset: 2px;
+}
+.salle-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.salle-toggle--primary {
+  --_c: var(--salle-color-primary);
+}
+.salle-toggle--secondary {
+  --_c: var(--salle-color-secondary);
+}
+.salle-toggle--accent {
+  --_c: var(--salle-color-accent);
+}
+.salle-toggle--neutral {
+  --_c: var(--salle-color-neutral);
+}
+.salle-toggle--info {
+  --_c: var(--salle-color-info);
+}
+.salle-toggle--success {
+  --_c: var(--salle-color-success);
+}
+.salle-toggle--warning {
+  --_c: var(--salle-color-warning);
+}
+.salle-toggle--error {
+  --_c: var(--salle-color-error);
+}
+
+.salle-toggle--xs {
+  --_h: 1rem;
+}
+.salle-toggle--sm {
+  --_h: 1.2rem;
+}
+.salle-toggle--md {
+  --_h: 1.4rem;
+}
+.salle-toggle--lg {
+  --_h: 1.7rem;
+}
+.salle-toggle--xl {
+  --_h: 2rem;
+}

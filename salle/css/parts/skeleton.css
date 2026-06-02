@@ -1,0 +1,44 @@
+/* salle — Skeleton (loading placeholders) */
+
+/* ======================================================================== */
+/* Skeleton (loading placeholders)                                          */
+/* ======================================================================== */
+
+/* A muted block whose sheen sweeps left-to-right to read as "loading". The base fill
+   is a token so it sits right in both light and dark themes; the sheen rides over it
+   via a repeating background gradient animated across the block's width. */
+.salle-skeleton {
+  --_base: var(--salle-skeleton-base, color-mix(in srgb, var(--salle-input-fg, #0f172a) 12%, transparent));
+  --_sheen: var(--salle-skeleton-sheen, color-mix(in srgb, var(--salle-input-fg, #0f172a) 6%, transparent));
+  display: block;
+  border-radius: var(--salle-radius);
+  background-color: var(--_base);
+  background-image: linear-gradient(90deg, transparent 0%, var(--_sheen) 50%, transparent 100%);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  background-position: -150% 0;
+  animation: salle-skeleton-sweep 1.4s ease-in-out infinite;
+}
+/* The icon inside a SkeletonImage placeholder — a faint glyph centred in the block. */
+.salle-skeleton-image__icon {
+  display: inline-flex;
+  color: var(--salle-input-fg, #0f172a);
+  opacity: 0.18;
+}
+/* A still block: no sweep (for animated = false / reduced-motion callers). */
+.salle-skeleton--static {
+  background-image: none;
+  animation: none;
+}
+@keyframes salle-skeleton-sweep {
+  to {
+    background-position: 150% 0;
+  }
+}
+/* Respect the OS reduced-motion preference regardless of the animated flag. */
+@media (prefers-reduced-motion: reduce) {
+  .salle-skeleton {
+    background-image: none;
+    animation: none;
+  }
+}

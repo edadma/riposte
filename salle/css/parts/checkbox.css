@@ -1,0 +1,95 @@
+/* salle — Checkbox */
+
+/* ======================================================================== */
+/* Checkbox                                                                 */
+/* ======================================================================== */
+
+.salle-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.salle-checkbox {
+  --_c: var(--salle-color-primary);
+  --_sz: 1.25rem;
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--_sz);
+  height: var(--_sz);
+  margin: 0;
+  border: 1px solid var(--salle-input-border, #cbd5e1);
+  border-radius: calc(var(--salle-radius) * 0.55);
+  background: var(--salle-input-bg, #ffffff);
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.salle-checkbox::before {
+  content: "";
+  width: 65%;
+  height: 65%;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+  background: #ffffff;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+.salle-checkbox:checked {
+  background: var(--_c);
+  border-color: var(--_c);
+}
+.salle-checkbox:checked::before {
+  transform: scale(1);
+}
+.salle-checkbox:focus-visible {
+  outline: 2px solid var(--salle-focus);
+  outline-offset: 2px;
+}
+.salle-checkbox:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.salle-checkbox--primary {
+  --_c: var(--salle-color-primary);
+}
+.salle-checkbox--secondary {
+  --_c: var(--salle-color-secondary);
+}
+.salle-checkbox--accent {
+  --_c: var(--salle-color-accent);
+}
+.salle-checkbox--neutral {
+  --_c: var(--salle-color-neutral);
+}
+.salle-checkbox--info {
+  --_c: var(--salle-color-info);
+}
+.salle-checkbox--success {
+  --_c: var(--salle-color-success);
+}
+.salle-checkbox--warning {
+  --_c: var(--salle-color-warning);
+}
+.salle-checkbox--error {
+  --_c: var(--salle-color-error);
+}
+
+.salle-checkbox--xs {
+  --_sz: 0.9rem;
+}
+.salle-checkbox--sm {
+  --_sz: 1.05rem;
+}
+.salle-checkbox--md {
+  --_sz: 1.25rem;
+}
+.salle-checkbox--lg {
+  --_sz: 1.5rem;
+}
+.salle-checkbox--xl {
+  --_sz: 1.75rem;
+}
