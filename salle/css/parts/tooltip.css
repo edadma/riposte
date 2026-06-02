@@ -1,0 +1,125 @@
+/* salle — Tooltip (floating hint) */
+
+/* ======================================================================== */
+/* Tooltip                                                                  */
+/* ======================================================================== */
+
+/* The wrapper is the positioning context for the absolutely-placed bubble; it stays
+   inline so it sits naturally beside text/icons. */
+.salle-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+/* The bubble. `--_bg`/`--_fg` are the fill/text (a neutral dark pill by default, retinted
+   by the colour modifiers). It fades via `data-state` (usePresence drives enter→open→exit);
+   pointer-events are off so it never intercepts hover on the trigger beneath it. */
+.salle-tooltip__tip {
+  --_bg: var(--salle-color-neutral);
+  --_fg: var(--salle-btn-fg, #ffffff);
+  position: absolute;
+  z-index: 50;
+  padding: 0.3rem 0.55rem;
+  border-radius: calc(var(--salle-radius) * 0.7);
+  background: var(--_bg);
+  color: var(--_fg);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.salle-tooltip__tip[data-state="open"] {
+  opacity: 1;
+}
+.salle-tooltip__tip[data-state="enter"],
+.salle-tooltip__tip[data-state="exit"] {
+  opacity: 0;
+}
+
+/* Colour modifiers set the one `--_bg` the base consumes; the two light fills flip to dark
+   text via their *-content token so they stay legible. */
+.salle-tooltip__tip--primary {
+  --_bg: var(--salle-color-primary);
+}
+.salle-tooltip__tip--secondary {
+  --_bg: var(--salle-color-secondary);
+  --_fg: var(--salle-color-secondary-content, #0f172a);
+}
+.salle-tooltip__tip--accent {
+  --_bg: var(--salle-color-accent);
+}
+.salle-tooltip__tip--neutral {
+  --_bg: var(--salle-color-neutral);
+}
+.salle-tooltip__tip--info {
+  --_bg: var(--salle-color-info);
+}
+.salle-tooltip__tip--success {
+  --_bg: var(--salle-color-success);
+}
+.salle-tooltip__tip--warning {
+  --_bg: var(--salle-color-warning);
+  --_fg: var(--salle-color-warning-content, #1c1917);
+}
+.salle-tooltip__tip--error {
+  --_bg: var(--salle-color-error);
+}
+
+/* Placement: anchor to one edge of the wrapper, centred on the cross axis, with a small gap.
+   Fade-only (the centring translate stays constant), so no transform animation to conflict. */
+.salle-tooltip__tip--top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+}
+.salle-tooltip__tip--bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0.5rem;
+}
+.salle-tooltip__tip--left {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 0.5rem;
+}
+.salle-tooltip__tip--right {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0.5rem;
+}
+
+/* The arrow is a rotated square in the bubble's fill, nudged to the anchored edge. */
+.salle-tooltip__arrow {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--_bg);
+  transform: rotate(45deg);
+}
+.salle-tooltip__tip--top .salle-tooltip__arrow {
+  bottom: -0.2rem;
+  left: 50%;
+  margin-left: -0.25rem;
+}
+.salle-tooltip__tip--bottom .salle-tooltip__arrow {
+  top: -0.2rem;
+  left: 50%;
+  margin-left: -0.25rem;
+}
+.salle-tooltip__tip--left .salle-tooltip__arrow {
+  right: -0.2rem;
+  top: 50%;
+  margin-top: -0.25rem;
+}
+.salle-tooltip__tip--right .salle-tooltip__arrow {
+  left: -0.2rem;
+  top: 50%;
+  margin-top: -0.25rem;
+}

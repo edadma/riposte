@@ -364,6 +364,35 @@ private def showcase: VNode =
         ),
       ),
     ),
+    section("Tooltip — hover / focus / click hints (placements, colours, triggers)")(
+      div(
+        cls := "demo-grid-stack",
+        row(
+          Seq(
+            Tooltip(tip = "Top", placement = TooltipPlacement.Top)(Button("Top", variant = ButtonVariant.Outline)),
+            Tooltip(tip = "Bottom", placement = TooltipPlacement.Bottom)(
+              Button("Bottom", variant = ButtonVariant.Outline),
+            ),
+            Tooltip(tip = "Left", placement = TooltipPlacement.Left)(Button("Left", variant = ButtonVariant.Outline)),
+            Tooltip(tip = "Right", placement = TooltipPlacement.Right)(Button("Right", variant = ButtonVariant.Outline)),
+          ),
+        ),
+        row(
+          Seq(
+            Tooltip(tip = "Primary", color = Color.Primary)(Button("Primary", color = Color.Primary)),
+            Tooltip(tip = "Success", color = Color.Success)(Button("Success", color = Color.Success)),
+            Tooltip(tip = "Warning", color = Color.Warning)(Button("Warning", color = Color.Warning)),
+            Tooltip(tip = "Danger", color = Color.Error)(Button("Error", color = Color.Error)),
+          ),
+        ),
+        row(
+          Seq(
+            Tooltip(tip = "Shows on focus too — Tab to me")(Button("Hover or focus")),
+            Tooltip(tip = "Click to toggle", trigger = TooltipTrigger.Click)(Button("Click")),
+          ),
+        ),
+      ),
+    ),
     // Mounted once; it portals each toast to document.body, grouped by placement.
     Toaster(),
   )

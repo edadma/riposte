@@ -101,6 +101,16 @@ type ToastClasses = (
     close: String,
 )
 
+/** The per-part CSS classes for a [[Tooltip]]: the `root` wrapper (the positioning context),
+  * the floating `tip` bubble (which carries the placement + colour look), and its `arrow`.
+  * Distinct elements, so the skin returns one class per part. Open/exit phase rides
+  * `data-state` on the tip, not the class. */
+type TooltipClasses = (
+    root: String,
+    tip: String,
+    arrow: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -181,6 +191,10 @@ trait Skin:
   /** The class for a [[RadialProgress]] ring of the given colour. One class; the value, size,
     * and thickness ride inline custom properties, not the class. */
   def radialProgress(color: Color): String
+
+  /** Classes for a [[Tooltip]]'s parts. `placement` chooses the side the bubble sits on and
+    * `color` tints it; the open/exit phase rides `data-state` and is styled from there. */
+  def tooltip(placement: TooltipPlacement, color: Color): TooltipClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -290,6 +304,13 @@ object SalleSkin extends Skin:
 
   def radialProgress(color: Color): String =
     bem("salle-radial-progress", color.token)
+
+  def tooltip(placement: TooltipPlacement, color: Color): TooltipClasses =
+    (
+      root = "salle-tooltip",
+      tip = bem("salle-tooltip__tip", placement.token, color.token),
+      arrow = "salle-tooltip__arrow",
+    )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
   * the classes (`btn btn-primary btn-outline btn-sm`); the styles come from DaisyUI
@@ -448,6 +469,26 @@ object DaisySkin extends Skin:
   // to a `text-*` utility rather than a `radial-progress-*` class.
   def radialProgress(color: Color): String =
     "radial-progress" + (if color == Color.Default then "" else s" text-${color.token}")
+
+  // DaisyUI's own `tooltip` is a pure-CSS, hover-only, string-in-`data-tip` affair that renders
+  // its own ::before bubble — incompatible with salle's JS-rendered, controllable, rich-content
+  // tip node. So we style our tip node with Tailwind utilities instead: an absolutely-positioned
+  // bubble offset to the chosen side, filled with the colour's `bg-*`/`*-content` pair (Default
+  // → neutral). The arrow is dropped here (utilities can't easily draw it); SalleSkin's CSS has
+  // a proper arrow.
+  def tooltip(placement: TooltipPlacement, color: Color): TooltipClasses =
+    val pos = placement match
+      case TooltipPlacement.Top    => "bottom-full left-1/2 -translate-x-1/2 mb-2"
+      case TooltipPlacement.Bottom => "top-full left-1/2 -translate-x-1/2 mt-2"
+      case TooltipPlacement.Left   => "right-full top-1/2 -translate-y-1/2 mr-2"
+      case TooltipPlacement.Right  => "left-full top-1/2 -translate-y-1/2 ml-2"
+    val c = if color == Color.Default then "neutral" else color.token
+    (
+      root = "relative inline-block",
+      tip =
+        s"absolute z-[1] $pos px-2 py-1 rounded text-sm shadow-lg whitespace-nowrap pointer-events-none bg-$c text-$c-content",
+      arrow = "hidden",
+    )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
 // `base--token` convention (`salle-btn salle-btn--primary`).
