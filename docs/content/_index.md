@@ -24,11 +24,11 @@ val Counter = view {
 ## What's here
 
 The sections split the docs into the usual layers: get up and running fast, understand
-the model — components, hooks, shared state, and routing — then look up the exact API
-surface when you need it.
+the model — components, hooks, shared state, routing, and data fetching — then look up the
+exact API surface when you need it.
 
 - **[Getting Started](/getting-started/)** — install Riposte and mount your first component.
-- **[Guide](/guide/)** — the DSL, hooks, shared state with atoms, and the router.
+- **[Guide](/guide/)** — the DSL, hooks, shared state with atoms, the router, and queries.
 - **[Component library (salle)](/salle/)** — styled, skinnable widgets: form controls,
   display, overlays, and layout, with light/dark theming.
 - **[Reference](/reference/)** — the published modules and their APIs.

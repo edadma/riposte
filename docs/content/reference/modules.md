@@ -3,8 +3,8 @@ title: "Modules & API"
 weight: 1
 ---
 
-Riposte ships as four independently published artifacts under the `io.github.edadma`
-organization, all at the same version. The three sibling artifacts depend on the core
+Riposte ships as five independently published artifacts under the `io.github.edadma`
+organization, all at the same version. The sibling artifacts depend on the core
 transitively, so adding any of them is enough — you don't list `riposte` separately.
 
 | Artifact          | Import                                  | What it gives you                      |
@@ -12,9 +12,11 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte`         | `io.github.edadma.riposte.*`            | Components, hooks, the DSL, rendering   |
 | `riposte-atoms`   | `io.github.edadma.riposte.atoms.*`      | Shared atomic state                     |
 | `riposte-router`  | `io.github.edadma.riposte.router.*`     | Client-side routing                     |
+| `riposte-query`   | `io.github.edadma.riposte.query.*`      | Async server-state cache               |
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
-`riposte-salle` also depends on `riposte` transitively. The current published version is `0.1.0`.
+`riposte-query` also depends on `riposte-atoms`; the rest depend only on `riposte`. The
+current published version is `0.1.0`.
 
 ## riposte (core)
 
@@ -111,6 +113,9 @@ Atomic, identity-based shared state built on the core's `useSyncExternalStore` s
 - **Hooks** — `useAtom` (read+write), `useAtomValue` (read), `useSetAtom` (write).
 - **Store** — values live in a `Store`; `Store.default` is the global one, `new Store`
   makes a scoped one, `StoreProvider(store) { … }` scopes it to a subtree.
+- **Eviction** — `Store.forget(atom)` drops an atom from the graph (runs its cleanup,
+  detaches it, discards its cached state); `atomFamily` returns an `AtomFamily` with
+  `contains`/`keys`/`remove`/`clear` to release keyed atoms.
 
 See [State with Atoms](/guide/state/).
 
@@ -130,6 +135,21 @@ Client-side routing built on the core's public API.
   `ScrollRestoration()`.
 
 See [Routing](/guide/routing/).
+
+## riposte-query
+
+A TanStack-Query-style async data layer — a keyed cache of server state — built on
+riposte-atoms (each query is one atom).
+
+- **Read** — `useQuery(key, fetcher, options)` → a `QueryResult` named tuple
+  (`data`, `error`, `isLoading`, `isFetching`, `isError`, `refetch`).
+- **Keys** — `queryKey(parts*)` → a structured `Vector[Any]`; equal parts share an entry,
+  prefixes drive invalidation.
+- **Options** — `QueryOptions(staleTime, gcTime)` tune freshness and garbage collection.
+- **Client** — `QueryClient`, `QueryClientProvider(client)(child)`, `useQueryClient`; cache
+  control via `invalidate`, `invalidatePrefix`, `refetch`, `setQueryData`, `getQueryData`.
+
+See [Data Fetching](/guide/queries/).
 
 ## riposte-salle
 
