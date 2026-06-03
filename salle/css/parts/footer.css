@@ -1,0 +1,55 @@
+/* salle — Footer (page-foot content block: link columns + titles) */
+
+/* ======================================================================== */
+/* Footer                                                                    */
+/* ======================================================================== */
+
+/* Stacked link columns by default; `--horizontal` lays them in a wrapping row and `--center`
+   centres each column's content. */
+.salle-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--salle-color-neutral) 10%, var(--salle-input-bg, #ffffff));
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 85%, transparent);
+  font-size: 0.9rem;
+}
+.salle-footer--horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2.5rem;
+}
+.salle-footer--center {
+  align-items: center;
+  text-align: center;
+}
+
+/* Each column is a vertical stack; nav links inside read as a quiet list. */
+.salle-footer > nav,
+.salle-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.salle-footer a {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+.salle-footer a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* A column heading: small, uppercase, muted — the label above a set of links. */
+.salle-footer__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}

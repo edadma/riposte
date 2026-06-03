@@ -26,6 +26,7 @@ object SalleE2E:
     case "dropdown"  => dropdownFixture()
     case "imagecard" => imageCardFixture()
     case "lightbox"  => lightboxFixture()
+    case "navbar"    => navbarFixture()
     case _           => indexFixture
 
   // ---- tooltip: real hover/focus timing (the jsdom specs fake the Timers seam) ----------
@@ -124,6 +125,23 @@ object SalleE2E:
     )
   }
 
+  // ---- navbar: real responsive collapse driven by the viewport width --------------------
+  // A collapsible navbar whose center/end zones fold behind the hamburger below the 768px
+  // breakpoint. matchMedia only reports a real value in a browser, so the collapse is a
+  // browser-only behaviour the jsdom specs can't reach — Playwright resizes the viewport.
+  private val navbarFixture = view {
+    div(
+      id := "harness",
+      Navbar(
+        start = span(id := "nav-brand", "Brand"),
+        center = a(id := "nav-link", href := "#", "Gallery"),
+        end = button(id := "nav-action", typ := "button", "Sign in"),
+        collapsible = true,
+      ),
+      p(style := Map("padding" -> "1rem"), "page content below the bar"),
+    )
+  }
+
   // ---- index: a plain links page, handy when opening the harness by hand ----------------
   private val indexFixture =
     div(
@@ -138,5 +156,6 @@ object SalleE2E:
         li(a(href := "?case=dropdown", "dropdown")),
         li(a(href := "?case=imagecard", "imagecard")),
         li(a(href := "?case=lightbox", "lightbox")),
+        li(a(href := "?case=navbar", "navbar")),
       ),
     )

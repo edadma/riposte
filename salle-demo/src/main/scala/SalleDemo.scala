@@ -438,6 +438,42 @@ private def showcase: VNode =
         ),
       ),
     ),
+    section("Layout / Navbar / Footer — the page-shell frame (narrow the window to collapse the navbar)")(
+      div(
+        cls := "demo-row",
+        // A self-contained mini-shell: a header band with a collapsible navbar, a row of a
+        // sider beside the content, and a content footer in the bottom band.
+        div(
+          style := Map("width" -> "100%", "height" -> "320px", "border" -> "1px solid var(--salle-input-border)",
+            "border-radius" -> "0.5rem", "overflow" -> "hidden"),
+          Layout()(
+            Layout.Header(
+              Navbar(
+                start = strong("Wallpapers"),
+                center = a(href := "#", "Browse"),
+                end = Button(label = "Sign in", color = Color.Primary, size = Size.Sm),
+                collapsible = true,
+              ),
+            ),
+            Layout(hasSider = true)(
+              Layout.Sider(width = "180px", collapsible = true, theme = SiderTheme.Dark)(
+                div(style := Map("padding" -> "1rem", "display" -> "flex", "flex-direction" -> "column", "gap" -> "0.5rem"),
+                  span("Nature"), span("Abstract"), span("Space"), span("Minimal")),
+              ),
+              Layout.Content(
+                p(style := Map("padding" -> "1rem"), "Main gallery content scrolls here."),
+              ),
+            ),
+            Layout.Footer(
+              Footer(center = true)(
+                Footer.Title("salle"),
+                span("Built on the riposte stack · © 2026"),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
     // Mounted once; it portals each toast to document.body, grouped by placement.
     Toaster(),
   )
