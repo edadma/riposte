@@ -17,23 +17,37 @@ class QueryClientSpec extends AnyFunSuite:
 
   private given ExecutionContext = ExecutionContext.parasitic
 
-  private var clock   = 0.0
+  private var clock      = 0.0
   private val timerQueue = mutable.ArrayBuffer.empty[() => Unit]
+  private val focusCbs   = mutable.ArrayBuffer.empty[() => Unit]
+  private val onlineCbs  = mutable.ArrayBuffer.empty[() => Unit]
 
-  // Install the fake clock and timer queue. Called at the top of each test so the
-  // global `QueryEnv` seam is reset between them.
+  // Install the fake clock, timer queue, and focus/online seams. Called at the top
+  // of each test so the global `QueryEnv` seam is reset between them — the focus
+  // and online stubs just capture the client's handler so a test can fire it.
   private def install(): Unit =
     clock = 1000.0
     timerQueue.clear()
+    focusCbs.clear()
+    onlineCbs.clear()
     QueryEnv.now = () => clock
     QueryEnv.schedule = (fn, _) =>
       timerQueue += fn
       () => timerQueue -= fn
+    QueryEnv.subscribeFocus = cb =>
+      focusCbs += cb
+      () => focusCbs -= cb
+    QueryEnv.subscribeOnline = cb =>
+      onlineCbs += cb
+      () => onlineCbs -= cb
 
   private def fireTimers(): Unit =
     val fns = timerQueue.toVector
     timerQueue.clear()
     fns.foreach(_())
+
+  private def fireFocus(): Unit  = focusCbs.toVector.foreach(_())
+  private def fireOnline(): Unit = onlineCbs.toVector.foreach(_())
 
   // Register a query and observe its cell, returning the cell and an unsubscribe —
   // observing is what triggers fetch-on-first-observe.
@@ -305,3 +319,57 @@ class QueryClientSpec extends AnyFunSuite:
     fireTimers()                                  // attempt 1 fails → retryDelay(1)
     fireTimers()                                  // attempt 2 fails → exhausted, no delay asked
     assert(delays.toVector == Vector(0, 1))
+
+  test("window focus refetches an observed stale query"):
+    install()
+    val client    = new QueryClient()
+    var calls     = 0
+    val opts      = QueryOptions(staleTime = 1000.0)
+    val (cell, _) = observe(client, queryKey("x"), () => { calls += 1; Future.successful(calls) }, opts)
+    assert(calls == 1)
+    clock += 2000 // age it past staleTime
+    fireFocus()
+    assert(calls == 2)
+    assert(client.store.get(cell).data == Some(2))
+
+  test("window focus leaves a fresh query alone"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, QueryOptions(staleTime = 1e9))
+    assert(calls == 1)
+    fireFocus()
+    assert(calls == 1) // still fresh
+
+  test("window focus is ignored when refetchOnWindowFocus is off"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    val opts   = QueryOptions(staleTime = 1000.0, refetchOnWindowFocus = false)
+    observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, opts)
+    assert(calls == 1)
+    clock += 2000
+    fireFocus()
+    assert(calls == 1) // opted out
+
+  test("window focus does not refetch an unobserved query"):
+    install()
+    val client     = new QueryClient()
+    var calls      = 0
+    val opts       = QueryOptions(staleTime = 1000.0)
+    val (_, unsub) = observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, opts)
+    assert(calls == 1)
+    unsub()       // no longer active
+    clock += 2000
+    fireFocus()
+    assert(calls == 1) // nothing is watching it
+
+  test("network reconnect refetches an observed stale query"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, QueryOptions(staleTime = 1000.0))
+    assert(calls == 1)
+    clock += 2000
+    fireOnline()
+    assert(calls == 2)

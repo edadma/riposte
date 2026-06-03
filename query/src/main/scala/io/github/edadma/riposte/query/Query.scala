@@ -47,12 +47,16 @@ object QueryState:
 // (ms) an unobserved query's data is kept before the cache evicts it. `retry` is
 // how many times a failed fetch is retried before its error surfaces, and
 // `retryDelay` maps a zero-based attempt index to the delay (ms) before that
-// retry — by default exponential backoff capped at 30s.
+// retry — by default exponential backoff capped at 30s. `refetchOnWindowFocus`
+// and `refetchOnReconnect` control whether an observed, stale query is refetched
+// when the window regains focus or the network comes back.
 final case class QueryOptions(
-    staleTime:  Double      = 0.0,
-    gcTime:     Double      = 5 * 60 * 1000.0,
-    retry:      Int         = 0,
-    retryDelay: Int => Double = QueryOptions.defaultRetryDelay,
+    staleTime:            Double        = 0.0,
+    gcTime:               Double        = 5 * 60 * 1000.0,
+    retry:                Int           = 0,
+    retryDelay:           Int => Double = QueryOptions.defaultRetryDelay,
+    refetchOnWindowFocus: Boolean       = true,
+    refetchOnReconnect:   Boolean       = true,
 )
 
 object QueryOptions:
@@ -75,12 +79,24 @@ type QueryResult[A] = (
     refetch:    () => Unit,
 )
 
-// Timing indirected so tests can install a deterministic clock and timer queue,
-// the same seam pattern the core uses for `Transition`/`Timers`. In the browser
-// `now` is wall-clock epoch ms and `schedule` is setTimeout/clearTimeout.
+// Timing and environment events indirected so tests can install deterministic
+// fakes, the same seam pattern the core uses for `Transition`/`Timers`. In the
+// browser `now` is wall-clock epoch ms, `schedule` is setTimeout/clearTimeout, and
+// `subscribeFocus`/`subscribeOnline` register window 'focus'/'online' handlers,
+// each returning an unsubscribe.
 private[query] object QueryEnv:
   var now: () => Double = () => js.Date.now()
 
   var schedule: (() => Unit, Double) => (() => Unit) = (fn, delayMs) =>
     val id = dom.window.setTimeout(() => fn(), delayMs)
     () => dom.window.clearTimeout(id)
+
+  var subscribeFocus: (() => Unit) => (() => Unit) = cb =>
+    val handler: js.Function1[dom.Event, Unit] = _ => cb()
+    dom.window.addEventListener("focus", handler)
+    () => dom.window.removeEventListener("focus", handler)
+
+  var subscribeOnline: (() => Unit) => (() => Unit) = cb =>
+    val handler: js.Function1[dom.Event, Unit] = _ => cb()
+    dom.window.addEventListener("online", handler)
+    () => dom.window.removeEventListener("online", handler)

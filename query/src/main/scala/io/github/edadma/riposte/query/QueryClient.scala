@@ -24,10 +24,12 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   private final class Entry(
       val cell:       PrimitiveAtom[QueryState[Any]],
       var fetcher:    Option[() => Future[Any]],
-      var staleTime:  Double,
-      var gcTime:     Double,
-      var retry:      Int,
-      var retryDelay: Int => Double,
+      var staleTime:            Double,
+      var gcTime:               Double,
+      var retry:                Int,
+      var retryDelay:           Int => Double,
+      var refetchOnWindowFocus: Boolean,
+      var refetchOnReconnect:   Boolean,
   ):
     // The in-flight fetch, if any — its presence dedupes concurrent fetches of the
     // same key onto one promise.
@@ -47,26 +49,51 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // mutation's callbacks run on the same context as the cache writes they trigger.
   private[query] def executionContext: ExecutionContext = ec
 
+  // Window focus / network reconnect are subscribed lazily — once the first query
+  // is observed — so a client that is never used (or runs without a window) never
+  // touches the environment. Subscribed once and kept for the client's lifetime.
+  private var focusSub:  Option[() => Unit] = None
+  private var onlineSub: Option[() => Unit] = None
+
+  private def ensureGlobalListeners(): Unit =
+    if focusSub.isEmpty then
+      focusSub = Some(QueryEnv.subscribeFocus(() => refetchActiveStale(_.refetchOnWindowFocus)))
+    if onlineSub.isEmpty then
+      onlineSub = Some(QueryEnv.subscribeOnline(() => refetchActiveStale(_.refetchOnReconnect)))
+
+  // Refetch every query that a component is observing, whose data is stale, that
+  // opts into this trigger, and that has no fetch already in flight. The shape of
+  // the focus and reconnect handlers — they differ only in which option gates them.
+  private def refetchActiveStale(wants: Entry => Boolean): Unit =
+    entries.foreach { (key, e) =>
+      if e.active && wants(e) && e.promise.isEmpty && e.fetcher.isDefined && isStale(e) then doFetch(key, e)
+    }
+
   // Get-or-create the cell for `key`, refreshing the fetcher and options to the
   // latest call's values so a re-render with a new closure or new `staleTime`
   // takes effect. Called from `useQuery` on every render; the lifecycle is wired
   // once, when the entry is first created.
   private[query] def register(key: QueryKey, fetcher: () => Future[Any], opts: QueryOptions): PrimitiveAtom[QueryState[Any]] =
     val e = entries.getOrElseUpdate(key, createEntry(key, Some(fetcher), opts))
-    e.fetcher    = Some(fetcher)
-    e.staleTime  = opts.staleTime
-    e.gcTime     = opts.gcTime
-    e.retry      = opts.retry
-    e.retryDelay = opts.retryDelay
+    e.fetcher              = Some(fetcher)
+    e.staleTime            = opts.staleTime
+    e.gcTime               = opts.gcTime
+    e.retry                = opts.retry
+    e.retryDelay           = opts.retryDelay
+    e.refetchOnWindowFocus = opts.refetchOnWindowFocus
+    e.refetchOnReconnect   = opts.refetchOnReconnect
     e.cell
 
   private def createEntry(key: QueryKey, fetcher: Option[() => Future[Any]], opts: QueryOptions): Entry =
     val cell = atom(QueryState.initial[Any])
-    val e    = new Entry(cell, fetcher, opts.staleTime, opts.gcTime, opts.retry, opts.retryDelay)
+    val e =
+      new Entry(cell, fetcher, opts.staleTime, opts.gcTime, opts.retry, opts.retryDelay,
+        opts.refetchOnWindowFocus, opts.refetchOnReconnect)
     // First observer: cancel any pending eviction and fetch if the data is stale.
     // Last observer: start the gc countdown. The store fires this on the cell's
     // listener set going empty→nonempty and the cleanup on nonempty→empty.
     onMount(cell) { _ =>
+      ensureGlobalListeners()
       e.active = true
       e.gcCancel.foreach(_())
       e.gcCancel = None
@@ -90,14 +117,16 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   private def seedEntry(key: QueryKey): Entry =
     entries.getOrElseUpdate(key, createUnobserved(key, None, QueryOptions()))
 
-  // Fetch only if the cell has never settled or its result has aged past
-  // `staleTime`, and only if no fetch is already in flight — stale-while-revalidate
-  // plus in-flight dedup.
+  // True if the cell has never settled or its result has aged past `staleTime`.
+  private def isStale(e: Entry): Boolean =
+    val st = store.get(e.cell)
+    st.updatedAt == 0.0 || (QueryEnv.now() - st.updatedAt) >= e.staleTime
+
+  // Fetch only if the data is stale and no fetch is already in flight —
+  // stale-while-revalidate plus in-flight dedup.
   private def fetchIfStale(key: QueryKey): Unit =
     entries.get(key).foreach { e =>
-      val st    = store.get(e.cell)
-      val stale = st.updatedAt == 0.0 || (QueryEnv.now() - st.updatedAt) >= e.staleTime
-      if stale && e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e)
+      if isStale(e) && e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e)
     }
 
   // Run the fetcher, marking the cell fetching, and fold the settled result back
@@ -167,11 +196,13 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // so a prefetch nobody adopts is evicted after `gcTime`.
   def prefetchQuery(key: QueryKey, fetcher: () => Future[Any], opts: QueryOptions = QueryOptions()): Unit =
     val e = entries.getOrElseUpdate(key, createUnobserved(key, Some(fetcher), opts))
-    e.fetcher    = Some(fetcher)
-    e.staleTime  = opts.staleTime
-    e.gcTime     = opts.gcTime
-    e.retry      = opts.retry
-    e.retryDelay = opts.retryDelay
+    e.fetcher              = Some(fetcher)
+    e.staleTime            = opts.staleTime
+    e.gcTime               = opts.gcTime
+    e.retry                = opts.retry
+    e.retryDelay           = opts.retryDelay
+    e.refetchOnWindowFocus = opts.refetchOnWindowFocus
+    e.refetchOnReconnect   = opts.refetchOnReconnect
     fetchIfStale(key)
 
   // Invalidate every query whose key begins with `prefix` — the structured-key
