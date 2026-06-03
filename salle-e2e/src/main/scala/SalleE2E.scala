@@ -28,6 +28,7 @@ object SalleE2E:
     case "lightbox"  => lightboxFixture()
     case "navbar"    => navbarFixture()
     case "drawer"    => drawerFixture()
+    case "segmented" => segmentedFixture()
     case _           => indexFixture
 
   // ---- tooltip: real hover/focus timing (the jsdom specs fake the Timers seam) ----------
@@ -163,6 +164,25 @@ object SalleE2E:
     )
   }
 
+  // ---- segmented: real focus + roving tabindex under arrow keys -------------------------
+  // A single-choice strip with a disabled segment (Map), to exercise selection-follows-focus,
+  // wrapping, and disabled-skip with genuine browser focus the jsdom specs can only approximate.
+  private val segmentedFixture = view {
+    div(
+      id := "harness",
+      style := Map("padding" -> "2rem"),
+      Segmented(
+        options = Seq(
+          SegmentedOpt(value = "grid", label = "Grid"),
+          SegmentedOpt(value = "list", label = "List"),
+          SegmentedOpt(value = "map", label = "Map", disabled = true),
+          SegmentedOpt(value = "card", label = "Card"),
+        ),
+        ariaLabel = "View mode",
+      ),
+    )
+  }
+
   // ---- index: a plain links page, handy when opening the harness by hand ----------------
   private val indexFixture =
     div(
@@ -179,5 +199,6 @@ object SalleE2E:
         li(a(href := "?case=lightbox", "lightbox")),
         li(a(href := "?case=navbar", "navbar")),
         li(a(href := "?case=drawer", "drawer")),
+        li(a(href := "?case=segmented", "segmented")),
       ),
     )
