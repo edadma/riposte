@@ -1,6 +1,6 @@
 ---
 title: "Spinner, Progress & RadialProgress"
-weight: 4
+weight: 5
 ---
 
 Busy indicators, split by whether you know the fraction. **`Spinner`** is *indeterminate* — a

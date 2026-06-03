@@ -125,6 +125,29 @@ type TabsClasses = (
     panel: String,
 )
 
+/** The per-part CSS classes for a [[Lightbox]]: the full-screen `overlay` scrim (the
+  * positioning context), the centred `content` wrapper, the `img` itself, the corner `close`
+  * button, the `prev`/`next` navigation controls, and the `counter` readout. Distinct elements,
+  * so the skin returns one class per part; open/exit phase and zoom ride `data-*`, not classes. */
+type LightboxClasses = (
+    overlay: String,
+    content: String,
+    img: String,
+    close: String,
+    prev: String,
+    next: String,
+    counter: String,
+)
+
+/** The per-part CSS classes for an [[Image]]: the `root` wrapper, the `img` element, and the
+  * `error` placeholder shown when the source (and any fallback) fails. `rounded` requests
+  * rounded corners on the wrapper. */
+type ImageClasses = (
+    root: String,
+    img: String,
+    error: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -214,6 +237,14 @@ trait Skin:
     * places the panel above or below (the skin maps it to the panel's margin side). The
     * `active`/`disabled` tab modifiers are applied conditionally by the component. */
   def tabs(variant: TabsVariant, size: Size, position: TabsPosition): TabsClasses
+
+  /** Classes for a [[Lightbox]]'s parts. Stateless — the open/exit phase and zoom are mirrored
+    * to `data-*` and styled from there, so this returns the structural classes only. */
+  def lightbox: LightboxClasses
+
+  /** Classes for an [[Image]]'s parts. `rounded` requests rounded corners on the wrapper; the
+    * active skin maps it to whatever radius treatment it uses. */
+  def image(rounded: Boolean): ImageClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -340,6 +371,24 @@ object SalleSkin extends Skin:
       disabled = "salle-tabs__tab--disabled",
       icon = "salle-tabs__icon",
       panel = "salle-tabs__panel",
+    )
+
+  def lightbox: LightboxClasses =
+    (
+      overlay = "salle-lightbox__overlay",
+      content = "salle-lightbox__content",
+      img = "salle-lightbox__img",
+      close = "salle-lightbox__close",
+      prev = "salle-lightbox__nav salle-lightbox__nav--prev",
+      next = "salle-lightbox__nav salle-lightbox__nav--next",
+      counter = "salle-lightbox__counter",
+    )
+
+  def image(rounded: Boolean): ImageClasses =
+    (
+      root = bem("salle-image", if rounded then "rounded" else ""),
+      img = "salle-image__img",
+      error = "salle-image__error",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -532,6 +581,29 @@ object DaisySkin extends Skin:
       disabled = "tab-disabled",
       icon = "mr-1 inline-flex items-center",
       panel = if position == TabsPosition.Top then "mt-4" else "mb-4",
+    )
+
+  // DaisyUI has no lightbox, so the overlay is a fixed full-screen scrim built from Tailwind
+  // utilities (above the modal's z-50). The image is contained within the viewport; the close
+  // and nav controls reuse the circular ghost-button look, tinted white over the dark scrim.
+  def lightbox: LightboxClasses =
+    (
+      overlay = "fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4",
+      content = "relative flex items-center justify-center max-w-full max-h-full",
+      img = "max-w-full max-h-[90vh] object-contain",
+      close = "btn btn-sm btn-circle btn-ghost absolute top-4 right-4 text-white",
+      prev = "btn btn-circle btn-ghost absolute left-4 top-1/2 -translate-y-1/2 text-white",
+      next = "btn btn-circle btn-ghost absolute right-4 top-1/2 -translate-y-1/2 text-white",
+      counter = "absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm",
+    )
+
+  // A plain inline image; `rounded` adds DaisyUI's box radius (with clipping). The error
+  // placeholder reuses the muted base-200 fill used by ImageCard's error state.
+  def image(rounded: Boolean): ImageClasses =
+    (
+      root = "relative inline-block" + (if rounded then " rounded-box overflow-hidden" else ""),
+      img = "block max-w-full",
+      error = "flex items-center justify-center bg-base-200 text-base-content/40 p-4",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish

@@ -1,6 +1,6 @@
 ---
 title: "Skeleton"
-weight: 3
+weight: 4
 ---
 
 Loading placeholders — the grey, gently shimmering blocks that hold content's space until it

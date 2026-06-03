@@ -25,6 +25,7 @@ object SalleE2E:
     case "modal"     => modalFixture()
     case "dropdown"  => dropdownFixture()
     case "imagecard" => imageCardFixture()
+    case "lightbox"  => lightboxFixture()
     case _           => indexFixture
 
   // ---- tooltip: real hover/focus timing (the jsdom specs fake the Timers seam) ----------
@@ -103,6 +104,26 @@ object SalleE2E:
     )
   }
 
+  // ---- lightbox: real click-to-open, arrow-key nav, click-to-zoom, Esc, focus move ------
+  // Three distinct SVG data-URI images in a preview group, so a click opens one shared,
+  // navigable lightbox. Data URIs load instantly in a real browser (no network) so each
+  // image becomes previewable at once.
+  private def swatch(fill: String): String =
+    "data:image/svg+xml," +
+      s"%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='200'%20height='200'%3E" +
+      s"%3Crect%20width='200'%20height='200'%20fill='$fill'/%3E%3C/svg%3E"
+  private val lightboxFixture = view {
+    div(
+      id := "harness",
+      style := Map("padding" -> "2rem", "display" -> "flex", "gap" -> "1rem"),
+      ImagePreviewGroup()(
+        Image(src = swatch("crimson"), alt = "L1", width = "120px"),
+        Image(src = swatch("seagreen"), alt = "L2", width = "120px"),
+        Image(src = swatch("steelblue"), alt = "L3", width = "120px"),
+      ),
+    )
+  }
+
   // ---- index: a plain links page, handy when opening the harness by hand ----------------
   private val indexFixture =
     div(
@@ -116,5 +137,6 @@ object SalleE2E:
         li(a(href := "?case=modal", "modal")),
         li(a(href := "?case=dropdown", "dropdown")),
         li(a(href := "?case=imagecard", "imagecard")),
+        li(a(href := "?case=lightbox", "lightbox")),
       ),
     )
