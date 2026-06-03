@@ -16,19 +16,23 @@ final case class InfiniteData[D, P](pages: Vector[D], pageParams: Vector[P])
 
 // What `useInfiniteQuery` returns — a named tuple, like `useQuery`'s result.
 // `pages` is the convenience flattening of `data.pages`; `fetchNextPage` loads and
-// appends the next page (a no-op when one is in flight or none is left);
-// `hasNextPage` reflects whether `getNextPageParam` yields another param from the
-// pages loaded so far.
+// appends the next page, `fetchPreviousPage` loads and prepends an older one (each
+// a no-op when a fetch is in flight or that direction is exhausted). `hasNextPage`
+// / `hasPreviousPage` reflect whether the respective param function yields another
+// param from the pages loaded so far — `hasPreviousPage` stays false for a
+// forward-only query (the default `getPreviousPageParam` returns `None`).
 type InfiniteQueryResult[D, P] = (
-    data:          Option[InfiniteData[D, P]],
-    pages:         Vector[D],
-    error:         Option[Throwable],
-    isLoading:     Boolean,
-    isFetching:    Boolean,
-    isError:       Boolean,
-    hasNextPage:   Boolean,
-    fetchNextPage: () => Unit,
-    refetch:       () => Unit,
+    data:              Option[InfiniteData[D, P]],
+    pages:             Vector[D],
+    error:             Option[Throwable],
+    isLoading:         Boolean,
+    isFetching:        Boolean,
+    isError:           Boolean,
+    hasNextPage:       Boolean,
+    fetchNextPage:     () => Unit,
+    hasPreviousPage:   Boolean,
+    fetchPreviousPage: () => Unit,
+    refetch:           () => Unit,
 )
 
 // Subscribe a component to a paginated query. The first observe loads the page at
@@ -36,22 +40,28 @@ type InfiniteQueryResult[D, P] = (
 // `getNextPageParam(lastPage, allPages)` to choose the next param and stopping when
 // it returns `None`. `fetchPage` loads one page given its param.
 //
+// Pass `getPreviousPageParam` to make the query bidirectional — it can then also
+// grow from the front via `result.fetchPreviousPage()`, choosing the previous param
+// from the first page held. Omit it (the default returns `None`) for the common
+// forward-only "load more" case, where `hasPreviousPage` stays false.
+//
 //   val q = useInfiniteQuery(
-//     queryKey("feed"),
-//     (cursor: Int) => api.feed(cursor),
-//     initialPageParam = 0,
-//     getNextPageParam = (last, _) => last.nextCursor,
+//     queryKey("messages", roomId),
+//     (cursor: Long) => api.messages(roomId, cursor),
+//     initialPageParam = openAt,
+//     getNextPageParam = (last, _) => last.olderCursor,      // scroll down → history
+//     getPreviousPageParam = (first, _) => first.newerCursor, // scroll up → newer
 //   )
-//   q.pages.flatMap(_.items) ... if q.hasNextPage then loadMore(q.fetchNextPage)
 def useInfiniteQuery[D, P](
-    key:              QueryKey,
-    fetchPage:        P => Future[D],
-    initialPageParam: P,
-    getNextPageParam: (D, Vector[D]) => Option[P],
-    options:          QueryOptions = QueryOptions(),
+    key:                  QueryKey,
+    fetchPage:            P => Future[D],
+    initialPageParam:     P,
+    getNextPageParam:     (D, Vector[D]) => Option[P],
+    getPreviousPageParam: (D, Vector[D]) => Option[P] = (_: D, _: Vector[D]) => None,
+    options:              QueryOptions = QueryOptions(),
 )(using Hooks): InfiniteQueryResult[D, P] =
   val client = useQueryClient
-  val cell   = client.registerInfinite(key, fetchPage, initialPageParam, getNextPageParam, options)
+  val cell   = client.registerInfinite(key, fetchPage, initialPageParam, getNextPageParam, getPreviousPageParam, options)
 
   // Subscribe through the client's store, exactly like `useQuery`; the cell holds
   // an `InfiniteData[Any, Any]` cast back to the page types on read.
@@ -60,13 +70,15 @@ def useInfiniteQuery[D, P](
   val data      = st.data.map(_.asInstanceOf[InfiniteData[D, P]])
 
   (
-    data          = data,
-    pages         = data.map(_.pages).getOrElse(Vector.empty),
-    error         = st.error,
-    isLoading     = st.status == QueryStatus.Pending && st.data.isEmpty,
-    isFetching    = st.isFetching,
-    isError       = st.status == QueryStatus.Error,
-    hasNextPage   = data.exists(d => d.pages.nonEmpty && getNextPageParam(d.pages.last, d.pages).isDefined),
-    fetchNextPage = () => client.fetchNextPage(key),
-    refetch       = () => client.refetch(key),
+    data              = data,
+    pages             = data.map(_.pages).getOrElse(Vector.empty),
+    error             = st.error,
+    isLoading         = st.status == QueryStatus.Pending && st.data.isEmpty,
+    isFetching        = st.isFetching,
+    isError           = st.status == QueryStatus.Error,
+    hasNextPage       = data.exists(d => d.pages.nonEmpty && getNextPageParam(d.pages.last, d.pages).isDefined),
+    fetchNextPage     = () => client.fetchNextPage(key),
+    hasPreviousPage   = data.exists(d => d.pages.nonEmpty && getPreviousPageParam(d.pages.head, d.pages).isDefined),
+    fetchPreviousPage = () => client.fetchPreviousPage(key),
+    refetch           = () => client.refetch(key),
   )

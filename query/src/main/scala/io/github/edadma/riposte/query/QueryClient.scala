@@ -53,9 +53,10 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // fetching a page and choosing the next param go through these type-erased
   // closures rather than the original `D`/`P`.
   private final class InfiniteSpec(
-      val fetchPage:        Any => Future[Any],
-      val initialPageParam: Any,
-      val getNextPageParam: (Any, Vector[Any]) => Option[Any],
+      val fetchPage:            Any => Future[Any],
+      val initialPageParam:     Any,
+      val getNextPageParam:     (Any, Vector[Any]) => Option[Any],
+      val getPreviousPageParam: (Any, Vector[Any]) => Option[Any],
   )
 
   private val entries = mutable.Map.empty[QueryKey, Entry]
@@ -261,17 +262,19 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // focus refresh the whole list, not just the first page), and `fetchNextPage`
   // extends the list. Called from `useInfiniteQuery` on every render.
   private[query] def registerInfinite[D, P](
-      key:              QueryKey,
-      fetchPage:        P => Future[D],
-      initialPageParam: P,
-      getNextPageParam: (D, Vector[D]) => Option[P],
-      opts:             QueryOptions,
+      key:                  QueryKey,
+      fetchPage:            P => Future[D],
+      initialPageParam:     P,
+      getNextPageParam:     (D, Vector[D]) => Option[P],
+      getPreviousPageParam: (D, Vector[D]) => Option[P],
+      opts:                 QueryOptions,
   ): PrimitiveAtom[QueryState[Any]] =
     val e = entries.getOrElseUpdate(key, createEntry(key, None, opts))
     val spec = new InfiniteSpec(
-      fetchPage        = (p: Any) => fetchPage(p.asInstanceOf[P]),
-      initialPageParam = initialPageParam,
-      getNextPageParam = (last, all) => getNextPageParam(last.asInstanceOf[D], all.asInstanceOf[Vector[D]]),
+      fetchPage            = (p: Any) => fetchPage(p.asInstanceOf[P]),
+      initialPageParam     = initialPageParam,
+      getNextPageParam     = (last, all) => getNextPageParam(last.asInstanceOf[D], all.asInstanceOf[Vector[D]]),
+      getPreviousPageParam = (first, all) => getPreviousPageParam(first.asInstanceOf[D], all.asInstanceOf[Vector[D]]),
     )
     e.infinite             = Some(spec)
     e.fetcher              = Some(() => refetchAllPages(e, spec))
@@ -307,6 +310,26 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
               spec.getNextPageParam(cur.pages.last, cur.pages).foreach { nextParam =>
                 val fetch = () =>
                   spec.fetchPage(nextParam).map(page => InfiniteData(cur.pages :+ page, cur.pageParams :+ nextParam))
+                startFetch(key, e, fetch)
+              }
+          }
+        }
+    }
+
+  // The mirror of `fetchNextPage` for the other end: load and prepend an older
+  // page. The previous param comes from `getPreviousPageParam` applied to the first
+  // page held; the fetched page and its param go on the front of the list. Same
+  // no-op conditions — none left, nothing loaded yet, or a fetch already in flight
+  // (the in-flight guard is shared, so the two directions never overlap).
+  def fetchPreviousPage(key: QueryKey): Unit =
+    entries.get(key).foreach { e =>
+      if e.promise.isEmpty then
+        e.infinite.foreach { spec =>
+          store.get(e.cell).data.asInstanceOf[Option[InfiniteData[Any, Any]]].foreach { cur =>
+            if cur.pages.nonEmpty then
+              spec.getPreviousPageParam(cur.pages.head, cur.pages).foreach { prevParam =>
+                val fetch = () =>
+                  spec.fetchPage(prevParam).map(page => InfiniteData(page +: cur.pages, prevParam +: cur.pageParams))
                 startFetch(key, e, fetch)
               }
           }
