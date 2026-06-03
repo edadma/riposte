@@ -393,6 +393,36 @@ private def showcase: VNode =
         ),
       ),
     ),
+    section("Tabs — data-driven panels (variants, sizes, keyboard roving)")(
+      div(
+        cls := "demo-grid-stack",
+        Tabs(
+          items = Seq(
+            Tab(key = "nature", label = "Nature", content = p("Forests, oceans, mountains — the calm set.")),
+            Tab(key = "urban", label = "Urban", content = p("City skylines, neon nights, architecture.")),
+            Tab(key = "abstract", label = "Abstract", content = p("Gradients, shapes, generative art.")),
+            Tab(key = "space", label = "Space", content = p("Nebulae and starfields."), disabled = true),
+          ),
+        ),
+        Tabs(
+          variant = TabsVariant.Box,
+          size = Size.Sm,
+          items = Seq(
+            Tab(key = "all", label = "All", content = p("Every wallpaper, newest first.")),
+            Tab(key = "fav", label = "Favourites", content = p("The ones you starred.")),
+            Tab(key = "dl", label = "Downloads", content = p("What you've saved locally.")),
+          ),
+        ),
+        Tabs(
+          variant = TabsVariant.Lift,
+          position = TabsPosition.Bottom,
+          items = Seq(
+            Tab(key = "details", label = "Details", content = p("Resolution, palette, licence.")),
+            Tab(key = "related", label = "Related", content = p("More like this.")),
+          ),
+        ),
+      ),
+    ),
     // Mounted once; it portals each toast to document.body, grouped by placement.
     Toaster(),
   )

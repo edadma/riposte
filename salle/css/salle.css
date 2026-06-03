@@ -48,3 +48,4 @@
 @import url("./parts/toast.css") layer(salle);
 @import url("./parts/spinner.css") layer(salle);
 @import url("./parts/tooltip.css") layer(salle);
+@import url("./parts/tabs.css") layer(salle);

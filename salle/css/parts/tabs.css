@@ -1,0 +1,136 @@
+/* salle — Tabs */
+
+/* ======================================================================== */
+/* Tabs                                                                      */
+/* ======================================================================== */
+
+.salle-tabs {
+  display: flex;
+  flex-direction: column;
+}
+/* Bottom position renders the panel before the strip in the DOM; the panel's margin
+   side is flipped via the --bottom modifier on the panel itself. */
+
+/* The strip is a row of tab buttons; the border variant draws a baseline under them. */
+.salle-tabs__list {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.salle-tabs__list--border {
+  border-bottom: 1px solid var(--salle-input-border, #cbd5e1);
+}
+
+.salle-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: var(--salle-radius) var(--salle-radius) 0 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 65%, transparent);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.salle-tabs__tab:hover:not(:disabled) {
+  color: var(--salle-input-fg, #0f172a);
+}
+.salle-tabs__tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--salle-color-primary) 25%, transparent);
+}
+.salle-tabs__tab:disabled,
+.salle-tabs__tab--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- size ---------------------------------------------------------------- */
+.salle-tabs__list--xs .salle-tabs__tab {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+}
+.salle-tabs__list--sm .salle-tabs__tab {
+  font-size: 0.825rem;
+  padding: 0.4rem 0.7rem;
+}
+.salle-tabs__list--lg .salle-tabs__tab {
+  font-size: 1rem;
+  padding: 0.6rem 1rem;
+}
+.salle-tabs__list--xl .salle-tabs__tab {
+  font-size: 1.125rem;
+  padding: 0.7rem 1.2rem;
+}
+
+/* ---- variant: border (underline indicator on the active tab) ------------- */
+.salle-tabs__list--border .salle-tabs__tab {
+  border-radius: 0;
+  /* sit on top of the strip's baseline so the active underline overlaps it */
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+}
+.salle-tabs__list--border .salle-tabs__tab--active {
+  color: var(--salle-color-primary);
+  border-bottom-color: var(--salle-color-primary);
+}
+
+/* ---- variant: box (filled active tab) ------------------------------------ */
+.salle-tabs__list--box {
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: var(--salle-radius);
+  background: color-mix(in srgb, var(--salle-color-neutral) 12%, transparent);
+}
+.salle-tabs__list--box .salle-tabs__tab {
+  border-radius: calc(var(--salle-radius) * 0.7);
+}
+.salle-tabs__list--box .salle-tabs__tab--active {
+  color: var(--salle-input-fg, #0f172a);
+  background: var(--salle-input-bg, #ffffff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* ---- variant: lift (active tab lifts to meet the panel) ------------------ */
+.salle-tabs__list--lift {
+  border-bottom: 1px solid var(--salle-input-border, #cbd5e1);
+}
+.salle-tabs__list--lift .salle-tabs__tab {
+  margin-bottom: -1px;
+  border-color: transparent;
+}
+.salle-tabs__list--lift .salle-tabs__tab--active {
+  color: var(--salle-input-fg, #0f172a);
+  background: var(--salle-input-bg, #ffffff);
+  border-color: var(--salle-input-border, #cbd5e1);
+  border-bottom-color: var(--salle-input-bg, #ffffff);
+}
+
+.salle-tabs__icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/* The panel sits below the strip by default; the bottom-position modifier flips the
+   gap to the other side, since the panel renders above the strip there. */
+.salle-tabs__panel {
+  margin-top: 1rem;
+}
+.salle-tabs--bottom .salle-tabs__panel {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+.salle-tabs__panel:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--salle-color-primary) 25%, transparent);
+}

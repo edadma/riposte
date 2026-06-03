@@ -111,6 +111,20 @@ type TooltipClasses = (
     arrow: String,
 )
 
+/** The per-part CSS classes for a [[Tabs]] set: the `root` wrapper, the `list` strip
+  * (which carries the variant + size look), each `tab` button with its `active` and
+  * `disabled` modifiers (applied conditionally, like [[PaginationClasses.active]]), a tab's
+  * leading `icon` slot, and the `panel` region. */
+type TabsClasses = (
+    root: String,
+    list: String,
+    tab: String,
+    active: String,
+    disabled: String,
+    icon: String,
+    panel: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -195,6 +209,11 @@ trait Skin:
   /** Classes for a [[Tooltip]]'s parts. `placement` chooses the side the bubble sits on and
     * `color` tints it; the open/exit phase rides `data-state` and is styled from there. */
   def tooltip(placement: TooltipPlacement, color: Color): TooltipClasses
+
+  /** Classes for a [[Tabs]] set's parts. `variant` and `size` shape the strip; `position`
+    * places the panel above or below (the skin maps it to the panel's margin side). The
+    * `active`/`disabled` tab modifiers are applied conditionally by the component. */
+  def tabs(variant: TabsVariant, size: Size, position: TabsPosition): TabsClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -310,6 +329,17 @@ object SalleSkin extends Skin:
       root = "salle-tooltip",
       tip = bem("salle-tooltip__tip", placement.token, color.token),
       arrow = "salle-tooltip__arrow",
+    )
+
+  def tabs(variant: TabsVariant, size: Size, position: TabsPosition): TabsClasses =
+    (
+      root = bem("salle-tabs", position.token),
+      list = bem("salle-tabs__list", variant.token, size.token),
+      tab = "salle-tabs__tab",
+      active = "salle-tabs__tab--active",
+      disabled = "salle-tabs__tab--disabled",
+      icon = "salle-tabs__icon",
+      panel = "salle-tabs__panel",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -488,6 +518,20 @@ object DaisySkin extends Skin:
       tip =
         s"absolute z-[1] $pos px-2 py-1 rounded text-sm shadow-lg whitespace-nowrap pointer-events-none bg-$c text-$c-content",
       arrow = "hidden",
+    )
+
+  // DaisyUI puts the variant + size on the `tabs` strip and `tab`/`tab-active`/`tab-disabled`
+  // on each button. There is no wrapper class, so the root is empty; position is handled by DOM
+  // order in the component, and the panel just takes a top/bottom margin.
+  def tabs(variant: TabsVariant, size: Size, position: TabsPosition): TabsClasses =
+    (
+      root = "",
+      list = daisy("tabs", variant.token, size.token),
+      tab = "tab",
+      active = "tab-active",
+      disabled = "tab-disabled",
+      icon = "mr-1 inline-flex items-center",
+      panel = if position == TabsPosition.Top then "mt-4" else "mb-4",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
