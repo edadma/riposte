@@ -72,6 +72,38 @@ class AtomSpec extends AnyFunSuite:
     s.set(a, 2)
     assert(hits == 1)
 
+  test("forget discards an atom's state, resetting it on the next read"):
+    val s = new Store
+    val a = atom(1)
+    s.set(a, 5)
+    assert(s.get(a) == 5)
+    s.forget(a)
+    assert(s.get(a) == 1) // rebuilt at its initial value
+
+  test("forget is a no-op for an atom that was never read"):
+    val s = new Store
+    val a = atom(0)
+    s.forget(a) // no exception
+    assert(s.get(a) == 0)
+
+  test("forget runs a mounted atom's cleanup"):
+    val s        = new Store
+    var cleanups = 0
+    val a        = atom(0)
+    onMount(a)(_ => Some(() => cleanups += 1))
+    s.sub(a, () => ()) // mounts
+    s.forget(a)
+    assert(cleanups == 1)
+
+  test("forget detaches the atom from its dependencies' dependents"):
+    val s   = new Store
+    val a   = atom(1)
+    val dbl = atom(g => g(a) * 2)
+    assert(s.get(dbl) == 2) // records the a -> dbl reverse edge
+    s.forget(dbl)
+    s.set(a, 7)             // a no longer knows about dbl
+    assert(s.get(dbl) == 14) // dbl, rebuilt fresh, recomputes from the current a
+
   // --- Hooks: components and atoms -----------------------------------------
 
   test("useAtom shares state across components"):
@@ -264,6 +296,25 @@ class AtomSpec extends AnyFunSuite:
     s.set(itemAtom(1), 99)
     assert(s.get(itemAtom(1)) == 99)
     assert(s.get(itemAtom(2)) == 20) // independent state per parameter
+
+  test("an atomFamily is still a plain function of its parameter"):
+    val fam: Int => Atom[Int] = atomFamily((id: Int) => atom(id))
+    assert(fam(2) eq fam(2))
+
+  test("atomFamily remove drops the memo so a fresh atom is built"):
+    val fam = atomFamily((id: Int) => atom(id * 10))
+    val a1  = fam(1)
+    assert(fam.contains(1))
+    fam.remove(1)
+    assert(!fam.contains(1))
+    assert(!(fam(1) eq a1)) // rebuilt, new identity
+
+  test("atomFamily keys and clear track and drop the live set"):
+    val fam = atomFamily((id: Int) => atom(id))
+    fam(1); fam(2); fam(3)
+    assert(fam.keys.toSet == Set(1, 2, 3))
+    fam.clear()
+    assert(fam.keys.isEmpty)
 
   test("onMount runs on the first listener and cleans up after the last"):
     val s        = new Store
