@@ -152,6 +152,45 @@ val Search = view {
 }
 ```
 
+### A single typed query value
+
+`useQueryState` focuses `useSearchParams` down to **one typed key**, returning the same
+`(value, set, update)` triple as the core's `useState`. The value lives in the URL — so it
+survives reload and is shareable and bookmarkable — but reads and writes like ordinary
+component state:
+
+```scala
+val Counter = view {
+  val (count, setCount, updateCount) = useQueryState("count", 0)
+
+  div(
+    button(onClick := (_ => updateCount(_ - 1)), "−"),
+    span(s" $count "),
+    button(onClick := (_ => updateCount(_ + 1)), "+"),
+  )
+}
+```
+
+A `QueryCodec[T]` crosses the string boundary of the URL; codecs for `String`, `Int`,
+`Long`, `Double`, and `Boolean` are provided `given`s, so the type is inferred from the
+default. A custom type supplies its own `QueryCodec` (or you pass one explicitly). An
+absent or unparseable value reads back as the default, so `?count=abc` is the default
+rather than an error.
+
+Setting the value to the default **drops the key** entirely, keeping URLs clean. Writes
+**replace** the current history entry by default — so typing into a filter doesn't fill the
+Back button — but pass `push = true` for a new entry:
+
+```scala
+setCount(5)               // ?count=5, replacing the current entry
+setCount(5, push = true)  // …as a new history entry instead
+updateCount(_ + 1)        // reads the live value, then writes
+```
+
+The component re-renders only when *this* key changes: a write to an unrelated query key
+produces an equal snapshot and bails out. Independent keys set in the same tick each see
+the other's write, so neither clobbers the other.
+
 ## Per-route error boundaries
 
 `route(...).catchErrors(fallback)` wraps a route's view in an

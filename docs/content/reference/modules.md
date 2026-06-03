@@ -124,7 +124,8 @@ Client-side routing built on the core's public API.
   `route(...)(view)(children…)`, `index(view)`, and `Outlet` for the matched child.
 - **Navigation** — `Link(to, children…)`, `NavLink(to, activeClass, end)(children…)`,
   `navigate(to, replace)`.
-- **Params & query** — `useParams()` (a `Map`), `useSearchParams()` → `(params, set)`.
+- **Params & query** — `useParams()` (a `Map`), `useSearchParams()` → `(params, set)`,
+  `useQueryState(key, default)` → a `useState`-shaped triple for one typed URL query key.
 - **Advanced** — `route(...).catchErrors(fallback)`, `lazyView(load, fallback)`,
   `ScrollRestoration()`.
 
@@ -147,9 +148,11 @@ A styled component library on top of the core.
 - **Feedback** — `Spinner` (indeterminate, with overlay mode), `Progress` (linear),
   `RadialProgress` (ring).
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
-  `Dropdown` menu button (`MenuItem`/`MenuDivider`).
-- **Overlays** — `Modal` (portal dialog) and `Toast`/`Toaster` (imperative `toast` API)
-  — both portalled and animated via the core `usePresence` hook.
+  `Dropdown` menu button (`MenuItem`/`MenuDivider`); `Tabs` (data-driven panels, `Tab`,
+  `TabsVariant`/`TabsPosition`).
+- **Overlays** — `Modal` (portal dialog), `Toast`/`Toaster` (imperative `toast` API), and
+  `Tooltip` (floating hint, hover/focus/click) — all animated via the core `usePresence`
+  hook.
 - **Layout** — `Row`/`Col` (24-column grid, responsive spans) and `Masonry` /
   `MasonryResponsive` (packed columns; pure `layoutMasonry`).
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
