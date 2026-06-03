@@ -17,13 +17,37 @@ def selectAtom[A, B](source: Atom[A], f: A => B): Atom[B] =
 // A parameterised family of atoms: `make` builds an atom for a parameter, and the
 // family memoises by parameter so the same `p` always yields the same atom (and
 // thus the same shared state). The atom's static type is preserved, so a family of
-// writable atoms stays writable. Like Jotai's `atomFamily`.
+// writable atoms stays writable. It is a `P => T`, so it is still usable anywhere a
+// plain function of the parameter is expected. Like Jotai's `atomFamily`, plus an
+// eviction surface (`remove`/`clear`/`keys`) a cache needs to garbage-collect
+// entries — `remove` only drops the family's memo, so pair it with `Store.forget`
+// to also discard the atom's value from a store.
 //
 //   val itemAtom = atomFamily((id: Int) => atom(id * 10))
 //   itemAtom(1) eq itemAtom(1)   // same atom
-def atomFamily[P, T <: Atom[?]](make: P => T): P => T =
-  val cache = mutable.Map.empty[P, T]
-  p => cache.getOrElseUpdate(p, make(p))
+//   itemAtom.remove(1)           // a later itemAtom(1) builds a fresh atom
+final class AtomFamily[P, T <: Atom[?]] private[atoms] (make: P => T) extends (P => T):
+  private val cache = mutable.Map.empty[P, T]
+
+  // The atom for `p`, created once and memoised so the same `p` always yields the
+  // same shared state.
+  def apply(p: P): T = cache.getOrElseUpdate(p, make(p))
+
+  // Whether an atom has already been created for `p`.
+  def contains(p: P): Boolean = cache.contains(p)
+
+  // The parameters that currently have an atom, as a snapshot so the caller may
+  // evict while iterating over them.
+  def keys: Vector[P] = cache.keys.toVector
+
+  // Forget the atom for `p` so a later `apply(p)` builds a fresh one. This drops
+  // only the family's memo; evict the atom's value from a store with `Store.forget`.
+  def remove(p: P): Unit = cache -= p
+
+  // Forget every parameter.
+  def clear(): Unit = cache.clear()
+
+def atomFamily[P, T <: Atom[?]](make: P => T): AtomFamily[P, T] = new AtomFamily(make)
 
 // Attach a lifecycle hook to a writable atom. The hook runs the first time the
 // atom gains a listener (a component starts reading it), and is handed a `setSelf`

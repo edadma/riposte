@@ -124,6 +124,23 @@ final class Store:
         st.mountCleanup.foreach(_())
         st.mountCleanup = None
 
+  // Drop `a` from the graph: run its mount cleanup if it is mounted, detach it from
+  // its dependencies' reverse edges, and discard its cached `State`. The next read
+  // re-creates the atom from scratch — a primitive resets to its initial value, a
+  // computed recomputes — so a fresh `sub` after a forget re-mounts cleanly. This is
+  // the eviction primitive a cache builds on (see `AtomFamily.remove`): forget an
+  // atom nothing currently observes or depends on. A still-subscribed listener would
+  // be left watching the discarded `State` and never hear from the re-created one,
+  // and a live dependent keeps its now-stale cached value until it recomputes — so
+  // forget leaf atoms with no live listeners, which is exactly a gc'd cache entry.
+  def forget(a: Atom[?]): Unit =
+    states.get(a).foreach { st =>
+      st.mountCleanup.foreach(_())
+      st.mountCleanup = None
+      st.deps.foreach(dep => states.get(dep).foreach(_.dependents -= a))
+      states -= a
+    }
+
   // Invoke `a`'s mount hook, handing it a `setSelf` that writes `a` in this store,
   // and remember any cleanup it returns.
   private def runMount(a: Atom[?], st: State): Unit =
