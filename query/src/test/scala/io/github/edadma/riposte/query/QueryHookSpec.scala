@@ -65,6 +65,18 @@ class QueryHookSpec extends AnyFunSuite:
     Scheduler.flushSync()
     assert(c.querySelector("span.v").textContent == "99")
 
+  test("a component reads a pre-seeded query with no loading flash"):
+    val c      = host()
+    val client = new QueryClient()
+    client.setQueryData(queryKey("seeded"), "hello") // primed before any render
+    val App = view {
+      val q = useQuery(queryKey("seeded"), () => Future.successful("fetched"), QueryOptions(staleTime = 1e9))
+      span(cls := "s", if q.isLoading then "loading" else q.data.getOrElse(""))
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.s").textContent == "hello")
+
   test("two components reading the same key share one fetch"):
     val c      = host()
     var calls  = 0
@@ -79,3 +91,28 @@ class QueryHookSpec extends AnyFunSuite:
     val spans = c.querySelectorAll("span.r")
     assert(spans.length == 2)
     assert((0 until spans.length).forall(i => spans(i).textContent == "7"))
+
+  test("useInfiniteQuery loads the first page and fetchNextPage appends"):
+    val c      = host()
+    val client = new QueryClient()
+    val App = view {
+      val q = useInfiniteQuery[String, Int](
+        queryKey("feed"),
+        (p: Int) => Future.successful(s"page$p"),
+        initialPageParam = 0,
+        getNextPageParam = (_, all) => if all.size < 2 then Some(all.size) else None,
+        QueryOptions(staleTime = 1e9),
+      )
+      div(
+        span(cls := "pages", q.pages.mkString(",")),
+        span(cls := "more", q.hasNextPage.toString),
+        button(onClick := (_ => q.fetchNextPage()), "more"),
+      )
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.pages").textContent == "page0")
+    assert(c.querySelector("span.more").textContent == "true")
+    fireClick(c.querySelector("button"))
+    assert(c.querySelector("span.pages").textContent == "page0,page1")
+    assert(c.querySelector("span.more").textContent == "false")

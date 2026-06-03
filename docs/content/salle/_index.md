@@ -33,8 +33,8 @@ Every salle component is an ordinary function with default arguments, returning 
 - **[Concepts](/salle/concepts/)** — the skin system, light/dark theming, and the
   `useControllable` hook the form controls are built on. Start here.
 - **[Form controls](/salle/forms/)** — `Button`, `Input`, `Checkbox`/`Toggle`, `Select`.
-- **[Display](/salle/display/)** — `ImageCard`, `Badge`/`Tag`, `Skeleton`, and the
-  `Spinner`/`Progress` busy indicators.
-- **[Navigation](/salle/navigation/)** — `Pagination` and `Dropdown`.
-- **[Overlays](/salle/overlays/)** — `Modal` and `Toast`.
+- **[Display](/salle/display/)** — `ImageCard`, `Image`/`Lightbox`, `Badge`/`Tag`,
+  `Skeleton`, and the `Spinner`/`Progress` busy indicators.
+- **[Navigation](/salle/navigation/)** — `Pagination`, `Dropdown`, and `Tabs`.
+- **[Overlays](/salle/overlays/)** — `Modal`, `Toast`, and `Tooltip`.
 - **[Layout](/salle/layout/)** — the `Row`/`Col` grid and `Masonry`.
