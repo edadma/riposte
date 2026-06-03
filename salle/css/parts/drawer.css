@@ -1,0 +1,139 @@
+/* salle — Drawer (edge panel that slides in over a scrim) */
+
+/* ======================================================================== */
+/* Drawer                                                                    */
+/* ======================================================================== */
+
+/* The root is the full-screen positioning context for the scrim + panel. */
+.salle-drawer__root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+/* The scrim fades via data-state; enter and exit share the hidden look so the drawer
+   cross-fades both in and out (usePresence keeps it mounted through the exit). */
+.salle-drawer__mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.salle-drawer__mask[data-state="open"] {
+  opacity: 1;
+}
+
+/* The panel docks to one edge and slides along its axis. Each placement parks the panel
+   off-screen; the open state slides it home. Width (left/right) or height (top/bottom) is set
+   inline by the component so a caller's `size` wins. */
+.salle-drawer__panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  max-width: 100vw;
+  max-height: 100vh;
+  background: var(--salle-input-bg, #ffffff);
+  color: var(--salle-input-fg, #0f172a);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  outline: none;
+  transition: transform 0.25s ease;
+}
+.salle-drawer__panel--right {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 320px;
+  transform: translateX(100%);
+}
+.salle-drawer__panel--left {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 320px;
+  transform: translateX(-100%);
+}
+.salle-drawer__panel--top {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 320px;
+  transform: translateY(-100%);
+}
+.salle-drawer__panel--bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 320px;
+  transform: translateY(100%);
+}
+/* Higher specificity (class + attribute) than the placement rules, so the open state slides
+   the panel home regardless of edge. */
+.salle-drawer__panel[data-state="open"] {
+  transform: none;
+}
+
+/* ---- header / body / footer --------------------------------------------- */
+
+.salle-drawer__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--salle-input-border, #cbd5e1);
+}
+.salle-drawer__title {
+  margin: 0;
+  margin-right: auto; /* push extra + close to the right edge */
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.salle-drawer__extra {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.salle-drawer__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--salle-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+.salle-drawer__close:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.salle-drawer__close:focus-visible {
+  outline: 2px solid var(--salle-focus);
+  outline-offset: 2px;
+}
+
+/* The body is the one scrolling region, so a tall drawer keeps its header/footer pinned. */
+.salle-drawer__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 1.25rem;
+}
+
+.salle-drawer__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex: none;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--salle-input-border, #cbd5e1);
+}

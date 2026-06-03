@@ -22,12 +22,6 @@ import scala.scalajs.js
 // carry `data-part` (box|header|title|close|body|footer) so tests and consumers select on
 // stable, skin-independent hooks.
 
-// The elements Tab should cycle through inside an open dialog. Anything focusable by
-// default, minus things explicitly removed from the tab order (`tabindex="-1"`).
-private val FocusableSelector =
-  "a[href], area[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), " +
-    "textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
-
 private val ModalImpl =
   container[
     (
@@ -49,7 +43,9 @@ private val ModalImpl =
     val parts    = skin.modal(p.centered)
     val presence = usePresence(p.open, p.exitMs)
 
-    val box = useRef[dom.Element | Null](null)
+    // The focus half of "modal": move focus into the box on open, trap Tab within it, and
+    // restore focus to the opener on close. Escape-to-close is handled separately below.
+    val box = useFocusTrap(presence.mounted)
 
     val base    = useId()
     val titleId = base + "-title"
@@ -69,42 +65,6 @@ private val ModalImpl =
       ,
       Array(presence.mounted, p.closeOnEsc),
     )
-
-    // Move focus into the dialog when it appears and restore it to the opener when it goes
-    // away. A layout effect so focus lands before paint; the cleanup captures the
-    // previously-focused element and returns it focus on close/unmount.
-    useLayoutEffect(
-      () =>
-        if !presence.mounted then noCleanup
-        else
-          val previous = dom.document.activeElement
-          val b        = box.current
-          if b != null then b.asInstanceOf[dom.html.Element].focus()
-          () =>
-            if previous != null then
-              try previous.asInstanceOf[dom.html.Element].focus()
-              catch case _: Throwable => ()
-      ,
-      Array(presence.mounted),
-    )
-
-    // Trap Tab within the box: wrap from the last focusable back to the first (and the
-    // reverse for Shift+Tab), so keyboard focus can't escape the open dialog.
-    val onKey: dom.KeyboardEvent => Unit = e =>
-      if e.key == "Tab" then
-        val b = box.current
-        if b != null then
-          val focusables = b.querySelectorAll(FocusableSelector)
-          if focusables.length > 0 then
-            val first  = focusables(0).asInstanceOf[dom.html.Element]
-            val last   = focusables(focusables.length - 1).asInstanceOf[dom.html.Element]
-            val active = dom.document.activeElement
-            if e.shiftKey && (active eq first) then
-              e.preventDefault()
-              last.focus()
-            else if !e.shiftKey && (active eq last) then
-              e.preventDefault()
-              first.focus()
 
     if !presence.mounted then VEmpty
     else
@@ -149,7 +109,6 @@ private val ModalImpl =
           cls           := parts.overlay,
           data("part")  := "overlay",
           data("state") := presence.phase.token,
-          onKeyDown     := onKey,
           // Click on the scrim itself (not a child) dismisses, when permitted.
           onClick := (e => if p.maskClosable && (e.target eq e.currentTarget) then p.onClose()),
           div(

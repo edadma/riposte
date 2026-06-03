@@ -27,6 +27,7 @@ object SalleE2E:
     case "imagecard" => imageCardFixture()
     case "lightbox"  => lightboxFixture()
     case "navbar"    => navbarFixture()
+    case "drawer"    => drawerFixture()
     case _           => indexFixture
 
   // ---- tooltip: real hover/focus timing (the jsdom specs fake the Timers seam) ----------
@@ -142,6 +143,26 @@ object SalleE2E:
     )
   }
 
+  // ---- drawer: real focus move/trap/restore + Esc + slide-in from the edge --------------
+  private val drawerFixture = view {
+    val (open, setOpen, _) = useState(false)
+    div(
+      id := "harness",
+      style := Map("padding" -> "2rem"),
+      button(id := "open", typ := "button", onClick := (_ => setOpen(true)), "Open drawer"),
+      Drawer(
+        open = open,
+        onClose = () => setOpen(false),
+        title = Some("Filters"),
+        placement = DrawerPlacement.Right,
+      )(
+        p("Filter the gallery"),
+        button(id := "field-1", typ := "button", "First"),
+        button(id := "field-2", typ := "button", "Last"),
+      ),
+    )
+  }
+
   // ---- index: a plain links page, handy when opening the harness by hand ----------------
   private val indexFixture =
     div(
@@ -157,5 +178,6 @@ object SalleE2E:
         li(a(href := "?case=imagecard", "imagecard")),
         li(a(href := "?case=lightbox", "lightbox")),
         li(a(href := "?case=navbar", "navbar")),
+        li(a(href := "?case=drawer", "drawer")),
       ),
     )

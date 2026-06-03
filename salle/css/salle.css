@@ -53,3 +53,4 @@
 @import url("./parts/layout.css") layer(salle);
 @import url("./parts/navbar.css") layer(salle);
 @import url("./parts/footer.css") layer(salle);
+@import url("./parts/drawer.css") layer(salle);
