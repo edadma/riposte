@@ -163,8 +163,9 @@ A styled component library on top of the core.
   `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon
   button) and `ThemeSelect(themes)`.
 - **Form controls** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`).
-- **Display** — `ImageCard`; `Badge`/`Tag`/`CheckableTag` label pills; `Skeleton` /
-  `SkeletonText` / `SkeletonImage` loading placeholders.
+- **Display** — `ImageCard`; the previewable `Image` with its `Lightbox` viewer and
+  `ImagePreviewGroup` (shared gallery lightbox); `Badge`/`Tag`/`CheckableTag` label pills;
+  `Skeleton` / `SkeletonText` / `SkeletonImage` loading placeholders.
 - **Feedback** — `Spinner` (indeterminate, with overlay mode), `Progress` (linear),
   `RadialProgress` (ring).
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);

@@ -1,6 +1,6 @@
 ---
 title: "Badge, Tag & CheckableTag"
-weight: 2
+weight: 3
 ---
 
 Three label pills built on one look. **`Badge`** is a non-interactive label — a category, a
