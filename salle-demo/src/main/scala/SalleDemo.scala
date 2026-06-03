@@ -423,6 +423,21 @@ private def showcase: VNode =
         ),
       ),
     ),
+    section("Image / Lightbox — click a thumbnail to open the navigable viewer (←/→, zoom, Esc)")(
+      div(
+        cls := "demo-row",
+        ImagePreviewGroup()(
+          wallpapers.map { (seed, title, _) =>
+            Image(
+              src = s"https://picsum.photos/seed/$seed/240/160",
+              alt = title,
+              width = "180px",
+              rounded = true,
+            )
+          }*,
+        ),
+      ),
+    ),
     // Mounted once; it portals each toast to document.body, grouped by placement.
     Toaster(),
   )

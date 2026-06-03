@@ -1,0 +1,160 @@
+/* salle — Image / Lightbox (full-size previewable image + navigable viewer) */
+
+/* ======================================================================== */
+/* Image (a previewable inline image)                                       */
+/* ======================================================================== */
+
+.salle-image {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+.salle-image--rounded {
+  border-radius: var(--salle-radius);
+  overflow: hidden;
+}
+
+.salle-image__img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  transition: opacity 0.15s ease;
+}
+.salle-image__img[role="button"] {
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+.salle-image__img[role="button"]:hover {
+  filter: brightness(0.92);
+}
+.salle-image__img:focus-visible {
+  outline: 2px solid var(--salle-focus);
+  outline-offset: 2px;
+}
+
+.salle-image__error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4rem;
+  min-height: 4rem;
+  padding: 1rem;
+  background: var(--salle-input-bg, #f1f5f9);
+  color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+/* ======================================================================== */
+/* Lightbox (full-screen image viewer over a dark scrim)                    */
+/* ======================================================================== */
+
+/* The overlay is the full-screen scrim and positioning context. It fades via data-state;
+   enter and exit share the hidden look so the viewer animates both in and out (usePresence
+   keeps it mounted through the exit). It sits above the modal layer. */
+.salle-lightbox__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.9);
+  outline: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.salle-lightbox__overlay[data-state="open"] {
+  opacity: 1;
+}
+.salle-lightbox__overlay[data-state="enter"],
+.salle-lightbox__overlay[data-state="exit"] {
+  opacity: 0;
+}
+
+.salle-lightbox__content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.salle-lightbox__img {
+  display: block;
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--salle-radius);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.7);
+  transform: scale(1);
+  transition: transform 0.2s ease;
+  cursor: zoom-in;
+}
+.salle-lightbox__img[data-zoom="in"] {
+  transform: scale(1.6);
+  cursor: zoom-out;
+}
+
+/* The controls float over the scrim, tinted light so they read against any image. */
+.salle-lightbox__close,
+.salle-lightbox__nav {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+.salle-lightbox__close:hover,
+.salle-lightbox__nav:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.7);
+}
+.salle-lightbox__close:focus-visible,
+.salle-lightbox__nav:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+.salle-lightbox__nav[data-disabled="true"] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.salle-lightbox__close {
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.salle-lightbox__nav {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+}
+.salle-lightbox__nav--prev {
+  left: 1rem;
+}
+.salle-lightbox__nav--next {
+  right: 1rem;
+}
+
+.salle-lightbox__counter {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
