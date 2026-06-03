@@ -69,6 +69,8 @@ same signature. Dependency arrays: `Array(a, b)` re-runs on change, `Array()` ru
 | `useClickOutside(ref, active, handler)`               | Fire when a press lands outside `ref`         |
 | `useMediaQuery(query)`                                | Live `Boolean` for a CSS media query          |
 | `useIntersectionObserver(ref, …)`                     | `Boolean` viewport visibility (lazy load)     |
+| `useResizeObserver(ref, onResize)`                    | Run a callback when an element's size changes  |
+| `useFocusTrap(active)`                                 | Confine focus to a container while `active`    |
 
 See [Hooks](/guide/hooks/).
 
@@ -178,9 +180,9 @@ A styled component library on top of the core.
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
   `Dropdown` menu button (`MenuItem`/`MenuDivider`); `Tabs` (data-driven panels, `Tab`,
   `TabsVariant`/`TabsPosition`).
-- **Overlays** — `Modal` (portal dialog), `Toast`/`Toaster` (imperative `toast` API), and
-  `Tooltip` (floating hint, hover/focus/click) — all animated via the core `usePresence`
-  hook.
+- **Overlays** — `Modal` (portal dialog) and `Drawer` (edge-docked panel) — both focus-
+  trapped via the core `useFocusTrap`; `Toast`/`Toaster` (imperative `toast` API); and
+  `Tooltip` (floating hint, hover/focus/click) — all animated via the core `usePresence` hook.
 - **Layout** — the page shell `Layout` (with `Header`/`Content`/`Footer`/`Sider` regions),
   `Navbar` (three-zone, responsive collapse) and content `Footer` (`Footer.Title`); plus
   `Row`/`Col` (24-column grid, responsive spans) and `Masonry` / `MasonryResponsive` (packed
