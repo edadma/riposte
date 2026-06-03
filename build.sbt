@@ -51,7 +51,7 @@ Global / excludeLintKeys += publishMavenStyle
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(riposte, atoms, router, salle, salleDemo, salleE2E, demo)
+  .aggregate(riposte, atoms, router, query, salle, salleDemo, salleE2E, demo)
   .settings(
     name                := "riposte-root",
     publish / skip      := true,
@@ -127,6 +127,23 @@ lazy val router = project
   .dependsOn(riposte)
   .settings(
     name := "riposte-router",
+    scalacOptions ++= commonScalacOptions,
+    Test / jsEnv := new JSDOMNodeJSEnv(),
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+
+// riposte-query — a TanStack-Query-style async data layer, a separate artifact
+// built on riposte-atoms. A query cache is a reactive keyed store of async cells:
+// `atomFamily` dedupes per key, `onMount` drives fetch-on-first-observe and a
+// gcTime countdown on last-observer-leave, and `Store.forget` evicts. Depends on
+// core (the hooks/DSL) and atoms (the cache substrate); scalajs-dom comes through
+// both transitively.
+lazy val query = project
+  .in(file("query"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(riposte, atoms)
+  .settings(
+    name := "riposte-query",
     scalacOptions ++= commonScalacOptions,
     Test / jsEnv := new JSDOMNodeJSEnv(),
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
