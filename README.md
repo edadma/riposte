@@ -64,6 +64,7 @@ libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.1.0"
 - `salle/` — `riposte-salle`, a styled component library built on the core's DSL + hooks
 - `demo/` — a runnable showcase (its own subproject, never published)
 - `salle-demo/` — a runnable showcase for salle (its own subproject, never published)
+- `salle-e2e/` — a Playwright harness driving salle components in a real browser (never published)
 - the repo root is a thin aggregator; a task run there fans out to every module
 
 ## Development
@@ -80,6 +81,16 @@ sbt salleDemo/fastLinkJS  # build the salle demo's JS
 
 Tests run under a real DOM via jsdom (`npm install` fetches it). To see the demo, build
 its JS, then serve `demo/` (e.g. `cd demo && python3 -m http.server`) and open `index.html`.
+
+The salle component library also has a **Playwright** suite that drives the components in a
+real Chromium (`salle-e2e/`), covering interactions jsdom can't — focus, pointer, layout:
+
+```sh
+npm run e2e        # build the harness bundle, then run the Playwright specs
+npm run e2e:build  # just build the harness JS (sbt salleE2E/fastLinkJS)
+npm run e2e:run    # run the specs against an already-built bundle
+npm run e2e:ui     # the same, in Playwright's interactive UI
+```
 
 ## License
 
