@@ -255,6 +255,46 @@ private val drawerDemo = view {
   )
 }
 
+// A view so the chosen value is visible live. Segmented is the "sort by" / grid-vs-list switch
+// — a single-choice strip, keyboard-driven, with one disabled segment to show the skip.
+private val segmentedDemo = view {
+  val (sort, setSort, _) = useState("new")
+  div(
+    cls := "demo-grid-stack",
+    Segmented(
+      ariaLabel = "Sort wallpapers",
+      value = Some(sort),
+      onChange = setSort,
+      options = Seq(
+        SegmentedOpt(value = "new", label = "Newest"),
+        SegmentedOpt(value = "popular", label = "Popular"),
+        SegmentedOpt(value = "trending", label = "Trending"),
+        SegmentedOpt(value = "random", label = "Random", disabled = true),
+      ),
+    ),
+    p(s"Sorting by: $sort"),
+    Segmented(
+      ariaLabel = "View mode",
+      size = Size.Sm,
+      defaultValue = Some("grid"),
+      options = Seq(
+        SegmentedOpt(value = "grid", label = "Grid"),
+        SegmentedOpt(value = "list", label = "List"),
+      ),
+    ),
+    Segmented(
+      ariaLabel = "Density",
+      block = true,
+      defaultValue = Some("comfortable"),
+      options = Seq(
+        SegmentedOpt(value = "compact", label = "Compact"),
+        SegmentedOpt(value = "comfortable", label = "Comfortable"),
+        SegmentedOpt(value = "spacious", label = "Spacious"),
+      ),
+    ),
+  )
+}
+
 // Buttons that fire the imperative toast API — the "Downloaded" / "Added to favourites"
 // confirmations a gallery shows. A single Toaster (added to the showcase below) renders
 // them, portalled to the body and grouped by placement.
@@ -454,6 +494,9 @@ private def showcase: VNode =
           ),
         ),
       ),
+    ),
+    section("Segmented — single-choice strip (sort, view mode, density; keyboard roving)")(
+      segmentedDemo(),
     ),
     section("Image / Lightbox — click a thumbnail to open the navigable viewer (←/→, zoom, Esc)")(
       div(

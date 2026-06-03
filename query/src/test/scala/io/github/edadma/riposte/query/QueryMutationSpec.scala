@@ -147,3 +147,56 @@ class QueryMutationSpec extends AnyFunSuite:
     assert(c.querySelector("span.st").textContent == "Success")
     fireClick(c.querySelector("button.rs"))
     assert(c.querySelector("span.st").textContent == "Idle")
+
+  test("onSettled runs with the data after a successful mutation"):
+    val c      = host()
+    val client = new QueryClient()
+    var settled: Option[(Option[Int], Option[Throwable])] = None
+    val App = view {
+      val m = useMutation[Int, Int](
+        mutationFn = (v: Int) => Future.successful(v * 2),
+        onSettled = (d, e, _) => settled = Some((d, e)),
+      )
+      button(onClick := (_ => m.mutate(5)), "go")
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    fireClick(c.querySelector("button"))
+    assert(settled == Some((Some(10), None)))
+
+  test("onSettled runs with the error after a failed mutation"):
+    val c      = host()
+    val client = new QueryClient()
+    val boom   = new RuntimeException("boom")
+    var settled: Option[(Option[Int], Option[Throwable])] = None
+    val App = view {
+      val m = useMutation[Int, Int](
+        mutationFn = (_: Int) => Future.failed[Int](boom),
+        onSettled = (d, e, _) => settled = Some((d, e)),
+      )
+      button(onClick := (_ => m.mutate(1)), "go")
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    fireClick(c.querySelector("button"))
+    assert(settled == Some((None, Some(boom))))
+
+  test("onSuccess and onError receive the mutation variables"):
+    val c       = host()
+    val client  = new QueryClient()
+    var okVars  = -1
+    var errVars = -1
+    val App = view {
+      val ok = useMutation[Int, Int]((v: Int) => Future.successful(v), onSuccess = (_, v) => okVars = v)
+      val no = useMutation[Int, Int]((_: Int) => Future.failed[Int](new RuntimeException), onError = (_, v) => errVars = v)
+      div(
+        button(cls := "ok", onClick := (_ => ok.mutate(7)), "ok"),
+        button(cls := "no", onClick := (_ => no.mutate(9)), "no"),
+      )
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    fireClick(c.querySelector("button.ok"))
+    fireClick(c.querySelector("button.no"))
+    assert(okVars == 7)
+    assert(errVars == 9)

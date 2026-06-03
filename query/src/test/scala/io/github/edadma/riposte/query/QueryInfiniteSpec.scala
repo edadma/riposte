@@ -29,14 +29,15 @@ class QueryInfiniteSpec extends AnyFunSuite:
     fns.foreach(_())
 
   private def observeInfinite[D, P](
-      client:           QueryClient,
-      key:              QueryKey,
-      fetchPage:        P => Future[D],
-      initialPageParam: P,
-      getNextPageParam: (D, Vector[D]) => Option[P],
-      opts:             QueryOptions = QueryOptions(),
+      client:               QueryClient,
+      key:                  QueryKey,
+      fetchPage:            P => Future[D],
+      initialPageParam:     P,
+      getNextPageParam:     (D, Vector[D]) => Option[P],
+      getPreviousPageParam: (D, Vector[D]) => Option[P] = (_: D, _: Vector[D]) => None,
+      opts:                 QueryOptions = QueryOptions(),
   ) =
-    val cell  = client.registerInfinite(key, fetchPage, initialPageParam, getNextPageParam, opts)
+    val cell  = client.registerInfinite(key, fetchPage, initialPageParam, getNextPageParam, getPreviousPageParam, opts)
     val unsub = client.store.sub(cell, () => ())
     (cell, unsub)
 
@@ -152,3 +153,74 @@ class QueryInfiniteSpec extends AnyFunSuite:
     fireTimers() // retry succeeds
     assert(n == 2)
     assert(infiniteData[String, Int](client, cell).pages == Vector("page0", "page1"))
+
+  // A bidirectional query opens at a param in the middle of the range and can grow
+  // from both ends. Pages here are their own param (an Int window index): the next
+  // param is one higher, the previous one lower, each bounded.
+
+  test("fetchPreviousPage prepends an older page"):
+    install()
+    val client = new QueryClient()
+    val key    = queryKey("win")
+    val (cell, _) = observeInfinite[Int, Int](
+      client,
+      key,
+      (p: Int) => Future.successful(p),
+      initialPageParam = 5,
+      getNextPageParam = (last, _) => if last < 10 then Some(last + 1) else None,
+      getPreviousPageParam = (first, _) => if first > 0 then Some(first - 1) else None,
+    )
+    assert(infiniteData[Int, Int](client, cell).pages == Vector(5))
+    client.fetchPreviousPage(key)
+    val d = infiniteData[Int, Int](client, cell)
+    assert(d.pages == Vector(4, 5))
+    assert(d.pageParams == Vector(4, 5))
+
+  test("a bidirectional query can grow from both ends"):
+    install()
+    val client = new QueryClient()
+    val key    = queryKey("win")
+    val (cell, _) = observeInfinite[Int, Int](
+      client,
+      key,
+      (p: Int) => Future.successful(p),
+      initialPageParam = 5,
+      getNextPageParam = (last, _) => if last < 10 then Some(last + 1) else None,
+      getPreviousPageParam = (first, _) => if first > 0 then Some(first - 1) else None,
+    )
+    client.fetchPreviousPage(key) // [4, 5]
+    client.fetchPreviousPage(key) // [3, 4, 5]
+    client.fetchNextPage(key)     // [3, 4, 5, 6]
+    val d = infiniteData[Int, Int](client, cell)
+    assert(d.pages == Vector(3, 4, 5, 6))
+    assert(d.pageParams == Vector(3, 4, 5, 6))
+
+  test("fetchPreviousPage stops when getPreviousPageParam returns None"):
+    install()
+    val client = new QueryClient()
+    val key    = queryKey("win")
+    val (cell, _) = observeInfinite[Int, Int](
+      client,
+      key,
+      (p: Int) => Future.successful(p),
+      initialPageParam = 1,
+      getNextPageParam = (_, _) => None,
+      getPreviousPageParam = (first, _) => if first > 0 then Some(first - 1) else None,
+    )
+    client.fetchPreviousPage(key) // first 1 → prepend 0 → [0, 1]
+    client.fetchPreviousPage(key) // first 0 → None, a no-op
+    assert(infiniteData[Int, Int](client, cell).pages == Vector(0, 1))
+
+  test("a forward-only query has no previous direction"):
+    install()
+    val client = new QueryClient()
+    val key    = queryKey("feed")
+    val (cell, _) = observeInfinite[String, Int](
+      client,
+      key,
+      (p: Int) => Future.successful(s"page$p"),
+      initialPageParam = 0,
+      getNextPageParam = (_, all) => if all.size < 3 then Some(all.size) else None,
+    ) // getPreviousPageParam defaults to None
+    client.fetchPreviousPage(key) // no-op — no previous param
+    assert(infiniteData[String, Int](client, cell).pages == Vector("page0"))

@@ -203,6 +203,20 @@ type DrawerClasses = (
     footer: String,
 )
 
+/** The per-part CSS classes for a [[Segmented]] control: the `root` strip (which carries the
+  * size + block look), each `item` segment button with its `active` (selected) and `disabled`
+  * modifiers (applied conditionally, like [[TabsClasses]]), a segment's leading `icon` slot, and
+  * its `label` text. The selected/disabled state also rides `data-*`, so a skin may style from
+  * either. */
+type SegmentedClasses = (
+    root: String,
+    item: String,
+    active: String,
+    disabled: String,
+    icon: String,
+    label: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -322,6 +336,11 @@ trait Skin:
   /** Classes for a [[Drawer]]'s parts, by `placement` ([[DrawerPlacement]]). The open/exit
     * phase rides `data-state`, so this returns the structural + placement classes only. */
   def drawer(placement: DrawerPlacement): DrawerClasses
+
+  /** Classes for a [[Segmented]] control's parts. `size` scales the strip and `block` makes it
+    * span the full width (segments share the space equally). The `active`/`disabled` segment
+    * modifiers are applied conditionally by the component. */
+  def segmented(size: Size, block: Boolean): SegmentedClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -515,6 +534,16 @@ object SalleSkin extends Skin:
       close = "salle-drawer__close",
       body = "salle-drawer__body",
       footer = "salle-drawer__footer",
+    )
+
+  def segmented(size: Size, block: Boolean): SegmentedClasses =
+    (
+      root = bem("salle-segmented", size.token, if block then "block" else ""),
+      item = "salle-segmented__item",
+      active = "salle-segmented__item--active",
+      disabled = "salle-segmented__item--disabled",
+      icon = "salle-segmented__icon",
+      label = "salle-segmented__label",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -801,6 +830,20 @@ object DaisySkin extends Skin:
     (
       root = "footer p-6" + (if center then " footer-center" else "") + (if horizontal then " footer-horizontal" else ""),
       title = "footer-title",
+    )
+
+  // Mirrors AsterUI's Segmented: a `join` group of `btn join-item` segments, the selected one
+  // getting `btn-active`. `block` makes the strip fill its container and each segment share the
+  // width equally. The selected/disabled state also rides `data-*`, so SalleSkin can style from
+  // there; here the active look comes from `btn-active` applied by the component.
+  def segmented(size: Size, block: Boolean): SegmentedClasses =
+    (
+      root = "join" + (if block then " w-full [&>.join-item]:flex-1" else ""),
+      item = daisy("btn", size.token) + " join-item",
+      active = "btn-active",
+      disabled = "btn-disabled",
+      icon = "mr-1 inline-flex items-center",
+      label = "inline-flex items-center",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
