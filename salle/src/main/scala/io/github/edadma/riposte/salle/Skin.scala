@@ -186,6 +186,23 @@ type FooterClasses = (
     title: String,
 )
 
+/** The per-part CSS classes for a [[Drawer]]: the full-screen `root` positioning context, the
+  * `mask` scrim, the sliding `panel` (which carries the placement + slide look), the `header`
+  * band with its `title`/`extra` slots and `close` button, the scrollable `body`, and the
+  * `footer`. The open/exit phase rides `data-state` and the edge rides `data-placement`, so the
+  * slide is driven from there rather than from these classes. */
+type DrawerClasses = (
+    root: String,
+    mask: String,
+    panel: String,
+    header: String,
+    title: String,
+    extra: String,
+    close: String,
+    body: String,
+    footer: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -301,6 +318,10 @@ trait Skin:
   /** Classes for a content [[Footer]]'s parts. `center` centres the columns; `horizontal` lays
     * them in a row rather than stacked. */
   def footer(center: Boolean, horizontal: Boolean): FooterClasses
+
+  /** Classes for a [[Drawer]]'s parts, by `placement` ([[DrawerPlacement]]). The open/exit
+    * phase rides `data-state`, so this returns the structural + placement classes only. */
+  def drawer(placement: DrawerPlacement): DrawerClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -479,6 +500,21 @@ object SalleSkin extends Skin:
     (
       root = bem("salle-footer", if center then "center" else "", if horizontal then "horizontal" else ""),
       title = "salle-footer__title",
+    )
+
+  // The slide + dock ride `[data-placement]`/`[data-state]` in drawer.css; the panel carries a
+  // placement modifier too so an override can target one edge by class alone.
+  def drawer(placement: DrawerPlacement): DrawerClasses =
+    (
+      root = "salle-drawer__root",
+      mask = "salle-drawer__mask",
+      panel = bem("salle-drawer__panel", placement.token),
+      header = "salle-drawer__header",
+      title = "salle-drawer__title",
+      extra = "salle-drawer__extra",
+      close = "salle-drawer__close",
+      body = "salle-drawer__body",
+      footer = "salle-drawer__footer",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -671,6 +707,29 @@ object DaisySkin extends Skin:
       disabled = "tab-disabled",
       icon = "mr-1 inline-flex items-center",
       panel = if position == TabsPosition.Top then "mt-4" else "mb-4",
+    )
+
+  // DaisyUI's own `drawer` is a checkbox-toggled sidebar, not a controllable modal overlay, so
+  // the drawer is built from Tailwind utilities (like the lightbox). The slide is driven by
+  // `data-[state=open]:` transform variants per placement so it tracks usePresence exactly as
+  // SalleSkin's CSS does; the mask cross-fades the same way.
+  def drawer(placement: DrawerPlacement): DrawerClasses =
+    val dock = placement match
+      case DrawerPlacement.Right  => "inset-y-0 right-0 translate-x-full data-[state=open]:translate-x-0"
+      case DrawerPlacement.Left   => "inset-y-0 left-0 -translate-x-full data-[state=open]:translate-x-0"
+      case DrawerPlacement.Top    => "inset-x-0 top-0 -translate-y-full data-[state=open]:translate-y-0"
+      case DrawerPlacement.Bottom => "inset-x-0 bottom-0 translate-y-full data-[state=open]:translate-y-0"
+    (
+      root = "fixed inset-0 z-[60]",
+      mask = "absolute inset-0 bg-black/50 transition-opacity duration-300 opacity-0 data-[state=open]:opacity-100",
+      panel =
+        "fixed flex flex-col bg-base-100 shadow-xl max-w-full max-h-full transition-transform duration-300 ease-in-out " + dock,
+      header = "flex items-center gap-2 px-6 py-4 border-b border-base-300",
+      title = "text-lg font-semibold mr-auto",
+      extra = "flex items-center gap-2",
+      close = "btn btn-sm btn-circle btn-ghost",
+      body = "flex-1 overflow-auto p-6",
+      footer = "px-6 py-4 border-t border-base-300",
     )
 
   // DaisyUI has no lightbox, so the overlay is a fixed full-screen scrim built from Tailwind
