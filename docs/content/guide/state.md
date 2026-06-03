@@ -114,7 +114,12 @@ val resetAll = action((get, set, _: Unit) => {
 
 **`atomFamily(make)`** — a function from a parameter to an atom, memoized so the same
 parameter always yields the same atom. Use it for per-id state (one atom per row, per
-user, …).
+user, …). The returned `AtomFamily` is still a `P => Atom`, but also exposes an eviction
+surface — `contains(p)`, `keys`, `remove(p)`, `clear()` — so a family can release keyed
+atoms instead of pinning them forever. `remove` drops only the family's memo; pair it with
+`Store.forget(atom)` to also discard the value from a store. (`Store.forget` is the
+eviction primitive [riposte-query](/guide/queries/) builds its cache garbage-collection
+on; use it on leaf atoms nothing currently observes.)
 
 **`atomWithStorage(key, default)`** — a primitive atom that persists to `localStorage`
 under `key` and re-hydrates on load. A typed overload takes `encode`/`decode` for
