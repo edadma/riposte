@@ -226,6 +226,35 @@ private val modalDemo = view {
   )
 }
 
+// A view because the Drawer is controlled. It slides in from the right over a scrim, traps
+// focus inside, and closes on the button, the scrim, or Escape — the filter-sidebar pattern.
+private val drawerDemo = view {
+  val (open, setOpen, _) = useState(false)
+  div(
+    Button("Open filters", color = Color.Primary, onClick = () => setOpen(true)),
+    Drawer(
+      open = open,
+      onClose = () => setOpen(false),
+      title = Some("Filters"),
+      placement = DrawerPlacement.Right,
+      footer = Some(
+        fragment(
+          Button("Reset", variant = ButtonVariant.Ghost, onClick = () => setOpen(false)),
+          Button("Apply", color = Color.Primary, onClick = () => setOpen(false)),
+        ),
+      ),
+    )(
+      p("This panel slides in from the edge, traps focus inside, and closes on the button, the scrim, or Escape."),
+      div(
+        style := Map("display" -> "flex", "flex-direction" -> "column", "gap" -> "0.5rem", "margin-top" -> "1rem"),
+        Checkbox(label = "Nature", defaultChecked = true),
+        Checkbox(label = "Abstract"),
+        Checkbox(label = "Minimal"),
+      ),
+    ),
+  )
+}
+
 // Buttons that fire the imperative toast API — the "Downloaded" / "Added to favourites"
 // confirmations a gallery shows. A single Toaster (added to the showcase below) renders
 // them, portalled to the body and grouped by placement.
@@ -327,6 +356,9 @@ private def showcase: VNode =
     ),
     section("Modal — dialog over a scrim (portalled, animated)")(
       modalDemo(),
+    ),
+    section("Drawer — edge panel that slides in over a scrim (filter sidebar, mobile nav)")(
+      drawerDemo(),
     ),
     section("Toast — notifications (types, auto-dismiss, loading, clear)")(
       toastDemo(),
@@ -435,6 +467,42 @@ private def showcase: VNode =
               rounded = true,
             )
           }*,
+        ),
+      ),
+    ),
+    section("Layout / Navbar / Footer — the page-shell frame (narrow the window to collapse the navbar)")(
+      div(
+        cls := "demo-row",
+        // A self-contained mini-shell: a header band with a collapsible navbar, a row of a
+        // sider beside the content, and a content footer in the bottom band.
+        div(
+          style := Map("width" -> "100%", "height" -> "320px", "border" -> "1px solid var(--salle-input-border)",
+            "border-radius" -> "0.5rem", "overflow" -> "hidden"),
+          Layout()(
+            Layout.Header(
+              Navbar(
+                start = strong("Wallpapers"),
+                center = a(href := "#", "Browse"),
+                end = Button(label = "Sign in", color = Color.Primary, size = Size.Sm),
+                collapsible = true,
+              ),
+            ),
+            Layout(hasSider = true)(
+              Layout.Sider(width = "180px", collapsible = true, theme = SiderTheme.Dark)(
+                div(style := Map("padding" -> "1rem", "display" -> "flex", "flex-direction" -> "column", "gap" -> "0.5rem"),
+                  span("Nature"), span("Abstract"), span("Space"), span("Minimal")),
+              ),
+              Layout.Content(
+                p(style := Map("padding" -> "1rem"), "Main gallery content scrolls here."),
+              ),
+            ),
+            Layout.Footer(
+              Footer(center = true)(
+                Footer.Title("salle"),
+                span("Built on the riposte stack · © 2026"),
+              ),
+            ),
+          ),
         ),
       ),
     ),

@@ -1,0 +1,93 @@
+/* salle — Layout (page-shell frame: regions + collapsible sider) */
+
+/* ======================================================================== */
+/* Layout                                                                    */
+/* ======================================================================== */
+
+/* The container stacks its regions in a column by default; `data-has-sider` flips it to a
+   row so a sider sits beside the content. Nest layouts to mix both axes on one page. */
+.salle-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.salle-layout--has-sider,
+.salle-layout[data-has-sider="true"] {
+  flex-direction: row;
+}
+
+/* The header band: a fixed-height row for the brand + nav. */
+.salle-layout__header {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 4rem;
+  padding: 0 1.5rem;
+  background: color-mix(in srgb, var(--salle-color-neutral) 14%, var(--salle-input-bg, #ffffff));
+  color: var(--salle-input-fg, #0f172a);
+}
+
+/* The main area grows to fill the space the bands and sider leave, and scrolls its overflow. */
+.salle-layout__content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The footer band, mirroring the header surface. */
+.salle-layout__footer {
+  flex: none;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--salle-color-neutral) 14%, var(--salle-input-bg, #ffffff));
+  color: var(--salle-input-fg, #0f172a);
+}
+
+/* ---- sider --------------------------------------------------------------- */
+
+/* A fixed-width column whose width animates as it collapses. The width itself is set inline
+   by the component (so a caller's `width`/`collapsedWidth` win); the transition lives here. */
+.salle-layout__sider {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+.salle-layout__sider--dark {
+  background: color-mix(in srgb, var(--salle-color-neutral) 22%, var(--salle-input-bg, #ffffff));
+  color: var(--salle-input-fg, #0f172a);
+}
+.salle-layout__sider--light {
+  background: var(--salle-input-bg, #ffffff);
+  color: var(--salle-input-fg, #0f172a);
+}
+
+/* The content scrolls; the trigger stays pinned at the foot of the column. */
+.salle-layout__sider-inner {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.salle-layout__sider-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 2.5rem;
+  width: 100%;
+  border: none;
+  background: color-mix(in srgb, var(--salle-color-neutral) 14%, transparent);
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.salle-layout__sider-trigger:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.salle-layout__sider-trigger:focus-visible {
+  outline: 2px solid var(--salle-focus);
+  outline-offset: -2px;
+}

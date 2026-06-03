@@ -148,6 +148,61 @@ type ImageClasses = (
     error: String,
 )
 
+/** The per-part CSS classes for a [[Layout]] frame: the flex `root` container and its three
+  * band regions — `header`, `content` (the growing main area), and `footer`. The `Sider`
+  * region is themed, so it has its own [[SiderClasses]] via [[Skin.sider]]. */
+type LayoutClasses = (
+    root: String,
+    header: String,
+    content: String,
+    footer: String,
+)
+
+/** The per-part CSS classes for a [[Layout.Sider]]: the `root` aside (which carries the
+  * theme + width), the scrollable `inner` content wrapper, and the collapse `trigger` button.
+  * The collapsed state and theme ride `data-*`; the skin only varies the look by theme. */
+type SiderClasses = (
+    root: String,
+    inner: String,
+    trigger: String,
+)
+
+/** The per-part CSS classes for a [[Navbar]]: the `root` nav (which carries the colour,
+  * shadow, radius, and sticky look), the three zones `start`/`center`/`end`, and the
+  * responsive `toggle` (hamburger) button. The narrow/open state rides `data-*`, so the
+  * collapse is driven from there rather than from these classes. */
+type NavbarClasses = (
+    root: String,
+    start: String,
+    center: String,
+    end: String,
+    toggle: String,
+)
+
+/** The per-part CSS classes for a content [[Footer]]: the `root` footer (which carries the
+  * centre/horizontal modifiers) and the `title` heading used for each column label. */
+type FooterClasses = (
+    root: String,
+    title: String,
+)
+
+/** The per-part CSS classes for a [[Drawer]]: the full-screen `root` positioning context, the
+  * `mask` scrim, the sliding `panel` (which carries the placement + slide look), the `header`
+  * band with its `title`/`extra` slots and `close` button, the scrollable `body`, and the
+  * `footer`. The open/exit phase rides `data-state` and the edge rides `data-placement`, so the
+  * slide is driven from there rather than from these classes. */
+type DrawerClasses = (
+    root: String,
+    mask: String,
+    panel: String,
+    header: String,
+    title: String,
+    extra: String,
+    close: String,
+    body: String,
+    footer: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -245,6 +300,28 @@ trait Skin:
   /** Classes for an [[Image]]'s parts. `rounded` requests rounded corners on the wrapper; the
     * active skin maps it to whatever radius treatment it uses. */
   def image(rounded: Boolean): ImageClasses
+
+  /** Classes for a [[Layout]] frame's parts. `hasSider` lays the regions in a row (a sidebar
+    * beside the content) rather than the default column; the skin maps it to its own flex
+    * direction. */
+  def layout(hasSider: Boolean): LayoutClasses
+
+  /** Classes for a [[Layout.Sider]]'s parts, by `theme` ([[SiderTheme]]). The collapsed state
+    * and width ride `data-*`/inline style, so only the theme surface varies here. */
+  def sider(theme: SiderTheme): SiderClasses
+
+  /** Classes for a [[Navbar]]'s parts. `color` tints the bar, `sticky` pins it, and `shadow`
+    * ([[NavbarShadow]]) / `rounded` ([[NavbarRounded]]) shape it. The narrow/open collapse
+    * state is mirrored to `data-*` and styled from there. */
+  def navbar(color: Color, sticky: Boolean, shadow: NavbarShadow, rounded: NavbarRounded): NavbarClasses
+
+  /** Classes for a content [[Footer]]'s parts. `center` centres the columns; `horizontal` lays
+    * them in a row rather than stacked. */
+  def footer(center: Boolean, horizontal: Boolean): FooterClasses
+
+  /** Classes for a [[Drawer]]'s parts, by `placement` ([[DrawerPlacement]]). The open/exit
+    * phase rides `data-state`, so this returns the structural + placement classes only. */
+  def drawer(placement: DrawerPlacement): DrawerClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -389,6 +466,55 @@ object SalleSkin extends Skin:
       root = bem("salle-image", if rounded then "rounded" else ""),
       img = "salle-image__img",
       error = "salle-image__error",
+    )
+
+  // Direction rides `[data-has-sider]` in CSS, but the modifier is also emitted so a skin
+  // override can target the row form by class alone.
+  def layout(hasSider: Boolean): LayoutClasses =
+    (
+      root = bem("salle-layout", if hasSider then "has-sider" else ""),
+      header = "salle-layout__header",
+      content = "salle-layout__content",
+      footer = "salle-layout__footer",
+    )
+
+  def sider(theme: SiderTheme): SiderClasses =
+    (
+      root = bem("salle-layout__sider", theme.token),
+      inner = "salle-layout__sider-inner",
+      trigger = "salle-layout__sider-trigger",
+    )
+
+  // The shadow/rounded tokens are class fragments (`shadow-sm`, `rounded-lg`); under salle they
+  // become BEM modifiers (`salle-navbar--shadow-sm`) styled in navbar.css.
+  def navbar(color: Color, sticky: Boolean, shadow: NavbarShadow, rounded: NavbarRounded): NavbarClasses =
+    (
+      root = bem("salle-navbar", color.token, if sticky then "sticky" else "", shadow.token, rounded.token),
+      start = "salle-navbar__start",
+      center = "salle-navbar__center",
+      end = "salle-navbar__end",
+      toggle = "salle-navbar__toggle",
+    )
+
+  def footer(center: Boolean, horizontal: Boolean): FooterClasses =
+    (
+      root = bem("salle-footer", if center then "center" else "", if horizontal then "horizontal" else ""),
+      title = "salle-footer__title",
+    )
+
+  // The slide + dock ride `[data-placement]`/`[data-state]` in drawer.css; the panel carries a
+  // placement modifier too so an override can target one edge by class alone.
+  def drawer(placement: DrawerPlacement): DrawerClasses =
+    (
+      root = "salle-drawer__root",
+      mask = "salle-drawer__mask",
+      panel = bem("salle-drawer__panel", placement.token),
+      header = "salle-drawer__header",
+      title = "salle-drawer__title",
+      extra = "salle-drawer__extra",
+      close = "salle-drawer__close",
+      body = "salle-drawer__body",
+      footer = "salle-drawer__footer",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -583,6 +709,29 @@ object DaisySkin extends Skin:
       panel = if position == TabsPosition.Top then "mt-4" else "mb-4",
     )
 
+  // DaisyUI's own `drawer` is a checkbox-toggled sidebar, not a controllable modal overlay, so
+  // the drawer is built from Tailwind utilities (like the lightbox). The slide is driven by
+  // `data-[state=open]:` transform variants per placement so it tracks usePresence exactly as
+  // SalleSkin's CSS does; the mask cross-fades the same way.
+  def drawer(placement: DrawerPlacement): DrawerClasses =
+    val dock = placement match
+      case DrawerPlacement.Right  => "inset-y-0 right-0 translate-x-full data-[state=open]:translate-x-0"
+      case DrawerPlacement.Left   => "inset-y-0 left-0 -translate-x-full data-[state=open]:translate-x-0"
+      case DrawerPlacement.Top    => "inset-x-0 top-0 -translate-y-full data-[state=open]:translate-y-0"
+      case DrawerPlacement.Bottom => "inset-x-0 bottom-0 translate-y-full data-[state=open]:translate-y-0"
+    (
+      root = "fixed inset-0 z-[60]",
+      mask = "absolute inset-0 bg-black/50 transition-opacity duration-300 opacity-0 data-[state=open]:opacity-100",
+      panel =
+        "fixed flex flex-col bg-base-100 shadow-xl max-w-full max-h-full transition-transform duration-300 ease-in-out " + dock,
+      header = "flex items-center gap-2 px-6 py-4 border-b border-base-300",
+      title = "text-lg font-semibold mr-auto",
+      extra = "flex items-center gap-2",
+      close = "btn btn-sm btn-circle btn-ghost",
+      body = "flex-1 overflow-auto p-6",
+      footer = "px-6 py-4 border-t border-base-300",
+    )
+
   // DaisyUI has no lightbox, so the overlay is a fixed full-screen scrim built from Tailwind
   // utilities (above the modal's z-50). The image is contained within the viewport; the close
   // and nav controls reuse the circular ghost-button look, tinted white over the dark scrim.
@@ -604,6 +753,54 @@ object DaisySkin extends Skin:
       root = "relative inline-block" + (if rounded then " rounded-box overflow-hidden" else ""),
       img = "block max-w-full",
       error = "flex items-center justify-center bg-base-200 text-base-content/40 p-4",
+    )
+
+  // Mirrors AsterUI's Layout class lists: a min-height-zero flex container, a fixed-height
+  // header band, a growing scrollable main, and a padded footer band — all on `base-300`.
+  def layout(hasSider: Boolean): LayoutClasses =
+    (
+      root = "flex min-h-0 " + (if hasSider then "flex-row" else "flex-col"),
+      header = "flex items-center px-6 h-16 bg-base-300 shrink-0",
+      content = "flex-1 min-h-0 overflow-auto",
+      footer = "px-6 py-4 text-center bg-base-300 shrink-0",
+    )
+
+  // The theme picks the surface (`base-100` light, `base-200` dark), matching AsterUI's Sider;
+  // the width transition rides the inline width set by the component.
+  def sider(theme: SiderTheme): SiderClasses =
+    (
+      root = "flex flex-col shrink-0 transition-all duration-200 relative " +
+        (if theme == SiderTheme.Light then "bg-base-100" else "bg-base-200"),
+      inner = "flex-1 overflow-auto",
+      trigger = "flex items-center justify-center h-10 w-full bg-base-300 hover:bg-base-content/10 transition-colors",
+    )
+
+  // DaisyUI's `navbar` with `navbar-start/center/end` zones. The responsive collapse is driven
+  // off the nav's own `data-narrow`/`data-open` via Tailwind group-data variants (the nav is a
+  // named `group/navbar`), so it tracks the JS breakpoint exactly as SalleSkin does. The
+  // shadow/rounded tokens are already Tailwind classes, so they pass through unchanged.
+  def navbar(color: Color, sticky: Boolean, shadow: NavbarShadow, rounded: NavbarRounded): NavbarClasses =
+    val colorCls = color match
+      case Color.Default => "bg-base-100"
+      case c             => s"bg-${c.token} text-${c.token}-content"
+    val fold =
+      "group-data-[narrow=true]/navbar:basis-full group-data-[narrow=true]/navbar:group-data-[open=false]/navbar:hidden"
+    (
+      root = ("navbar group/navbar flex-wrap " + colorCls
+        + (if sticky then " sticky top-0 z-50" else "")
+        + (if shadow.token.nonEmpty then " " + shadow.token else "")
+        + (if rounded.token.nonEmpty then " " + rounded.token else "")),
+      start = "navbar-start",
+      center = "navbar-center " + fold,
+      end = "navbar-end " + fold,
+      toggle = "btn btn-ghost btn-square hidden group-data-[narrow=true]/navbar:inline-flex",
+    )
+
+  // DaisyUI's `footer`; `footer-center` centres and `footer-horizontal` lays the columns in a row.
+  def footer(center: Boolean, horizontal: Boolean): FooterClasses =
+    (
+      root = "footer p-6" + (if center then " footer-center" else "") + (if horizontal then " footer-horizontal" else ""),
+      title = "footer-title",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish

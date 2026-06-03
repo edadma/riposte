@@ -270,3 +270,120 @@ class DomHooksSpec extends AnyFunSuite:
     dom.window.dispatchEvent(new dom.Event("resize"))
     Scheduler.flushSync()
     assert(observed == 7)
+
+  // -- useFocusTrap ---------------------------------------------------------
+
+  private def tabKey(target: dom.EventTarget, shift: Boolean): Unit =
+    target.dispatchEvent(
+      new dom.KeyboardEvent(
+        "keydown",
+        new dom.KeyboardEventInit { key = "Tab"; shiftKey = shift; bubbles = true; cancelable = true },
+      ),
+    )
+    Scheduler.flushSync()
+
+  // Each focus-trap test installs a *document* keydown listener and moves focus, so they
+  // must run in isolation: clear the body first (drop leftover nodes) and unmount at the end
+  // (drop the listener), or a prior test's still-attached trap would fight this one's.
+  private def clearBody(): Unit = dom.document.body.innerHTML = ""
+
+  test("useFocusTrap moves focus into the container when active"):
+    clearBody()
+    val Comp = view {
+      val trap = useFocusTrap(true)
+      div(ref := trap, tabIndex := "-1", id := "trap", button(id := "f", typ := "button", "f"))
+    }
+    val root = createRoot(host())
+    root.render(Comp())
+    Scheduler.flushSync()
+    assert(dom.document.activeElement eq dom.document.getElementById("trap"))
+    root.unmount()
+    Scheduler.flushSync()
+
+  test("useFocusTrap wraps Tab at the last focusable back to the first"):
+    clearBody()
+    val Comp = view {
+      val trap = useFocusTrap(true)
+      div(
+        ref      := trap,
+        tabIndex := "-1",
+        id       := "trap",
+        button(id := "first", typ := "button", "first"),
+        button(id := "last", typ := "button", "last"),
+      )
+    }
+    val root = createRoot(host())
+    root.render(Comp())
+    Scheduler.flushSync()
+    val first = dom.document.getElementById("first").asInstanceOf[dom.html.Element]
+    val last  = dom.document.getElementById("last").asInstanceOf[dom.html.Element]
+    last.focus()
+    tabKey(last, shift = false) // at the last element, forward Tab wraps to first
+    assert(dom.document.activeElement eq first)
+    first.focus()
+    tabKey(first, shift = true) // at the first element, Shift+Tab wraps to last
+    assert(dom.document.activeElement eq last)
+    root.unmount()
+    Scheduler.flushSync()
+
+  test("useFocusTrap pulls focus back when it has escaped the container"):
+    clearBody()
+    val Comp = view {
+      val trap = useFocusTrap(true)
+      div(ref := trap, tabIndex := "-1", id := "trap", button(id := "first", typ := "button", "first"))
+    }
+    val root = createRoot(host())
+    root.render(Comp())
+    Scheduler.flushSync()
+    val outside = dom.document.createElement("button").asInstanceOf[dom.html.Element]
+    dom.document.body.appendChild(outside)
+    outside.focus()
+    assert(dom.document.activeElement eq outside)
+    tabKey(outside, shift = false)
+    assert(dom.document.activeElement eq dom.document.getElementById("first"))
+    root.unmount()
+    Scheduler.flushSync()
+
+  test("useFocusTrap does not trap or move focus while inactive"):
+    clearBody()
+    val Comp = view {
+      val trap = useFocusTrap(false)
+      div(ref := trap, tabIndex := "-1", id := "trap", button(id := "first", typ := "button", "first"))
+    }
+    val opener = dom.document.createElement("button").asInstanceOf[dom.html.Element]
+    dom.document.body.appendChild(opener)
+    opener.focus()
+    val root = createRoot(host())
+    root.render(Comp())
+    Scheduler.flushSync()
+    assert(dom.document.activeElement eq opener) // focus was not moved into the container
+    val first = dom.document.getElementById("first").asInstanceOf[dom.html.Element]
+    first.focus()
+    tabKey(first, shift = false) // no trap installed, so the wrap does not fire
+    assert(dom.document.activeElement eq first)
+    root.unmount()
+    Scheduler.flushSync()
+
+  test("useFocusTrap restores focus to the opener when it closes"):
+    clearBody()
+    var active            = true
+    var bump: Int => Unit = null
+    val Comp = view {
+      val (_, set, _) = useState(0)
+      bump = set
+      val trap = useFocusTrap(active)
+      div(ref := trap, tabIndex := "-1", id := "trap", button(id := "first", typ := "button", "first"))
+    }
+    val opener = dom.document.createElement("button").asInstanceOf[dom.html.Element]
+    dom.document.body.appendChild(opener)
+    opener.focus()
+    val root = createRoot(host())
+    root.render(Comp())
+    Scheduler.flushSync()
+    assert(dom.document.activeElement eq dom.document.getElementById("trap"))
+    active = false
+    bump(1) // re-render with active = false → the layout-effect cleanup restores focus
+    Scheduler.flushSync()
+    assert(dom.document.activeElement eq opener)
+    root.unmount()
+    Scheduler.flushSync()

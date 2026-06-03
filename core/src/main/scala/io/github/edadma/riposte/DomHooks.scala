@@ -225,3 +225,69 @@ def usePresence(open: Boolean, exitMs: Int)(using Hooks): Presence =
   )
 
   (mounted = mounted, phase = phase)
+
+// The elements Tab should cycle through inside a trap: anything focusable by default, minus
+// what is explicitly removed from the tab order (`tabindex="-1"`).
+private val FocusTrapSelector =
+  "a[href], area[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), " +
+    "textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+
+/** Confine keyboard focus to one container while `active`. Returns a ref to attach to the
+  * container element — give it `tabindex="-1"` so it can hold focus itself. While active: focus
+  * moves into the container when it opens, `Tab`/`Shift+Tab` wrap within it (and any stray
+  * focus outside is pulled back), and focus is restored to the previously-focused element when
+  * `active` flips off or the component unmounts. This is the shared foundation for modal
+  * overlays (Modal, Drawer) — the focus half of "modal", separate from Escape-to-close, which
+  * each component still owns.
+  */
+def useFocusTrap(active: Boolean)(using Hooks): Ref[dom.Element | Null] =
+  val container = useRef[dom.Element | Null](null)
+
+  // Move focus into the container on open and restore it on close/unmount. A layout effect so
+  // focus lands before paint; the cleanup captures the previously-focused element and returns
+  // focus to it.
+  useLayoutEffect(
+    () =>
+      if !active then noCleanup
+      else
+        val previous = dom.document.activeElement
+        val c        = container.current
+        if c != null then c.asInstanceOf[dom.html.Element].focus()
+        () =>
+          if previous != null then
+            try previous.asInstanceOf[dom.html.Element].focus()
+            catch case _: Throwable => ()
+    ,
+    Array(active),
+  )
+
+  // Trap Tab within the container via a document listener while active: wrap from the last
+  // focusable back to the first (and the reverse for Shift+Tab), and pull focus back in if it
+  // has escaped the container entirely. A document listener (rather than an element handler)
+  // keeps the trap working no matter where focus currently sits.
+  useEffect(
+    () =>
+      if !active then noCleanup
+      else
+        val listener: js.Function1[dom.KeyboardEvent, Unit] = (e: dom.KeyboardEvent) =>
+          if e.key == "Tab" then
+            val c = container.current
+            if c != null then
+              val focusables = c.querySelectorAll(FocusTrapSelector)
+              if focusables.length > 0 then
+                val first    = focusables(0).asInstanceOf[dom.html.Element]
+                val last     = focusables(focusables.length - 1).asInstanceOf[dom.html.Element]
+                val activeEl = dom.document.activeElement
+                if e.shiftKey && (activeEl eq first) then
+                  e.preventDefault(); last.focus()
+                else if !e.shiftKey && (activeEl eq last) then
+                  e.preventDefault(); first.focus()
+                else if activeEl == null || !c.contains(activeEl) then
+                  e.preventDefault(); first.focus()
+        dom.document.addEventListener("keydown", listener)
+        () => dom.document.removeEventListener("keydown", listener)
+    ,
+    Array(active),
+  )
+
+  container

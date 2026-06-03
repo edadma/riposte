@@ -50,3 +50,7 @@
 @import url("./parts/tooltip.css") layer(salle);
 @import url("./parts/tabs.css") layer(salle);
 @import url("./parts/lightbox.css") layer(salle);
+@import url("./parts/layout.css") layer(salle);
+@import url("./parts/navbar.css") layer(salle);
+@import url("./parts/footer.css") layer(salle);
+@import url("./parts/drawer.css") layer(salle);
