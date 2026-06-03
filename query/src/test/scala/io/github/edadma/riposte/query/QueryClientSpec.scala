@@ -194,3 +194,69 @@ class QueryClientSpec extends AnyFunSuite:
     val (cell2, _) = observe(client, queryKey("x"), fetcher) // re-observe cancels it
     fireTimers()                                     // nothing timerQueue to fire
     assert(cell2 eq cell)
+
+  test("setQueryData seeds a key no query has observed"):
+    install()
+    val client = new QueryClient()
+    client.setQueryData(queryKey("x"), 5)
+    assert(client.getQueryData[Int](queryKey("x")) == Some(5))
+
+  test("setQueryData's updater form sees the previous value"):
+    install()
+    val client = new QueryClient()
+    client.setQueryData(queryKey("x"), 1)
+    client.setQueryData[Int](queryKey("x"), _.getOrElse(0) + 10)
+    assert(client.getQueryData[Int](queryKey("x")) == Some(11))
+
+  test("the updater sees None for a never-seen key"):
+    install()
+    val client = new QueryClient()
+    client.setQueryData[Int](queryKey("x"), _.getOrElse(0) + 1)
+    assert(client.getQueryData[Int](queryKey("x")) == Some(1))
+
+  test("a seeded key with no observer is evicted after gcTime"):
+    install()
+    val client = new QueryClient()
+    client.setQueryData(queryKey("x"), 5)
+    fireTimers() // the seed's gc countdown fires
+    assert(client.getQueryData[Int](queryKey("x")) == None)
+
+  test("a useQuery adopts a seeded entry, keeping its data and gaining a fetcher"):
+    install()
+    val client    = new QueryClient()
+    var calls     = 0
+    val opts      = QueryOptions(staleTime = 1e9) // the fresh seed is not stale
+    client.setQueryData(queryKey("x"), 5)
+    val (cell, _) = observe(client, queryKey("x"), () => { calls += 1; Future.successful(99) }, opts)
+    assert(client.store.get(cell).data == Some(5)) // kept the seed
+    assert(calls == 0)                             // fresh, so not refetched on observe
+    client.refetch(queryKey("x"))                  // the adopted fetcher now drives a refetch
+    assert(calls == 1)
+    assert(client.store.get(cell).data == Some(99))
+
+  test("prefetchQuery loads data into the cache with no observer"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    client.prefetchQuery(queryKey("x"), () => { calls += 1; Future.successful(7) })
+    assert(calls == 1)
+    assert(client.getQueryData[Int](queryKey("x")) == Some(7))
+
+  test("an unadopted prefetch is evicted after gcTime"):
+    install()
+    val client = new QueryClient()
+    client.prefetchQuery(queryKey("x"), () => Future.successful(7))
+    fireTimers()
+    assert(client.getQueryData[Int](queryKey("x")) == None)
+
+  test("observing a prefetched query reuses its fresh data without refetching"):
+    install()
+    val client    = new QueryClient()
+    var calls     = 0
+    val fetcher   = () => { calls += 1; Future.successful(7) }
+    val opts      = QueryOptions(staleTime = 1e9)
+    client.prefetchQuery(queryKey("x"), fetcher, opts)
+    assert(calls == 1)
+    val (cell, _) = observe(client, queryKey("x"), fetcher, opts)
+    assert(calls == 1) // still fresh — no refetch
+    assert(client.store.get(cell).data == Some(7))

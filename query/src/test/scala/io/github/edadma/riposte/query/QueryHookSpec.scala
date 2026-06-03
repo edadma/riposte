@@ -65,6 +65,18 @@ class QueryHookSpec extends AnyFunSuite:
     Scheduler.flushSync()
     assert(c.querySelector("span.v").textContent == "99")
 
+  test("a component reads a pre-seeded query with no loading flash"):
+    val c      = host()
+    val client = new QueryClient()
+    client.setQueryData(queryKey("seeded"), "hello") // primed before any render
+    val App = view {
+      val q = useQuery(queryKey("seeded"), () => Future.successful("fetched"), QueryOptions(staleTime = 1e9))
+      span(cls := "s", if q.isLoading then "loading" else q.data.getOrElse(""))
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.s").textContent == "hello")
+
   test("two components reading the same key share one fetch"):
     val c      = host()
     var calls  = 0
