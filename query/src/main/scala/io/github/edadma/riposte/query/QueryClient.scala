@@ -43,6 +43,21 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
     // mount lifecycle so `invalidate` can refetch only queries someone is watching.
     var active: Boolean = false
 
+    // Present only for infinite queries. Carries the erased page machinery the
+    // imperative paths (`fetchNextPage`, refetch-all) need, since the cell itself
+    // has lost the page types behind `QueryState[Any]`.
+    var infinite: Option[InfiniteSpec] = None
+
+  // The erased page machinery for an infinite query, captured at registration. The
+  // cell stores a `QueryState[Any]` whose data is an `InfiniteData[Any, Any]`, so
+  // fetching a page and choosing the next param go through these type-erased
+  // closures rather than the original `D`/`P`.
+  private final class InfiniteSpec(
+      val fetchPage:        Any => Future[Any],
+      val initialPageParam: Any,
+      val getNextPageParam: (Any, Vector[Any]) => Option[Any],
+  )
+
   private val entries = mutable.Map.empty[QueryKey, Entry]
 
   // The execution context queries settle on, shared with `useMutation` so a
@@ -138,10 +153,15 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // written. A no-op if the entry has no fetcher (a key seeded by `setQueryData`
   // with no query observing it yet).
   private def doFetch(key: QueryKey, e: Entry): Unit =
-    e.fetcher.foreach { fetch =>
-      store.set(e.cell, store.get(e.cell).copy(isFetching = true))
-      runAttempt(key, e, fetch, 0)
-    }
+    e.fetcher.foreach(fetch => startFetch(key, e, fetch))
+
+  // Begin a fetch from an explicit thunk: mark the cell fetching and enter the
+  // retry loop. The steady path passes `e.fetcher`; `fetchNextPage` passes a
+  // one-shot thunk resolving to the page-appended `InfiniteData`, so both share
+  // retry, in-flight dedup, and the zombie-cell guard.
+  private def startFetch(key: QueryKey, e: Entry, fetch: () => Future[Any]): Unit =
+    store.set(e.cell, store.get(e.cell).copy(isFetching = true))
+    runAttempt(key, e, fetch, 0)
 
   private def runAttempt(key: QueryKey, e: Entry, fetch: () => Future[Any], attempt: Int): Unit =
     val f = fetch()
@@ -231,3 +251,64 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // a component (e.g. computing an optimistic update from the present value).
   def getQueryData[A](key: QueryKey): Option[A] =
     entries.get(key).flatMap(e => store.get(e.cell).data).map(_.asInstanceOf[A])
+
+  // --- infinite queries ------------------------------------------------------
+
+  // Get-or-create the entry backing an infinite query, refreshing its page
+  // machinery and options. The cell holds an `InfiniteData` and is driven by the
+  // same fetch/stale/gc paths as a plain query; only the fetcher differs — its
+  // steady form reloads every page currently held (so staleness, refetch, and
+  // focus refresh the whole list, not just the first page), and `fetchNextPage`
+  // extends the list. Called from `useInfiniteQuery` on every render.
+  private[query] def registerInfinite[D, P](
+      key:              QueryKey,
+      fetchPage:        P => Future[D],
+      initialPageParam: P,
+      getNextPageParam: (D, Vector[D]) => Option[P],
+      opts:             QueryOptions,
+  ): PrimitiveAtom[QueryState[Any]] =
+    val e = entries.getOrElseUpdate(key, createEntry(key, None, opts))
+    val spec = new InfiniteSpec(
+      fetchPage        = (p: Any) => fetchPage(p.asInstanceOf[P]),
+      initialPageParam = initialPageParam,
+      getNextPageParam = (last, all) => getNextPageParam(last.asInstanceOf[D], all.asInstanceOf[Vector[D]]),
+    )
+    e.infinite             = Some(spec)
+    e.fetcher              = Some(() => refetchAllPages(e, spec))
+    e.staleTime            = opts.staleTime
+    e.gcTime               = opts.gcTime
+    e.retry                = opts.retry
+    e.retryDelay           = opts.retryDelay
+    e.refetchOnWindowFocus = opts.refetchOnWindowFocus
+    e.refetchOnReconnect   = opts.refetchOnReconnect
+    e.cell
+
+  // Reload, in order, every page param the query currently holds and fold them into
+  // a fresh `InfiniteData`. With nothing loaded yet it fetches the single initial
+  // param. This is the thunk the steady fetcher runs for an infinite query.
+  private def refetchAllPages(e: Entry, spec: InfiniteSpec): Future[Any] =
+    val cur    = store.get(e.cell).data.asInstanceOf[Option[InfiniteData[Any, Any]]]
+    val params = cur.map(_.pageParams).filter(_.nonEmpty).getOrElse(Vector(spec.initialPageParam))
+    params
+      .foldLeft(Future.successful(Vector.empty[Any]))((accF, p) => accF.flatMap(acc => spec.fetchPage(p).map(acc :+ _)))
+      .map(pages => InfiniteData(pages, params))
+
+  // Load and append the next page of an infinite query. The next param comes from
+  // the query's `getNextPageParam` applied to the pages loaded so far; if it yields
+  // `None`, no pages are loaded yet, or a fetch is already in flight, this is a
+  // no-op. The append goes through `startFetch`, so it inherits retry and dedup and
+  // the appended `InfiniteData` replaces the cell wholesale.
+  def fetchNextPage(key: QueryKey): Unit =
+    entries.get(key).foreach { e =>
+      if e.promise.isEmpty then
+        e.infinite.foreach { spec =>
+          store.get(e.cell).data.asInstanceOf[Option[InfiniteData[Any, Any]]].foreach { cur =>
+            if cur.pages.nonEmpty then
+              spec.getNextPageParam(cur.pages.last, cur.pages).foreach { nextParam =>
+                val fetch = () =>
+                  spec.fetchPage(nextParam).map(page => InfiniteData(cur.pages :+ page, cur.pageParams :+ nextParam))
+                startFetch(key, e, fetch)
+              }
+          }
+        }
+    }
