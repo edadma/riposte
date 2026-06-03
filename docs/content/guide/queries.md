@@ -175,6 +175,24 @@ when none is left) to the familiar `data` / `error` / `isLoading` / `isFetching`
 / `refetch`. The whole list is one observable snapshot, so the usual staleness, refetch, and
 gc machinery applies to it unchanged.
 
+For a list that grows from **both** ends — a chat window opened in the middle of its
+history, scrolling up for newer and down for older — pass `getPreviousPageParam` too. The
+query then exposes `hasPreviousPage` and `fetchPreviousPage()`, which **prepends** an older
+page chosen from the first page held:
+
+```scala
+val msgs = useInfiniteQuery(
+  queryKey("messages", roomId),
+  (cursor: Long) => api.messages(roomId, cursor),
+  initialPageParam = openAt,
+  getNextPageParam     = (last, _)  => last.olderCursor,    // scroll down → history
+  getPreviousPageParam = (first, _) => first.newerCursor,   // scroll up → newer
+)
+```
+
+Omit `getPreviousPageParam` (its default returns `None`) for the common forward-only
+"load more" case — `hasPreviousPage` then stays `false`.
+
 ## Scoping a client
 
 A process-wide default client backs `useQuery` with no setup. To isolate a cache — for

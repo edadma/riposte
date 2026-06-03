@@ -153,7 +153,8 @@ riposte-atoms (each query is one atom).
 - **Mutations** — `useMutation(mutationFn, onMutate, onSuccess, onError, onSettled)` → a
   `MutationResult` (`mutate`/`mutateAsync`/`reset` + status flags) for the write side.
 - **Infinite** — `useInfiniteQuery(key, fetchPage, initialPageParam, getNextPageParam,
-  options)` → an `InfiniteQueryResult` (`pages`, `hasNextPage`, `fetchNextPage`, …).
+  getPreviousPageParam, options)` → an `InfiniteQueryResult` (`pages`, `hasNextPage`,
+  `fetchNextPage`, plus `hasPreviousPage`/`fetchPreviousPage` for bidirectional lists).
 - **Client** — `QueryClient`, `QueryClientProvider(client)(child)`, `useQueryClient`; cache
   control via `invalidate`, `invalidatePrefix`, `refetch`, `setQueryData` (value or updater),
   `getQueryData`, `prefetchQuery`.
@@ -171,7 +172,8 @@ A styled component library on top of the core.
 - **Theming** — one open `data-theme` set (ships `light`/`dark`, `system` follows the OS).
   `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon
   button) and `ThemeSelect(themes)`.
-- **Form controls** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`).
+- **Form controls** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`), and
+  `Segmented` (`SegmentedOpt`) — a single-choice `radiogroup` strip.
 - **Display** — `ImageCard`; the previewable `Image` with its `Lightbox` viewer and
   `ImagePreviewGroup` (shared gallery lightbox); `Badge`/`Tag`/`CheckableTag` label pills;
   `Skeleton` / `SkeletonText` / `SkeletonImage` loading placeholders.
