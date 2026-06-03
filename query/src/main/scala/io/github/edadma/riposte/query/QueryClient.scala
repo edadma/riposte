@@ -43,6 +43,10 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
 
   private val entries = mutable.Map.empty[QueryKey, Entry]
 
+  // The execution context queries settle on, shared with `useMutation` so a
+  // mutation's callbacks run on the same context as the cache writes they trigger.
+  private[query] def executionContext: ExecutionContext = ec
+
   // Get-or-create the cell for `key`, refreshing the fetcher and options to the
   // latest call's values so a re-render with a new closure or new `staleTime`
   // takes effect. Called from `useQuery` on every render; the lifecycle is wired
