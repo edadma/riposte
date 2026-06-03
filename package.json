@@ -2,8 +2,15 @@
   "name": "riposte",
   "version": "0.0.1",
   "private": true,
-  "description": "npm deps for riposte's jsdom-backed Scala.js unit tests",
+  "description": "npm deps for riposte's jsdom-backed Scala.js unit tests, plus the salle Playwright e2e harness",
+  "scripts": {
+    "e2e:build": "sbt salleE2E/fastLinkJS",
+    "e2e": "sbt salleE2E/fastLinkJS && playwright test",
+    "e2e:run": "playwright test",
+    "e2e:ui": "playwright test --ui"
+  },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "jsdom": "^25.0.1"
   }
 }

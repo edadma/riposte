@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>salle — e2e harness</title>
+
+    <!-- DaisyUI v5, for ?skin=daisy fixtures. Ordered below `salle` so the native skin
+         always wins where the two overlap. (Network — only needed for daisy cases.) -->
+    <style>
+      @layer daisyui, salle;
+      @import url("https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css") layer(daisyui);
+    </style>
+
+    <!-- salle's own look (the SalleSkin). Resolves from the repo-root static server. -->
+    <link rel="stylesheet" href="../salle/css/salle.css" />
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="target/scala-3.8.3/salle-e2e-fastopt/main.js"></script>
+  </body>
+</html>

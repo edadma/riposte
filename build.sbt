@@ -51,7 +51,7 @@ Global / excludeLintKeys += publishMavenStyle
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(riposte, atoms, router, salle, salleDemo, demo)
+  .aggregate(riposte, atoms, router, salle, salleDemo, salleE2E, demo)
   .settings(
     name                := "riposte-root",
     publish / skip      := true,
@@ -160,6 +160,24 @@ lazy val salleDemo = project
     scalacOptions ++= commonScalacOptions,
     scalaJSUseMainModuleInitializer := true,
     Compile / mainClass             := Some("SalleDemo"),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.NoModule)),
+    publish / skip := true,
+  )
+
+// salle-e2e — the Playwright harness app. A NoModule bundle (like salle-demo) that
+// mounts ONE component fixture chosen by the page's `?case=` query param, optionally
+// re-skinned via `?skin=daisy`. The Playwright specs in salle-e2e/tests/ drive these
+// fixtures in a real browser — the hover/focus/keyboard/scroll/lazy-load behaviour
+// jsdom can't exercise. Build with `sbt salleE2E/fastLinkJS`. Never published.
+lazy val salleE2E = project
+  .in(file("salle-e2e"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(salle)
+  .settings(
+    name := "salle-e2e",
+    scalacOptions ++= commonScalacOptions,
+    scalaJSUseMainModuleInitializer := true,
+    Compile / mainClass             := Some("SalleE2E"),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.NoModule)),
     publish / skip := true,
   )
