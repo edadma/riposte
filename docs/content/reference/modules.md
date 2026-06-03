@@ -145,9 +145,16 @@ riposte-atoms (each query is one atom).
   (`data`, `error`, `isLoading`, `isFetching`, `isError`, `refetch`).
 - **Keys** — `queryKey(parts*)` → a structured `Vector[Any]`; equal parts share an entry,
   prefixes drive invalidation.
-- **Options** — `QueryOptions(staleTime, gcTime)` tune freshness and garbage collection.
+- **Options** — `QueryOptions(staleTime, gcTime, retry, retryDelay, refetchOnWindowFocus,
+  refetchOnReconnect)` tune freshness, garbage collection, retry/backoff, and focus/reconnect
+  refetch.
+- **Mutations** — `useMutation(mutationFn, onMutate, onSuccess, onError, onSettled)` → a
+  `MutationResult` (`mutate`/`mutateAsync`/`reset` + status flags) for the write side.
+- **Infinite** — `useInfiniteQuery(key, fetchPage, initialPageParam, getNextPageParam,
+  options)` → an `InfiniteQueryResult` (`pages`, `hasNextPage`, `fetchNextPage`, …).
 - **Client** — `QueryClient`, `QueryClientProvider(client)(child)`, `useQueryClient`; cache
-  control via `invalidate`, `invalidatePrefix`, `refetch`, `setQueryData`, `getQueryData`.
+  control via `invalidate`, `invalidatePrefix`, `refetch`, `setQueryData` (value or updater),
+  `getQueryData`, `prefetchQuery`.
 
 See [Data Fetching](/guide/queries/).
 
@@ -174,8 +181,10 @@ A styled component library on top of the core.
 - **Overlays** — `Modal` (portal dialog), `Toast`/`Toaster` (imperative `toast` API), and
   `Tooltip` (floating hint, hover/focus/click) — all animated via the core `usePresence`
   hook.
-- **Layout** — `Row`/`Col` (24-column grid, responsive spans) and `Masonry` /
-  `MasonryResponsive` (packed columns; pure `layoutMasonry`).
+- **Layout** — the page shell `Layout` (with `Header`/`Content`/`Footer`/`Sider` regions),
+  `Navbar` (three-zone, responsive collapse) and content `Footer` (`Footer.Title`); plus
+  `Row`/`Col` (24-column grid, responsive spans) and `Masonry` / `MasonryResponsive` (packed
+  columns; pure `layoutMasonry`).
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
 
 See [Component library (salle)](/salle/).

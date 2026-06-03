@@ -79,6 +79,12 @@ useQuery(
   the last component watching a query unmounts, a countdown starts; if nothing observes it
   again in time, its cell is dropped (via the atoms `Store.forget` primitive). Defaults to
   five minutes.
+- `retry` (count) — how many times a failed fetch is retried before its error surfaces.
+  Defaults to `0`.
+- `retryDelay` (`Int => Double`) — maps a zero-based attempt index to the delay (ms) before
+  that retry. Defaults to exponential backoff (1s, 2s, 4s, …) capped at 30s.
+- `refetchOnWindowFocus` / `refetchOnReconnect` (both default `true`) — refetch an observed,
+  stale query when the window regains focus or the network comes back online.
 
 ## Cache control
 
@@ -91,14 +97,83 @@ client.invalidate(queryKey("todos"))          // mark stale; refetch if observed
 client.invalidatePrefix(queryKey("todo"))     // every ["todo", *]
 client.refetch(queryKey("todos"))             // force a refetch now
 client.setQueryData(queryKey("todos"), next)  // write data directly (optimistic updates)
+client.setQueryData[Seq[Todo]](queryKey("todos"), _.getOrElse(Nil) :+ todo)  // update from current
 client.getQueryData[Seq[Todo]](queryKey("todos"))  // read without subscribing
+client.prefetchQuery(queryKey("todos"), () => api.fetchTodos())  // warm ahead of navigation
 ```
 
 `invalidate` marks a query stale and refetches it immediately if a component is watching;
 an unobserved query is just flagged, so it refetches the next time it's observed.
 `setQueryData` writes a fresh successful result into a query's cell — the seam for
-optimistic updates — and `getQueryData` reads the current value without subscribing, handy
-when computing that optimistic value from what's already cached.
+optimistic updates and for seeding a key before anything observes it (a later `useQuery`
+adopts the seed and supplies the fetcher). Its updater form `setQueryData(key, prev => …)`
+computes the next value from the current one (`prev` is `None` when nothing is cached yet).
+`getQueryData` reads the current value without subscribing, handy when computing an
+optimistic value. `prefetchQuery` eagerly loads a query into the cache without a component
+observing it — for warming data ahead of navigation (an unadopted prefetch is evicted after
+`gcTime`).
+
+## Mutations
+
+The write side of the cache. `useMutation` runs an asynchronous write and tracks its
+lifecycle; unlike a query it isn't keyed or shared — each call owns its own state — so it
+lives in component state rather than the cache. The client is still in reach, so a
+mutation's callbacks can write the cache and invalidate queries:
+
+```scala
+val add = useMutation[Todo, Todo](
+  mutationFn = todo => api.postTodo(todo),
+  onSuccess  = (_, _) => client.invalidate(queryKey("todos")),
+)
+
+button(onClick := (_ => add.mutate(newTodo)), "Add")
+if add.isPending then Spinner()
+```
+
+The result is a named tuple: `data` / `error` / `status` (`MutationStatus.{Idle,Pending,
+Success,Error}`) and the `isIdle` / `isPending` / `isSuccess` / `isError` flags, plus
+`mutate(vars)` (fire and ignore the outcome), `mutateAsync(vars): Future[D]` (await it), and
+`reset()` (back to idle). Four callbacks fire around the write: `onMutate` just before it,
+`onSuccess` / `onError` on the outcome, and `onSettled` after either.
+
+**Optimistic updates with rollback** are the closure pattern — all four callbacks share the
+component's refs and the captured client:
+
+```scala
+val snapshot = useRef[Option[List[Todo]]](None)
+val add = useMutation[Todo, Todo](
+  mutationFn = api.postTodo,
+  onMutate   = todo =>
+    snapshot.current = client.getQueryData[List[Todo]](key)
+    client.setQueryData[List[Todo]](key, _.getOrElse(Nil) :+ todo),
+  onError    = (_, _) => client.setQueryData(key, snapshot.current.getOrElse(Nil)),
+  onSuccess  = (_, _) => client.invalidate(key),
+)
+```
+
+## Infinite (paginated) queries
+
+Where `useQuery` holds one result, `useInfiniteQuery` holds a growing list of pages. Give it
+how to fetch one page from a page param, the first param, and how to derive the next param
+from the pages so far:
+
+```scala
+val feed = useInfiniteQuery(
+  queryKey("feed"),
+  (cursor: Int) => api.feed(cursor),
+  initialPageParam = 0,
+  getNextPageParam = (last, _) => last.nextCursor,   // None ends the list
+)
+
+feed.pages.flatMap(_.items).map(renderItem)
+if feed.hasNextPage then button(onClick := (_ => feed.fetchNextPage()), "Load more")
+```
+
+The result tuple adds `pages` (the convenience flattening of `data.pages`), `hasNextPage`,
+and `fetchNextPage()` (loads and appends the next page; a no-op while one is in flight or
+when none is left) to the familiar `data` / `error` / `isLoading` / `isFetching` / `isError`
+/ `refetch`. The whole list is one observable snapshot, so the usual staleness, refetch, and
+gc machinery applies to it unchanged.
 
 ## Scoping a client
 

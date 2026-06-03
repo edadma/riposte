@@ -1,6 +1,6 @@
 ---
 title: "Grid (Row / Col)"
-weight: 1
+weight: 2
 ---
 
 A 24-column grid in the Ant Design tradition: a `Row` lays out equal column tracks, and each

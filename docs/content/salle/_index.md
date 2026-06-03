@@ -37,4 +37,5 @@ Every salle component is an ordinary function with default arguments, returning 
   `Skeleton`, and the `Spinner`/`Progress` busy indicators.
 - **[Navigation](/salle/navigation/)** — `Pagination`, `Dropdown`, and `Tabs`.
 - **[Overlays](/salle/overlays/)** — `Modal`, `Toast`, and `Tooltip`.
-- **[Layout](/salle/layout/)** — the `Row`/`Col` grid and `Masonry`.
+- **[Layout](/salle/layout/)** — the `Layout`/`Navbar`/`Footer` page shell, plus the
+  `Row`/`Col` grid and `Masonry`.
