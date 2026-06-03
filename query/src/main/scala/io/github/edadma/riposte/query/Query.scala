@@ -44,11 +44,21 @@ object QueryState:
 
 // Per-query knobs. `staleTime` is how long (ms) a successful result is considered
 // fresh — within it, observing the query does not refetch; `gcTime` is how long
-// (ms) an unobserved query's data is kept before the cache evicts it.
+// (ms) an unobserved query's data is kept before the cache evicts it. `retry` is
+// how many times a failed fetch is retried before its error surfaces, and
+// `retryDelay` maps a zero-based attempt index to the delay (ms) before that
+// retry — by default exponential backoff capped at 30s.
 final case class QueryOptions(
-    staleTime: Double = 0.0,
-    gcTime:    Double = 5 * 60 * 1000.0,
+    staleTime:  Double      = 0.0,
+    gcTime:     Double      = 5 * 60 * 1000.0,
+    retry:      Int         = 0,
+    retryDelay: Int => Double = QueryOptions.defaultRetryDelay,
 )
+
+object QueryOptions:
+  // Exponential backoff: 1s, 2s, 4s, … capped at 30s, matching TanStack Query's
+  // default. The argument is the just-failed attempt's zero-based index.
+  val defaultRetryDelay: Int => Double = attempt => math.min(1000.0 * math.pow(2.0, attempt.toDouble), 30000.0)
 
 // What a component gets back from `useQuery` — a named tuple so fields are read by
 // name (`q.data`, `q.refetch`) in the spirit of `useState`'s destructured return,

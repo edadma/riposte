@@ -260,3 +260,48 @@ class QueryClientSpec extends AnyFunSuite:
     val (cell, _) = observe(client, queryKey("x"), fetcher, opts)
     assert(calls == 1) // still fresh — no refetch
     assert(client.store.get(cell).data == Some(7))
+
+  test("a fetch that fails is retried and can ultimately succeed"):
+    install()
+    val client    = new QueryClient()
+    val boom      = new RuntimeException("boom")
+    var n         = 0
+    val fetcher   = () => { n += 1; if n <= 2 then Future.failed[Int](boom) else Future.successful(42) }
+    val (cell, _) = observe(client, queryKey("x"), fetcher, QueryOptions(retry = 2))
+    assert(n == 1)
+    assert(client.store.get(cell).isFetching)              // retrying, not settled
+    assert(client.store.get(cell).status == QueryStatus.Pending)
+    fireTimers()                                           // second attempt — fails again
+    assert(n == 2)
+    assert(client.store.get(cell).status == QueryStatus.Pending)
+    fireTimers()                                           // third attempt — succeeds
+    assert(n == 3)
+    assert(client.store.get(cell).data == Some(42))
+    assert(!client.store.get(cell).isFetching)
+
+  test("a fetch that keeps failing surfaces the error once retries are exhausted"):
+    install()
+    val client    = new QueryClient()
+    val boom      = new RuntimeException("boom")
+    var n         = 0
+    val fetcher   = () => { n += 1; Future.failed[Int](boom) }
+    val (cell, _) = observe(client, queryKey("x"), fetcher, QueryOptions(retry = 1))
+    assert(n == 1)
+    assert(client.store.get(cell).status == QueryStatus.Pending) // still retrying
+    fireTimers()                                                 // retry — fails, exhausted
+    assert(n == 2)
+    assert(client.store.get(cell).status == QueryStatus.Error)
+    assert(client.store.get(cell).error.contains(boom))
+    assert(!client.store.get(cell).isFetching)
+
+  test("retryDelay is consulted with each just-failed attempt index"):
+    install()
+    val client  = new QueryClient()
+    val boom    = new RuntimeException("boom")
+    val delays  = mutable.ArrayBuffer.empty[Int]
+    val fetcher = () => Future.failed[Int](boom)
+    val opts    = QueryOptions(retry = 2, retryDelay = a => { delays += a; 5.0 })
+    observe(client, queryKey("x"), fetcher, opts) // attempt 0 fails → retryDelay(0)
+    fireTimers()                                  // attempt 1 fails → retryDelay(1)
+    fireTimers()                                  // attempt 2 fails → exhausted, no delay asked
+    assert(delays.toVector == Vector(0, 1))

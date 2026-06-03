@@ -22,10 +22,12 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // bookkeeping the client needs to drive fetching and gc, kept off the cell
   // because components don't observe it.
   private final class Entry(
-      val cell:      PrimitiveAtom[QueryState[Any]],
-      var fetcher:   Option[() => Future[Any]],
-      var staleTime: Double,
-      var gcTime:    Double,
+      val cell:       PrimitiveAtom[QueryState[Any]],
+      var fetcher:    Option[() => Future[Any]],
+      var staleTime:  Double,
+      var gcTime:     Double,
+      var retry:      Int,
+      var retryDelay: Int => Double,
   ):
     // The in-flight fetch, if any — its presence dedupes concurrent fetches of the
     // same key onto one promise.
@@ -47,14 +49,16 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // once, when the entry is first created.
   private[query] def register(key: QueryKey, fetcher: () => Future[Any], opts: QueryOptions): PrimitiveAtom[QueryState[Any]] =
     val e = entries.getOrElseUpdate(key, createEntry(key, Some(fetcher), opts))
-    e.fetcher   = Some(fetcher)
-    e.staleTime = opts.staleTime
-    e.gcTime    = opts.gcTime
+    e.fetcher    = Some(fetcher)
+    e.staleTime  = opts.staleTime
+    e.gcTime     = opts.gcTime
+    e.retry      = opts.retry
+    e.retryDelay = opts.retryDelay
     e.cell
 
   private def createEntry(key: QueryKey, fetcher: Option[() => Future[Any]], opts: QueryOptions): Entry =
     val cell = atom(QueryState.initial[Any])
-    val e    = new Entry(cell, fetcher, opts.staleTime, opts.gcTime)
+    val e    = new Entry(cell, fetcher, opts.staleTime, opts.gcTime, opts.retry, opts.retryDelay)
     // First observer: cancel any pending eviction and fetch if the data is stale.
     // Last observer: start the gc countdown. The store fires this on the cell's
     // listener set going empty→nonempty and the cleanup on nonempty→empty.
@@ -93,24 +97,37 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
     }
 
   // Run the fetcher, marking the cell fetching, and fold the settled result back
-  // into the cell. A result that arrives after the entry was evicted or replaced
-  // is dropped — `_ eq e` confirms this is still the same live entry — so a
-  // resurrected zombie cell can never be written. A no-op if the entry has no
-  // fetcher (a key seeded by `setQueryData` with no query observing it yet).
+  // into the cell. A failed attempt is retried up to `retry` times, waiting
+  // `retryDelay(attempt)` between tries; `isFetching` stays true and the error
+  // only surfaces once the retries are exhausted. A result (or final error) that
+  // arrives after the entry was evicted or replaced is dropped — `_ eq e` confirms
+  // this is still the same live entry — so a resurrected zombie cell can never be
+  // written. A no-op if the entry has no fetcher (a key seeded by `setQueryData`
+  // with no query observing it yet).
   private def doFetch(key: QueryKey, e: Entry): Unit =
     e.fetcher.foreach { fetch =>
       store.set(e.cell, store.get(e.cell).copy(isFetching = true))
-      val f = fetch()
-      e.promise = Some(f)
-      f.onComplete { res =>
-        if entries.get(key).exists(_ eq e) then
-          e.promise = None
-          res match
-            case Success(v) =>
-              store.set(e.cell, QueryState(QueryStatus.Success, Some(v), None, isFetching = false, QueryEnv.now()))
-            case Failure(err) =>
+      runAttempt(key, e, fetch, 0)
+    }
+
+  private def runAttempt(key: QueryKey, e: Entry, fetch: () => Future[Any], attempt: Int): Unit =
+    val f = fetch()
+    e.promise = Some(f) // stays Some across retries, so the fetch reads as in-flight
+    f.onComplete { res =>
+      if entries.get(key).exists(_ eq e) then
+        res match
+          case Success(v) =>
+            e.promise = None
+            store.set(e.cell, QueryState(QueryStatus.Success, Some(v), None, isFetching = false, QueryEnv.now()))
+          case Failure(err) =>
+            if attempt < e.retry then
+              QueryEnv.schedule(
+                () => if entries.get(key).exists(_ eq e) then runAttempt(key, e, fetch, attempt + 1),
+                e.retryDelay(attempt),
+              )
+            else
+              e.promise = None
               store.set(e.cell, store.get(e.cell).copy(status = QueryStatus.Error, error = Some(err), isFetching = false))
-      }
     }
 
   private def scheduleGc(key: QueryKey, e: Entry): Unit =
@@ -146,9 +163,11 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // so a prefetch nobody adopts is evicted after `gcTime`.
   def prefetchQuery(key: QueryKey, fetcher: () => Future[Any], opts: QueryOptions = QueryOptions()): Unit =
     val e = entries.getOrElseUpdate(key, createUnobserved(key, Some(fetcher), opts))
-    e.fetcher   = Some(fetcher)
-    e.staleTime = opts.staleTime
-    e.gcTime    = opts.gcTime
+    e.fetcher    = Some(fetcher)
+    e.staleTime  = opts.staleTime
+    e.gcTime     = opts.gcTime
+    e.retry      = opts.retry
+    e.retryDelay = opts.retryDelay
     fetchIfStale(key)
 
   // Invalidate every query whose key begins with `prefix` — the structured-key
