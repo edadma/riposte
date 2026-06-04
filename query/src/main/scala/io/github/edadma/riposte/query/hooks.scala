@@ -97,4 +97,5 @@ private def runQuery[A, B](
     isError           = st.status == QueryStatus.Error,
     isPlaceholderData = selected.isEmpty && shown.isDefined,
     refetch           = () => client.refetch(key),
+    cancel            = () => client.cancelQuery(key),
   )

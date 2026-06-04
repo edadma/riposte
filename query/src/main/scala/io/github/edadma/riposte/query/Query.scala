@@ -79,7 +79,8 @@ object QueryOptions:
 // name (`q.data`, `q.refetch`) in the spirit of `useState`'s destructured return,
 // but with the richer surface an async resource needs. `isPlaceholderData` is true
 // when `data` is showing a placeholder or the previous key's value rather than this
-// query's own settled result (see `placeholderData` / `keepPreviousData`).
+// query's own settled result (see `placeholderData` / `keepPreviousData`); `cancel`
+// aborts an in-flight fetch.
 //
 //   val q = useQuery(queryKey("todos"), fetchTodos)
 //   if q.isLoading then spinner else renderTodos(q.data.get)
@@ -91,7 +92,32 @@ type QueryResult[A] = (
     isError:           Boolean,
     isPlaceholderData: Boolean,
     refetch:           () => Unit,
+    cancel:            () => Unit,
 )
+
+// The cancellation signal for the fetcher that is currently running. A fetcher reads
+// it to wire cancellation into its request, so an aborted query actually cancels the
+// underlying work:
+//
+//   useQuery(queryKey("search", q), () =>
+//     dom.fetch(url, new dom.RequestInit { signal = QueryFetch.signal.orUndefined })
+//       .toFuture.flatMap(_.text().toFuture))
+//
+// The signal is live only for the synchronous duration of a fetcher call — read it
+// when you build the request, not after an `await`/`flatMap`. JavaScript is single
+// threaded, so this dynamic scope is unambiguous: exactly one fetcher runs at a time,
+// and the signal object the request captures stays valid for the request's lifetime
+// even after the scope is restored. The same ambient pattern riposte's hooks use.
+object QueryFetch:
+  private var current: Option[dom.AbortSignal] = None
+
+  def signal: Option[dom.AbortSignal] = current
+
+  private[query] def during[T](sig: dom.AbortSignal)(body: => T): T =
+    val prev = current
+    current = Some(sig)
+    try body
+    finally current = prev
 
 // Timing and environment events indirected so tests can install deterministic
 // fakes, the same seam pattern the core uses for `Transition`/`Timers`. In the
