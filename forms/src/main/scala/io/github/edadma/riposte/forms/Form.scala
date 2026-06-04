@@ -2,6 +2,7 @@ package io.github.edadma.riposte.forms
 
 import io.github.edadma.riposte.*
 import org.scalajs.dom
+import scala.concurrent.Future
 
 // The handle a component gets back from `useForm`. It pairs the imperative API
 // (`register`, `setValue`, `handleSubmit`, …) with the current `formState` snapshot,
@@ -43,6 +44,20 @@ final class Form private[forms] (val control: FormStore, val formState: FormStat
       e.preventDefault()
       control.submit(onValid, onInvalid)
 
+  // Like `handleSubmit`, but for an asynchronous valid handler (e.g. a server POST):
+  // `formState.isSubmitting` stays true across validation and the handler's `Future`,
+  // flipping false only when it settles — bind a spinner / disabled button to it.
+  //
+  //   form(onSubmit := f.handleSubmitAsync(values => api.save(values)))
+  def handleSubmitAsync(
+      onValid:   Map[String, Any] => Future[Unit],
+      onInvalid: Map[String, FieldError] => Unit = _ => (),
+  ): dom.Event => Unit =
+    e =>
+      e.preventDefault()
+      control.submitAsync(onValid, onInvalid)
+      ()
+
   // The whole form's current values; uncontrolled, so this reflects what the user has
   // typed without the form being controlled on every keystroke. This is a one-shot read —
   // for a value that re-renders the component as it changes, use `watch`.
@@ -76,6 +91,13 @@ final class Form private[forms] (val control: FormStore, val formState: FormStat
   // Run validation across the whole form, returning whether every field is valid.
   def trigger(): Boolean = control.trigger(None)
 
+  // Asynchronous validation through an async resolver — one field, returning a `Future` of
+  // whether it is valid. `formState.isValidating` is true while it runs.
+  def triggerAsync(field: String): Future[Boolean] = control.triggerAsync(Some(field))
+
+  // Asynchronous validation across the whole form.
+  def triggerAsync(): Future[Boolean] = control.triggerAsync(None)
+
   // Reset the form to fresh values (or back to its original defaults), clearing errors,
   // touched, and submit state and re-seeding every mounted element.
   def reset(values: Map[String, Any]): Unit = control.reset(Some(values))
@@ -86,13 +108,19 @@ final class Form private[forms] (val control: FormStore, val formState: FormStat
 // baseline `reset` returns to and `dirtyFields` is measured against); `mode` chooses
 // when fields validate as the user interacts, and `reValidateMode` when they re-validate
 // after the first submit (react-hook-form's defaults: validate on submit, then on
-// change). The store is created once and survives re-renders; the returned `formState`
-// is the live snapshot.
+// change). A `resolver` (or `asyncResolver`) replaces the per-field `Rules` with a whole-
+// form schema validator. The store is created once and survives re-renders; the returned
+// `formState` is the live snapshot.
 def useForm(
-    defaultValues:  Map[String, Any] = Map.empty,
-    mode:           ValidationMode   = ValidationMode.OnSubmit,
-    reValidateMode: ValidationMode   = ValidationMode.OnChange,
+    defaultValues:  Map[String, Any]      = Map.empty,
+    mode:           ValidationMode        = ValidationMode.OnSubmit,
+    reValidateMode: ValidationMode        = ValidationMode.OnChange,
+    resolver:       Option[Resolver]      = None,
+    asyncResolver:  Option[AsyncResolver] = None,
 )(using Hooks): Form =
-  val store     = useMemo(() => new FormStore(defaultValues, mode, reValidateMode), Array())
+  val store = useMemo(
+    () => new FormStore(defaultValues, mode, reValidateMode, resolver, asyncResolver),
+    Array(),
+  )
   val formState = useSyncExternalStore(store.subscribe, () => store.getSnapshot)
   new Form(store, formState)

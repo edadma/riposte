@@ -2,6 +2,8 @@ package io.github.edadma.riposte.forms
 
 import org.scalajs.dom
 import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 // When a field is validated, mirroring react-hook-form's `mode` / `reValidateMode`.
 //   OnSubmit  — only when the form is submitted (the default; typing never validates)
@@ -22,6 +24,7 @@ final case class FormState(
     dirtyFields:   Set[String],
     isDirty:       Boolean,
     isValid:       Boolean,
+    isValidating:  Boolean,
     isSubmitting:  Boolean,
     isSubmitted:   Boolean,
     submitCount:   Int,
@@ -46,12 +49,21 @@ final class FormStore(
     initialDefaults: Map[String, Any],
     val mode:           ValidationMode,
     val reValidateMode: ValidationMode,
+    val resolver:       Option[Resolver]      = None,
+    val asyncResolver:  Option[AsyncResolver] = None,
 ):
+  // Futures here only chain a single store update onto a user-supplied Future (an async
+  // resolver or async submit handler). In JavaScript's single thread the parasitic
+  // executor runs that continuation inline when the Future completes — exactly when the
+  // store should react — with no extra scheduling.
+  private given ec: ExecutionContext = ExecutionContext.parasitic
+
   private var defaults = initialDefaults
   private val values   = mutable.Map.from(initialDefaults)
   private val errors   = mutable.Map.empty[String, FieldError]
   private val touched  = mutable.Set.empty[String]
 
+  private var isValidating = false
   private var isSubmitting = false
   private var isSubmitted  = false
   private var submitCount  = 0
@@ -113,6 +125,7 @@ final class FormStore(
       dirtyFields = dirty,
       isDirty = dirty.nonEmpty,
       isValid = errors.isEmpty,
+      isValidating = isValidating,
       isSubmitting = isSubmitting,
       isSubmitted = isSubmitted,
       submitCount = submitCount,
@@ -180,7 +193,7 @@ final class FormStore(
   // and both subscriptions fire so a `useWatch` and the `formState` consumers update.
   def changeField(name: String, value: Any): Unit =
     values(name) = value
-    if shouldValidateOnChange(name) then revalidateField(name)
+    if shouldValidateOnChange(name) then validateFieldInteractive(name)
     notifyValues()
     notifyListeners()
 
@@ -207,7 +220,7 @@ final class FormStore(
 
     val onInput = (_: dom.Event) =>
       elements.get(name).foreach(e => values(name) = readElement(e))
-      if shouldValidateOnChange(name) then revalidateField(name)
+      if shouldValidateOnChange(name) then validateFieldInteractive(name)
       // A keystroke can flip `isDirty`/`dirtyFields` (and any error it just cleared)
       // even when we didn't validate, so rebuild the snapshot either way — the diff is
       // cheap and uncontrolled inputs don't re-render from it. `notifyValues` separately
@@ -220,7 +233,7 @@ final class FormStore(
       touched += name
       elements.get(name).foreach(e => values(name) = readElement(e))
       val validating = shouldValidateOnBlur(name)
-      if validating then revalidateField(name)
+      if validating then validateFieldInteractive(name)
       if validating || !wasTouched then notifyListeners()
 
     FieldHandlers(ref, onInput, onBlur)
@@ -239,15 +252,72 @@ final class FormStore(
       mode == ValidationMode.All ||
       (isSubmitted && reValidateMode == ValidationMode.OnBlur)
 
-  // Validate one field against its rules, updating its error entry. Returns whether the
-  // entry changed, so a caller can decide whether the change is worth notifying for.
+  // Validate one field, updating its error entry. With a sync `resolver` the whole form is
+  // validated and just this field's entry is taken from the result; otherwise the field's
+  // own `Rules` run. Returns whether the entry changed, so a caller can decide whether the
+  // change is worth notifying for. (An async resolver doesn't flow through here — see
+  // `validateFieldInteractive`.)
   private def revalidateField(name: String): Boolean =
-    val result = validateValue(values.getOrElse(name, ""), rules.getOrElse(name, Rules()))
+    val result = resolver match
+      case Some(r) => r(values.toMap).get(name)
+      case None    => validateValue(values.getOrElse(name, ""), rules.getOrElse(name, Rules()))
     val before = errors.get(name)
     result match
       case Some(err) => errors(name) = err
       case None      => errors -= name
     before != result
+
+  // Validate the whole form synchronously: a sync `resolver` produces the complete error
+  // map (replacing what was there); otherwise every registered field's `Rules` run. Used
+  // by `trigger()` and the synchronous `submit`.
+  private def revalidateAll(): Unit =
+    resolver match
+      case Some(r) =>
+        errors.clear()
+        errors ++= r(values.toMap)
+      case None =>
+        rules.keys.foreach(revalidateField)
+
+  // Validate one field as part of an interaction (change / blur). When an async resolver is
+  // configured this runs it — flipping `isValidating` while it is in flight and updating
+  // the field's error when it settles; otherwise it validates synchronously in place.
+  private def validateFieldInteractive(name: String): Unit =
+    asyncResolver match
+      case Some(ar) =>
+        isValidating = true
+        notifyListeners()
+        ar(values.toMap).onComplete {
+          case Success(all) =>
+            all.get(name) match
+              case Some(err) => errors(name) = err
+              case None      => errors -= name
+            isValidating = false
+            notifyListeners()
+          case Failure(_) =>
+            isValidating = false
+            notifyListeners()
+        }
+      case None =>
+        revalidateField(name)
+
+  // Validate the whole form for a submit: an async resolver awaited (toggling
+  // `isValidating`), otherwise the synchronous path. Always leaves `errors` current.
+  private def validateAllForSubmit(): Future[Unit] =
+    asyncResolver match
+      case Some(ar) =>
+        isValidating = true
+        notifyListeners()
+        ar(values.toMap).transform { res =>
+          errors.clear()
+          res match
+            case Success(all) => errors ++= all
+            case Failure(_)   => ()
+          isValidating = false
+          Success(())
+        }
+      case None =>
+        revalidateAll()
+        Future.successful(())
 
   // --- imperative API ------------------------------------------------------
 
@@ -273,15 +343,42 @@ final class FormStore(
     notifyListeners()
 
   // Validate the named field, or the whole form when no name is given; returns whether
-  // the validated scope is error-free.
+  // the validated scope is error-free. Synchronous: with an async resolver, use
+  // `triggerAsync` — this sync form only runs the built-in rules / a sync resolver.
   def trigger(name: Option[String]): Boolean =
     name match
       case Some(n) => revalidateField(n)
-      case None    => rules.keys.foreach(revalidateField)
+      case None    => revalidateAll()
     notifyListeners()
     name match
       case Some(n) => !errors.contains(n)
       case None    => errors.isEmpty
+
+  // Validate asynchronously through an async resolver (falling back to the sync path when
+  // none is configured), returning whether the validated scope ends up error-free.
+  def triggerAsync(name: Option[String]): Future[Boolean] =
+    asyncResolver match
+      case Some(ar) =>
+        isValidating = true
+        notifyListeners()
+        ar(values.toMap).transform { res =>
+          val all = res.getOrElse(Map.empty)
+          name match
+            case Some(n) =>
+              all.get(n) match
+                case Some(err) => errors(n) = err
+                case None      => errors -= n
+            case None =>
+              errors.clear()
+              errors ++= all
+          isValidating = false
+          notifyListeners()
+          Success(name match
+            case Some(n) => !errors.contains(n)
+            case None    => errors.isEmpty)
+        }
+      case None =>
+        Future.successful(trigger(name))
 
   // Reset to the given values (or back to the original defaults), clearing errors,
   // touched, and submit state and writing every mounted element back to its value.
@@ -298,16 +395,16 @@ final class FormStore(
     notifyValues()
     notifyListeners()
 
-  // Validate every registered field and run `onValid` with the values when the form is
-  // clean, or `onInvalid` with the errors otherwise. `submitCount` and `isSubmitted`
-  // advance regardless, switching subsequent validation to `reValidateMode`.
+  // Validate every field (rules or a sync resolver) and run `onValid` with the values when
+  // the form is clean, or `onInvalid` with the errors otherwise. `submitCount` and
+  // `isSubmitted` advance regardless, switching subsequent validation to `reValidateMode`.
   def submit(onValid: Map[String, Any] => Unit, onInvalid: Map[String, FieldError] => Unit): Unit =
     isSubmitting = true
     submitCount += 1
     notifyListeners()
 
     elements.foreach((name, el) => values(name) = readElement(el))
-    rules.keys.foreach(revalidateField)
+    revalidateAll()
 
     isSubmitting = false
     isSubmitted = true
@@ -315,6 +412,37 @@ final class FormStore(
 
     if errors.isEmpty then onValid(values.toMap)
     else onInvalid(errors.toMap)
+
+  // Submit with an asynchronous valid handler (and/or an async resolver). `isSubmitting`
+  // stays true across validation *and* the handler's Future, flipping false only once it
+  // settles — so a spinner bound to `isSubmitting` covers the whole round-trip. A handler
+  // that fails still clears `isSubmitting`. Returns a Future that completes when the whole
+  // submit is done.
+  def submitAsync(
+      onValid:   Map[String, Any] => Future[Unit],
+      onInvalid: Map[String, FieldError] => Unit,
+  ): Future[Unit] =
+    isSubmitting = true
+    submitCount += 1
+    notifyListeners()
+
+    elements.foreach((name, el) => values(name) = readElement(el))
+
+    validateAllForSubmit().flatMap { _ =>
+      isSubmitted = true
+      if errors.isEmpty then
+        notifyListeners() // still submitting, now validated — let a spinner show
+        onValid(values.toMap).transform { _ =>
+          isSubmitting = false
+          notifyListeners()
+          Success(())
+        }
+      else
+        isSubmitting = false
+        notifyListeners()
+        onInvalid(errors.toMap)
+        Future.successful(())
+    }
 
   // --- field arrays --------------------------------------------------------
 
