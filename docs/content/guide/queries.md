@@ -44,6 +44,7 @@ The result is a named tuple read by field:
 - `isPlaceholderData: Boolean` — `data` is a placeholder or the previous key's value rather
   than this query's own settled result (see [placeholders](#placeholders-and-keeping-previous-data)).
 - `refetch: () => Unit` — force a refetch, deduped against any fetch already running.
+- `cancel: () => Unit` — abort the in-flight fetch (see [cancellation](#cancelling-a-fetch)).
 
 On first observe the query fetches; the component re-renders only when *this* query's cell
 changes. Data already present stays on screen during a background refetch (`isFetching`
@@ -162,6 +163,23 @@ computes the next value from the current one (`prev` is `None` when nothing is c
 optimistic value. `prefetchQuery` eagerly loads a query into the cache without a component
 observing it — for warming data ahead of navigation (an unadopted prefetch is evicted after
 `gcTime`).
+
+## Cancelling a fetch
+
+The result's `cancel()` aborts the in-flight fetch (the client also cancels for you on its
+own — e.g. a key change under `keepPreviousData`). For the abort to actually stop the
+underlying request, the fetcher must wire it in: while a fetcher runs, the signal for that
+call is available as `QueryFetch.signal`. Read it *synchronously* when you build the request
+— not after an `await`/`flatMap`:
+
+```scala
+useQuery(queryKey("search", q), () =>
+  dom.fetch(url, new dom.RequestInit { signal = QueryFetch.signal.orUndefined })
+    .toFuture.flatMap(_.text().toFuture))
+```
+
+Exactly one fetcher runs at a time (JavaScript is single-threaded), so the ambient signal is
+unambiguous; the request captures the signal object, which stays valid for its lifetime.
 
 ## Mutations
 

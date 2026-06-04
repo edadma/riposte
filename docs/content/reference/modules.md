@@ -146,8 +146,11 @@ A TanStack-Query-style async data layer — a keyed cache of server state — bu
 riposte-atoms (each query is one atom).
 
 - **Read** — `useQuery(key, fetcher, options, placeholderData)` → a `QueryResult` named tuple
-  (`data`, `error`, `isLoading`, `isFetching`, `isError`, `isPlaceholderData`, `refetch`);
-  `useSelectQuery(key, fetcher, select, …)` projects the cached data into a derived shape.
+  (`data`, `error`, `isLoading`, `isFetching`, `isError`, `isPlaceholderData`, `refetch`,
+  `cancel`); `useSelectQuery(key, fetcher, select, …)` projects the cached data into a derived
+  shape.
+- **Cancellation** — `result.cancel()` (or `client.cancelQuery(key)`) aborts an in-flight
+  fetch; a fetcher reads `QueryFetch.signal` to wire the abort into its request.
 - **Keys** — `queryKey(parts*)` → a structured `Vector[Any]`; equal parts share an entry,
   prefixes drive invalidation.
 - **Options** — `QueryOptions(staleTime, gcTime, retry, retryDelay, refetchOnWindowFocus,
@@ -205,6 +208,8 @@ A styled component library on top of the core.
   (`DescItem`) — a label/value metadata table (pure `descriptionsRows`).
 - **Feedback** — `Spinner` (indeterminate, with overlay mode), `Progress` (linear),
   `RadialProgress` (ring); `Empty` (`EmptyImage`) — a `role=status` empty-state placeholder.
+- **Banners** — `Carousel` (`CarouselEffect`) — a rotating slide region with autoplay,
+  arrows, dots, keyboard, and swipe; `Hero` — a full-bleed headline band.
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
   `Dropdown` menu button (`MenuItem`/`MenuDivider`); `Tabs` (data-driven panels, `Tab`,
   `TabsVariant`/`TabsPosition`); `Breadcrumb` (`Crumb`) — a `nav` hierarchy trail.

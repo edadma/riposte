@@ -49,7 +49,7 @@ siblings depend on the core transitively.
 | `riposte-router`  | Client-side routing for single-page apps            |
 | `riposte-query`   | TanStack-style async server-state cache (built on atoms) |
 | `riposte-forms`   | react-hook-form-style form layer (uncontrolled fields, validation) |
-| `riposte-salle`   | Styled, skinnable component library — form controls (incl. Segmented), Image/Lightbox, Badge/Tag, Skeleton, Spinner/Progress, Empty, Descriptions, Pagination, Dropdown, Tabs, Breadcrumb, Modal/Drawer/Toast/Tooltip, Layout/Navbar/Footer shell, grid + masonry layout, theming |
+| `riposte-salle`   | Styled, skinnable component library — form controls (incl. Segmented), Image/Lightbox, Carousel/Hero, Badge/Tag, Skeleton, Spinner/Progress, Empty, Descriptions, Pagination, Dropdown, Tabs, Breadcrumb, Modal/Drawer/Toast/Tooltip, Layout/Navbar/Footer shell, grid + masonry layout, theming |
 
 ```scala
 libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.1.0"
