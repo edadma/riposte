@@ -373,3 +373,62 @@ class QueryClientSpec extends AnyFunSuite:
     clock += 2000
     fireOnline()
     assert(calls == 2)
+
+  test("a disabled query does not fetch on observe"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, QueryOptions(enabled = false))
+    assert(calls == 0)
+
+  test("enabling a disabled query fetches it"):
+    install()
+    val client  = new QueryClient()
+    var calls   = 0
+    val fetcher = () => { calls += 1; Future.successful(1) }
+    observe(client, queryKey("x"), fetcher, QueryOptions(enabled = false))
+    assert(calls == 0)
+    client.register(queryKey("x"), fetcher, QueryOptions(enabled = true)) // a re-render that turns it on
+    assert(calls == 1)
+
+  test("a disabled query ignores window focus"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    val opts   = QueryOptions(staleTime = 1000.0, enabled = false)
+    observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, opts)
+    clock += 2000
+    fireFocus()
+    assert(calls == 0)
+
+  test("refetchInterval polls an observed query even while it is fresh"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    val opts   = QueryOptions(staleTime = 1e9, refetchInterval = Some(1000.0))
+    observe(client, queryKey("x"), () => { calls += 1; Future.successful(calls) }, opts)
+    assert(calls == 1) // initial fetch
+    fireTimers()       // one poll tick — refetches despite staleTime not elapsing
+    assert(calls == 2)
+    fireTimers()
+    assert(calls == 3)
+
+  test("polling stops when the last observer leaves"):
+    install()
+    val client     = new QueryClient()
+    var calls      = 0
+    val opts       = QueryOptions(staleTime = 1e9, refetchInterval = Some(1000.0))
+    val (_, unsub) = observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, opts)
+    assert(calls == 1)
+    unsub()      // cancels the poll and schedules gc
+    fireTimers() // only gc fires
+    assert(calls == 1)
+
+  test("a disabled query is not polled"):
+    install()
+    val client = new QueryClient()
+    var calls  = 0
+    val opts   = QueryOptions(enabled = false, refetchInterval = Some(1000.0))
+    observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, opts)
+    fireTimers()
+    assert(calls == 0)

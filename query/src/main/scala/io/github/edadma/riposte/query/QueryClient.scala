@@ -30,6 +30,8 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
       var retryDelay:           Int => Double,
       var refetchOnWindowFocus: Boolean,
       var refetchOnReconnect:   Boolean,
+      var enabled:              Boolean,
+      var refetchInterval:      Option[Double],
   ):
     // The in-flight fetch, if any — its presence dedupes concurrent fetches of the
     // same key onto one promise.
@@ -38,6 +40,11 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
     // The pending gc cancel, set while this query is unobserved and counting down
     // to eviction; cleared (and cancelled) when it is observed again.
     var gcCancel: Option[() => Unit] = None
+
+    // The pending poll tick cancel, set while this query is being polled on an
+    // interval; cleared when it stops being observed, is disabled, or its interval
+    // changes.
+    var intervalCancel: Option[() => Unit] = None
 
     // Whether a component is currently observing the cell. Tracked from the cell's
     // mount lifecycle so `invalidate` can refetch only queries someone is watching.
@@ -82,7 +89,7 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // the focus and reconnect handlers — they differ only in which option gates them.
   private def refetchActiveStale(wants: Entry => Boolean): Unit =
     entries.foreach { (key, e) =>
-      if e.active && wants(e) && e.promise.isEmpty && e.fetcher.isDefined && isStale(e) then doFetch(key, e)
+      if e.active && e.enabled && wants(e) && e.promise.isEmpty && e.fetcher.isDefined && isStale(e) then doFetch(key, e)
     }
 
   // Get-or-create the cell for `key`, refreshing the fetcher and options to the
@@ -91,31 +98,53 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // once, when the entry is first created.
   private[query] def register(key: QueryKey, fetcher: () => Future[Any], opts: QueryOptions): PrimitiveAtom[QueryState[Any]] =
     val e = entries.getOrElseUpdate(key, createEntry(key, Some(fetcher), opts))
-    e.fetcher              = Some(fetcher)
+    e.fetcher = Some(fetcher)
+    reconcileOptions(key, e, opts)
+    e.cell
+
+  // Copy the latest options onto an entry's mutable policy fields. The fetcher and
+  // any infinite spec are the caller's to set; this is just the scalar knobs.
+  private def applyOptions(e: Entry, opts: QueryOptions): Unit =
     e.staleTime            = opts.staleTime
     e.gcTime               = opts.gcTime
     e.retry                = opts.retry
     e.retryDelay           = opts.retryDelay
     e.refetchOnWindowFocus = opts.refetchOnWindowFocus
     e.refetchOnReconnect   = opts.refetchOnReconnect
-    e.cell
+    e.enabled              = opts.enabled
+    e.refetchInterval      = opts.refetchInterval
+
+  // Refresh a live entry's options on re-registration and react to the changes that
+  // matter while it is observed: a disabled→enabled flip fetches now if stale (a
+  // dependent query whose precondition just became true — the first observe is
+  // handled by `onMount`), and an interval or enablement change restarts polling so
+  // a steady re-render with unchanged options doesn't reset the timer each time.
+  private def reconcileOptions(key: QueryKey, e: Entry, opts: QueryOptions): Unit =
+    val wasEnabled  = e.enabled
+    val intervalWas = e.refetchInterval
+    applyOptions(e, opts)
+    if e.active && !wasEnabled && e.enabled then fetchIfStale(key)
+    if e.active && (intervalWas != e.refetchInterval || wasEnabled != e.enabled) then restartInterval(key, e)
 
   private def createEntry(key: QueryKey, fetcher: Option[() => Future[Any]], opts: QueryOptions): Entry =
     val cell = atom(QueryState.initial[Any])
     val e =
       new Entry(cell, fetcher, opts.staleTime, opts.gcTime, opts.retry, opts.retryDelay,
-        opts.refetchOnWindowFocus, opts.refetchOnReconnect)
-    // First observer: cancel any pending eviction and fetch if the data is stale.
-    // Last observer: start the gc countdown. The store fires this on the cell's
-    // listener set going empty→nonempty and the cleanup on nonempty→empty.
+        opts.refetchOnWindowFocus, opts.refetchOnReconnect, opts.enabled, opts.refetchInterval)
+    // First observer: cancel any pending eviction, fetch if the data is stale, and
+    // start polling if an interval is set. Last observer: stop polling and start the
+    // gc countdown. The store fires this on the cell's listener set going
+    // empty→nonempty and the cleanup on nonempty→empty.
     onMount(cell) { _ =>
       ensureGlobalListeners()
       e.active = true
       e.gcCancel.foreach(_())
       e.gcCancel = None
       fetchIfStale(key)
+      restartInterval(key, e)
       Some { () =>
         e.active = false
+        stopInterval(e)
         scheduleGc(key, e)
       }
     }
@@ -138,12 +167,37 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
     val st = store.get(e.cell)
     st.updatedAt == 0.0 || (QueryEnv.now() - st.updatedAt) >= e.staleTime
 
-  // Fetch only if the data is stale and no fetch is already in flight —
-  // stale-while-revalidate plus in-flight dedup.
+  // Fetch only if the query is enabled, its data is stale, and no fetch is already
+  // in flight — stale-while-revalidate plus in-flight dedup. A disabled query never
+  // fetches; it fetches later, when re-enabled (`register`) or re-observed stale.
   private def fetchIfStale(key: QueryKey): Unit =
     entries.get(key).foreach { e =>
-      if isStale(e) && e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e)
+      if e.enabled && isStale(e) && e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e)
     }
+
+  // Polling. While a query is observed and enabled with a `refetchInterval`, a
+  // self-rescheduling tick refetches it every interval — regardless of staleness,
+  // unlike focus/reconnect — deduped against any in-flight fetch. `restartInterval`
+  // cancels any running tick and starts a fresh one if polling currently applies;
+  // `stopInterval` just cancels.
+  private def restartInterval(key: QueryKey, e: Entry): Unit =
+    stopInterval(e)
+    if e.active && e.enabled then e.refetchInterval.foreach(_ => scheduleTick(key, e))
+
+  private def stopInterval(e: Entry): Unit =
+    e.intervalCancel.foreach(_())
+    e.intervalCancel = None
+
+  private def scheduleTick(key: QueryKey, e: Entry): Unit =
+    e.refetchInterval.foreach { delay =>
+      e.intervalCancel = Some(QueryEnv.schedule(() => tickInterval(key, e), delay))
+    }
+
+  private def tickInterval(key: QueryKey, e: Entry): Unit =
+    e.intervalCancel = None
+    if entries.get(key).exists(_ eq e) && e.active && e.enabled then
+      if e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e)
+      scheduleTick(key, e) // keep polling until observation or enablement stops
 
   // Run the fetcher, marking the cell fetching, and fold the settled result back
   // into the cell. A failed attempt is retried up to `retry` times, waiting
@@ -198,17 +252,19 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
 
   // --- public cache control --------------------------------------------------
 
-  // Force a refetch of a query, deduped against any fetch already in flight.
+  // Force a refetch of a query, deduped against any fetch already in flight. This is
+  // imperative and intentional, so it bypasses `enabled` — calling `refetch()` is an
+  // explicit request even for an otherwise-disabled query.
   def refetch(key: QueryKey): Unit =
     entries.get(key).foreach(e => if e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e))
 
-  // Mark a query stale and, if a component is currently observing it, refetch it
-  // now. An unobserved query is just marked stale, so it refetches the next time
-  // it is observed.
+  // Mark a query stale and, if a component is observing it and it is enabled, refetch
+  // it now. An unobserved or disabled query is just marked stale, so it refetches the
+  // next time it is observed or re-enabled.
   def invalidate(key: QueryKey): Unit =
     entries.get(key).foreach { e =>
       store.set(e.cell, store.get(e.cell).copy(updatedAt = 0.0))
-      if e.active && e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e)
+      if e.active && e.enabled && e.promise.isEmpty && e.fetcher.isDefined then doFetch(key, e)
     }
 
   // Eagerly load a query into the cache without a component observing it — for
@@ -217,13 +273,8 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   // so a prefetch nobody adopts is evicted after `gcTime`.
   def prefetchQuery(key: QueryKey, fetcher: () => Future[Any], opts: QueryOptions = QueryOptions()): Unit =
     val e = entries.getOrElseUpdate(key, createUnobserved(key, Some(fetcher), opts))
-    e.fetcher              = Some(fetcher)
-    e.staleTime            = opts.staleTime
-    e.gcTime               = opts.gcTime
-    e.retry                = opts.retry
-    e.retryDelay           = opts.retryDelay
-    e.refetchOnWindowFocus = opts.refetchOnWindowFocus
-    e.refetchOnReconnect   = opts.refetchOnReconnect
+    e.fetcher = Some(fetcher)
+    applyOptions(e, opts)
     fetchIfStale(key)
 
   // Invalidate every query whose key begins with `prefix` — the structured-key
@@ -276,14 +327,9 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
       getNextPageParam     = (last, all) => getNextPageParam(last.asInstanceOf[D], all.asInstanceOf[Vector[D]]),
       getPreviousPageParam = (first, all) => getPreviousPageParam(first.asInstanceOf[D], all.asInstanceOf[Vector[D]]),
     )
-    e.infinite             = Some(spec)
-    e.fetcher              = Some(() => refetchAllPages(e, spec))
-    e.staleTime            = opts.staleTime
-    e.gcTime               = opts.gcTime
-    e.retry                = opts.retry
-    e.retryDelay           = opts.retryDelay
-    e.refetchOnWindowFocus = opts.refetchOnWindowFocus
-    e.refetchOnReconnect   = opts.refetchOnReconnect
+    e.infinite = Some(spec)
+    e.fetcher  = Some(() => refetchAllPages(e, spec))
+    reconcileOptions(key, e, opts)
     e.cell
 
   // Reload, in order, every page param the query currently holds and fold them into

@@ -1,0 +1,72 @@
+/* salle — Breadcrumb */
+
+/* ======================================================================== */
+/* Breadcrumb                                                                */
+/* ======================================================================== */
+
+/* A single horizontal row of crumbs. The default separator is a "/" drawn before every crumb
+   past the first; when the caller supplies a custom separator the component renders it as its own
+   item and the `--custom-sep` modifier turns this one off. */
+.salle-breadcrumb ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.salle-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 60%, transparent);
+}
+.salle-breadcrumb__item:not(:first-child)::before {
+  content: "/";
+  margin: 0 0.5rem;
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 35%, transparent);
+}
+.salle-breadcrumb--custom-sep .salle-breadcrumb__item:not(:first-child)::before {
+  content: none;
+  margin: 0;
+}
+
+/* The current page (last crumb) reads as plain, emphasised text. */
+.salle-breadcrumb__item[data-current="true"] {
+  color: var(--salle-input-fg, #0f172a);
+  font-weight: 500;
+}
+
+.salle-breadcrumb__link {
+  color: var(--salle-color-primary);
+  text-decoration: none;
+  border-radius: calc(var(--salle-radius) * 0.5);
+  transition: color 0.15s ease;
+}
+.salle-breadcrumb__link:hover {
+  text-decoration: underline;
+}
+.salle-breadcrumb__link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--salle-color-primary) 25%, transparent);
+}
+
+.salle-breadcrumb__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.salle-breadcrumb__icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.salle-breadcrumb__separator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.25rem;
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 35%, transparent);
+}

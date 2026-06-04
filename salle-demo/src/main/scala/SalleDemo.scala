@@ -317,6 +317,56 @@ private val emptyDemo = view {
   )
 }
 
+// Category navigation: the default-separator trail (skin-drawn), a custom "›" separator, and a
+// clickable last-hop trail that reports the chosen crumb.
+private val breadcrumbDemo = view {
+  val (at, setAt, _) = useState("Forests")
+  div(
+    cls := "demo-grid-stack",
+    Breadcrumb(items =
+      Seq(
+        Crumb(label = "Home", href = Some("#")),
+        Crumb(label = "Nature", href = Some("#")),
+        Crumb(label = "Forests"),
+      ),
+    ),
+    Breadcrumb(
+      separator = Some("›": VNode),
+      items = Seq(
+        Crumb(label = "Gallery", href = Some("#")),
+        Crumb(label = "Landscapes", href = Some("#")),
+        Crumb(label = "Mountains"),
+      ),
+    ),
+    Breadcrumb(items =
+      Seq(
+        Crumb(label = "Home", onClick = Some(() => setAt("Home"))),
+        Crumb(label = "Nature", onClick = Some(() => setAt("Nature"))),
+        Crumb(label = at),
+      ),
+    ),
+    p(s"You are at: $at"),
+  )
+}
+
+// The wallpaper detail metadata table: a bordered horizontal list, a vertical layout, and a
+// spanning "filled" row — the label/value pairs a gallery shows beside an image.
+private val descriptionsDemo = view {
+  val meta = Seq(
+    DescItem(label = "Resolution", value = "3840×2160"),
+    DescItem(label = "License", value = "CC0"),
+    DescItem(label = "Downloads", value = "1,204"),
+    DescItem(label = "Photographer", value = "A. Nilsson"),
+    DescItem(label = "Tags", value = "aurora, night, sky", span = 2),
+    DescItem(label = "Description", value = "A long-exposure aurora over a fjord.", filled = true),
+  )
+  div(
+    cls := "demo-grid-stack",
+    Descriptions(items = meta, bordered = true, column = 2, title = Some("Wallpaper details": VNode)),
+    Descriptions(items = meta.take(4), column = 2, layout = DescriptionsLayout.Vertical, size = Size.Sm),
+  )
+}
+
 // Buttons that fire the imperative toast API — the "Downloaded" / "Added to favourites"
 // confirmations a gallery shows. A single Toaster (added to the showcase below) renders
 // them, portalled to the body and grouped by placement.
@@ -522,6 +572,12 @@ private def showcase: VNode =
     ),
     section("Empty — the no-results placeholder (filter, then clear; Simple + Custom variants)")(
       emptyDemo(),
+    ),
+    section("Descriptions — wallpaper metadata table (bordered + vertical layout + spanning rows)")(
+      descriptionsDemo(),
+    ),
+    section("Breadcrumb — category trail (default + custom separator + clickable hops)")(
+      breadcrumbDemo(),
     ),
     section("Image / Lightbox — click a thumbnail to open the navigable viewer (←/→, zoom, Esc)")(
       div(
