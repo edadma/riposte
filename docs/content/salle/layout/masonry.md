@@ -1,6 +1,6 @@
 ---
 title: "Masonry"
-weight: 2
+weight: 3
 ---
 
 A Pinterest-style packed layout: tiles of differing heights flow into a fixed number of

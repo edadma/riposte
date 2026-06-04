@@ -1,6 +1,6 @@
 ---
 title: "Tooltip"
-weight: 3
+weight: 4
 ---
 
 A small floating hint anchored to its trigger — the label on an icon button, the full text

@@ -101,7 +101,7 @@ class QueryHookSpec extends AnyFunSuite:
         (p: Int) => Future.successful(s"page$p"),
         initialPageParam = 0,
         getNextPageParam = (_, all) => if all.size < 2 then Some(all.size) else None,
-        QueryOptions(staleTime = 1e9),
+        options = QueryOptions(staleTime = 1e9),
       )
       div(
         span(cls := "pages", q.pages.mkString(",")),
@@ -127,7 +127,7 @@ class QueryHookSpec extends AnyFunSuite:
         (_: Int) => p.future,
         initialPageParam = 0,
         getNextPageParam = (_, _) => None,
-        QueryOptions(staleTime = 1e9),
+        options = QueryOptions(staleTime = 1e9),
       )
       span(cls := "s", if q.isLoading then "loading" else q.pages.mkString(","))
     }
@@ -148,7 +148,7 @@ class QueryHookSpec extends AnyFunSuite:
         (_: Int) => Future.failed[String](boom),
         initialPageParam = 0,
         getNextPageParam = (_, _) => None,
-        QueryOptions(staleTime = 1e9),
+        options = QueryOptions(staleTime = 1e9),
       )
       span(cls := "s", if q.isError then q.error.map(_.getMessage).getOrElse("?") else "ok")
     }
@@ -166,7 +166,7 @@ class QueryHookSpec extends AnyFunSuite:
         (pp: Int) => Future.successful(s"p$pp-v$version"),
         initialPageParam = 0,
         getNextPageParam = (_, _) => None,
-        QueryOptions(staleTime = 1e9),
+        options = QueryOptions(staleTime = 1e9),
       )
       div(span(cls := "v", q.pages.mkString(",")), button(onClick := (_ => q.refetch()), "r"))
     }
@@ -205,3 +205,29 @@ class QueryHookSpec extends AnyFunSuite:
     Scheduler.flushSync()
     assert(c.querySelector("span.v").textContent == "2")
     assert(c.querySelector("span.f").textContent == "false")
+
+  test("useInfiniteQuery grows from the front and tracks hasPreviousPage"):
+    val c      = host()
+    val client = new QueryClient()
+    val App = view {
+      val q = useInfiniteQuery[Int, Int](
+        queryKey("win"),
+        (p: Int) => Future.successful(p),
+        initialPageParam = 1,
+        getNextPageParam = (last, _) => if last < 3 then Some(last + 1) else None,
+        getPreviousPageParam = (first, _) => if first > 0 then Some(first - 1) else None,
+        options = QueryOptions(staleTime = 1e9),
+      )
+      div(
+        span(cls := "pages", q.pages.mkString(",")),
+        span(cls := "prev", q.hasPreviousPage.toString),
+        button(onClick := (_ => q.fetchPreviousPage()), "prev"),
+      )
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.pages").textContent == "1")
+    assert(c.querySelector("span.prev").textContent == "true")
+    fireClick(c.querySelector("button")) // prepend the older page 0
+    assert(c.querySelector("span.pages").textContent == "0,1")
+    assert(c.querySelector("span.prev").textContent == "false") // first is 0 → no previous

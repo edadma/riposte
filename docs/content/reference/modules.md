@@ -69,6 +69,8 @@ same signature. Dependency arrays: `Array(a, b)` re-runs on change, `Array()` ru
 | `useClickOutside(ref, active, handler)`               | Fire when a press lands outside `ref`         |
 | `useMediaQuery(query)`                                | Live `Boolean` for a CSS media query          |
 | `useIntersectionObserver(ref, …)`                     | `Boolean` viewport visibility (lazy load)     |
+| `useResizeObserver(ref, onResize)`                    | Run a callback when an element's size changes  |
+| `useFocusTrap(active)`                                 | Confine focus to a container while `active`    |
 
 See [Hooks](/guide/hooks/).
 
@@ -145,9 +147,17 @@ riposte-atoms (each query is one atom).
   (`data`, `error`, `isLoading`, `isFetching`, `isError`, `refetch`).
 - **Keys** — `queryKey(parts*)` → a structured `Vector[Any]`; equal parts share an entry,
   prefixes drive invalidation.
-- **Options** — `QueryOptions(staleTime, gcTime)` tune freshness and garbage collection.
+- **Options** — `QueryOptions(staleTime, gcTime, retry, retryDelay, refetchOnWindowFocus,
+  refetchOnReconnect)` tune freshness, garbage collection, retry/backoff, and focus/reconnect
+  refetch.
+- **Mutations** — `useMutation(mutationFn, onMutate, onSuccess, onError, onSettled)` → a
+  `MutationResult` (`mutate`/`mutateAsync`/`reset` + status flags) for the write side.
+- **Infinite** — `useInfiniteQuery(key, fetchPage, initialPageParam, getNextPageParam,
+  getPreviousPageParam, options)` → an `InfiniteQueryResult` (`pages`, `hasNextPage`,
+  `fetchNextPage`, plus `hasPreviousPage`/`fetchPreviousPage` for bidirectional lists).
 - **Client** — `QueryClient`, `QueryClientProvider(client)(child)`, `useQueryClient`; cache
-  control via `invalidate`, `invalidatePrefix`, `refetch`, `setQueryData`, `getQueryData`.
+  control via `invalidate`, `invalidatePrefix`, `refetch`, `setQueryData` (value or updater),
+  `getQueryData`, `prefetchQuery`.
 
 See [Data Fetching](/guide/queries/).
 
@@ -162,7 +172,8 @@ A styled component library on top of the core.
 - **Theming** — one open `data-theme` set (ships `light`/`dark`, `system` follows the OS).
   `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon
   button) and `ThemeSelect(themes)`.
-- **Form controls** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`).
+- **Form controls** — `Button`, `Input`, `Checkbox`, `Toggle`, `Select` (`Opt`), and
+  `Segmented` (`SegmentedOpt`) — a single-choice `radiogroup` strip.
 - **Display** — `ImageCard`; the previewable `Image` with its `Lightbox` viewer and
   `ImagePreviewGroup` (shared gallery lightbox); `Badge`/`Tag`/`CheckableTag` label pills;
   `Skeleton` / `SkeletonText` / `SkeletonImage` loading placeholders.
@@ -171,11 +182,13 @@ A styled component library on top of the core.
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
   `Dropdown` menu button (`MenuItem`/`MenuDivider`); `Tabs` (data-driven panels, `Tab`,
   `TabsVariant`/`TabsPosition`).
-- **Overlays** — `Modal` (portal dialog), `Toast`/`Toaster` (imperative `toast` API), and
-  `Tooltip` (floating hint, hover/focus/click) — all animated via the core `usePresence`
-  hook.
-- **Layout** — `Row`/`Col` (24-column grid, responsive spans) and `Masonry` /
-  `MasonryResponsive` (packed columns; pure `layoutMasonry`).
+- **Overlays** — `Modal` (portal dialog) and `Drawer` (edge-docked panel) — both focus-
+  trapped via the core `useFocusTrap`; `Toast`/`Toaster` (imperative `toast` API); and
+  `Tooltip` (floating hint, hover/focus/click) — all animated via the core `usePresence` hook.
+- **Layout** — the page shell `Layout` (with `Header`/`Content`/`Footer`/`Sider` regions),
+  `Navbar` (three-zone, responsive collapse) and content `Footer` (`Footer.Title`); plus
+  `Row`/`Col` (24-column grid, responsive spans) and `Masonry` / `MasonryResponsive` (packed
+  columns; pure `layoutMasonry`).
 - **Hook** — `useControllable(value, default, onChange)` for controlled/uncontrolled state.
 
 See [Component library (salle)](/salle/).
