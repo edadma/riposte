@@ -3,7 +3,7 @@ title: "Modules & API"
 weight: 1
 ---
 
-Riposte ships as five independently published artifacts under the `io.github.edadma`
+Riposte ships as six independently published artifacts under the `io.github.edadma`
 organization, all at the same version. The sibling artifacts depend on the core
 transitively, so adding any of them is enough — you don't list `riposte` separately.
 
@@ -13,6 +13,7 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte-atoms`   | `io.github.edadma.riposte.atoms.*`      | Shared atomic state                     |
 | `riposte-router`  | `io.github.edadma.riposte.router.*`     | Client-side routing                     |
 | `riposte-query`   | `io.github.edadma.riposte.query.*`      | Async server-state cache               |
+| `riposte-forms`   | `io.github.edadma.riposte.forms.*`      | react-hook-form-style form layer        |
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
 `riposte-query` also depends on `riposte-atoms`; the rest depend only on `riposte`. The
@@ -92,7 +93,8 @@ See [Hooks](/guide/hooks/).
   identity.
 - **Conditionals** — `when(cond)(node)`, `unless(cond)(node)`.
 - **Escape hatches** — `unsafeHtml(s)`, `portal(target, child)`,
-  `errorBoundary(fallback)(child)`.
+  `errorBoundary(fallback)(child)`; a `Seq[Mod]` spreads into a tag's mod list (`spread(mods)`
+  is the explicit form) — the `{...props}` analogue.
 
 ### Context
 
@@ -144,8 +146,11 @@ A TanStack-Query-style async data layer — a keyed cache of server state — bu
 riposte-atoms (each query is one atom).
 
 - **Read** — `useQuery(key, fetcher, options, placeholderData)` → a `QueryResult` named tuple
-  (`data`, `error`, `isLoading`, `isFetching`, `isError`, `isPlaceholderData`, `refetch`);
-  `useSelectQuery(key, fetcher, select, …)` projects the cached data into a derived shape.
+  (`data`, `error`, `isLoading`, `isFetching`, `isError`, `isPlaceholderData`, `refetch`,
+  `cancel`); `useSelectQuery(key, fetcher, select, …)` projects the cached data into a derived
+  shape.
+- **Cancellation** — `result.cancel()` (or `client.cancelQuery(key)`) aborts an in-flight
+  fetch; a fetcher reads `QueryFetch.signal` to wire the abort into its request.
 - **Keys** — `queryKey(parts*)` → a structured `Vector[Any]`; equal parts share an entry,
   prefixes drive invalidation.
 - **Options** — `QueryOptions(staleTime, gcTime, retry, retryDelay, refetchOnWindowFocus,
@@ -162,6 +167,27 @@ riposte-atoms (each query is one atom).
   `getQueryData`, `prefetchQuery`.
 
 See [Data Fetching](/guide/queries/).
+
+## riposte-forms
+
+A react-hook-form-style form layer built on the core's public API. Fields are uncontrolled
+(the DOM owns the value, read through a ref), so typing doesn't re-render.
+
+- **Setup** — `useForm(defaultValues, mode, reValidateMode)` → a `Form` handle; `mode` /
+  `reValidateMode` are `ValidationMode.{OnSubmit,OnBlur,OnChange,OnTouched,All}`.
+- **Fields** — `form.register(field, rules)` spreads mods onto an uncontrolled element;
+  `form.handleSubmit(onValid, onInvalid)` validates then submits.
+- **Rules** — `Rules(required, minLength, maxLength, min, max, pattern, validate, messages)`;
+  a failure is a `FieldError(kind, message)`; `Messages` overrides the defaults.
+- **State** — `form.formState` (`errors`, `isDirty`, `isValid`, `isSubmitting`,
+  `isSubmitted`, `submitCount`, `touchedFields`, `dirtyFields`).
+- **Imperative** — `setValue`/`getValue`/`getValues`, `trigger`, `setError`/`clearErrors`,
+  `reset`.
+- **Watch** — `form.watch[T](field)`, `useWatch`, `useWatchAll`, `useWatchFields`.
+- **Controlled** — `Controller(name, control, rules) { args => … }` adapts a controlled
+  component (value + onChange) into the form.
+
+See [Forms](/guide/forms/).
 
 ## riposte-salle
 
@@ -182,6 +208,8 @@ A styled component library on top of the core.
   (`DescItem`) — a label/value metadata table (pure `descriptionsRows`).
 - **Feedback** — `Spinner` (indeterminate, with overlay mode), `Progress` (linear),
   `RadialProgress` (ring); `Empty` (`EmptyImage`) — a `role=status` empty-state placeholder.
+- **Banners** — `Carousel` (`CarouselEffect`) — a rotating slide region with autoplay,
+  arrows, dots, keyboard, and swipe; `Hero` — a full-bleed headline band.
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
   `Dropdown` menu button (`MenuItem`/`MenuDivider`); `Tabs` (data-driven panels, `Tab`,
   `TabsVariant`/`TabsPosition`); `Breadcrumb` (`Crumb`) — a `nav` hierarchy trail.

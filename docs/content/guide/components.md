@@ -100,6 +100,22 @@ div(
 )
 ```
 
+### Spreading a bundle of mods
+
+A `Seq[Mod]` drops straight into a tag's mod list — the riposte analogue of JSX's
+`{...props}`. A helper that returns a bundle of mods (a shared set of attributes, or a form
+library's `register`) composes alongside the others:
+
+```scala
+val field = Seq(cls := "field", aria("required") := true)
+input(field, typ := "email", placeholder := "you@example.com")
+```
+
+Scala forbids splicing a `Seq` with `*` next to other varargs, so this works through an
+implicit conversion; `spread(field)` is the explicit form when a named call reads more
+clearly. Bundles may nest. (salle's [forms layer](/guide/forms/) leans on this for
+`register`.)
+
 ## Events
 
 Event handlers are `EventKey` values, also combined with `:=`. Each key is typed by the

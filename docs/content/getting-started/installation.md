@@ -39,6 +39,7 @@ The optional sibling artifacts are added the same way when you need them:
 libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.1.0"
 libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.1.0"
 libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.1.0"
 libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.1.0"
 ```
 
