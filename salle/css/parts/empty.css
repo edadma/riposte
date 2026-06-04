@@ -1,0 +1,40 @@
+/* salle — Empty */
+
+/* ======================================================================== */
+/* Empty                                                                     */
+/* ======================================================================== */
+
+/* A centred column: illustration, then a muted description line, then an optional action slot.
+   The illustration is drawn in `currentColor`, so it picks up this muted tone for its strokes
+   and fills. */
+.salle-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.salle-empty__image {
+  margin-bottom: 0.5rem;
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 30%, transparent);
+}
+.salle-empty__image svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.salle-empty__description {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 55%, transparent);
+}
+
+.salle-empty__footer {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}

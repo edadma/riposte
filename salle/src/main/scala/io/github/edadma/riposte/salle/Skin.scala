@@ -217,6 +217,16 @@ type SegmentedClasses = (
     label: String,
 )
 
+/** The per-part CSS classes for an [[Empty]] placeholder: the `root` (a centred column), the
+  * `image` wrapper around the illustration, the `description` line, and the `footer` action slot.
+  * Stateless — Empty has no variants beyond the illustration choice, which it resolves itself. */
+type EmptyClasses = (
+    root: String,
+    image: String,
+    description: String,
+    footer: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -341,6 +351,10 @@ trait Skin:
     * span the full width (segments share the space equally). The `active`/`disabled` segment
     * modifiers are applied conditionally by the component. */
   def segmented(size: Size, block: Boolean): SegmentedClasses
+
+  /** Classes for an [[Empty]] placeholder's parts. Stateless — the only choice (which
+    * illustration) is resolved by the component, so the skin just supplies the layout surface. */
+  def empty: EmptyClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -544,6 +558,14 @@ object SalleSkin extends Skin:
       disabled = "salle-segmented__item--disabled",
       icon = "salle-segmented__icon",
       label = "salle-segmented__label",
+    )
+
+  def empty: EmptyClasses =
+    (
+      root = "salle-empty",
+      image = "salle-empty__image",
+      description = "salle-empty__description",
+      footer = "salle-empty__footer",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -844,6 +866,16 @@ object DaisySkin extends Skin:
       disabled = "btn-disabled",
       icon = "mr-1 inline-flex items-center",
       label = "inline-flex items-center",
+    )
+
+  // DaisyUI has no dedicated empty component; mirror AsterUI's plain Tailwind layout — a centred
+  // column with the muted-content colour on the description.
+  def empty: EmptyClasses =
+    (
+      root = "flex flex-col items-center justify-center py-8 px-4",
+      image = "mb-2 text-base-content/30",
+      description = "text-base-content/60 text-sm mb-4",
+      footer = "mt-2",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish

@@ -55,3 +55,4 @@
 @import url("./parts/footer.css") layer(salle);
 @import url("./parts/drawer.css") layer(salle);
 @import url("./parts/segmented.css") layer(salle);
+@import url("./parts/empty.css") layer(salle);
