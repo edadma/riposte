@@ -231,3 +231,87 @@ class QueryHookSpec extends AnyFunSuite:
     fireClick(c.querySelector("button")) // prepend the older page 0
     assert(c.querySelector("span.pages").textContent == "0,1")
     assert(c.querySelector("span.prev").textContent == "false") // first is 0 → no previous
+
+  test("useSelectQuery projects the cached data"):
+    val c      = host()
+    val client = new QueryClient()
+    val App = view {
+      val q = useSelectQuery[(Int, String), String](
+        queryKey("user"),
+        () => Future.successful((1, "Ada")),
+        select = _._2,
+        options = QueryOptions(staleTime = 1e9),
+      )
+      span(cls := "s", q.data.getOrElse("-"))
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.s").textContent == "Ada")
+
+  test("placeholderData shows until the real data arrives"):
+    val c      = host()
+    val client = new QueryClient()
+    val p      = Promise[String]()
+    val App = view {
+      val q = useQuery(queryKey("g"), () => p.future, QueryOptions(staleTime = 1e9), placeholderData = Some("…"))
+      div(span(cls := "v", q.data.getOrElse("-")), span(cls := "ph", q.isPlaceholderData.toString))
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "…")
+    assert(c.querySelector("span.ph").textContent == "true")
+    p.success("real")
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "real")
+    assert(c.querySelector("span.ph").textContent == "false")
+
+  test("keepPreviousData holds the prior key's data across a key change"):
+    val c      = host()
+    val client = new QueryClient()
+    val p2     = Promise[String]()
+    val App = view {
+      val (k, setK, _) = useState(1)
+      val q = useQuery(
+        queryKey("item", k),
+        () => if k == 1 then Future.successful("one") else p2.future,
+        QueryOptions(staleTime = 1e9, keepPreviousData = true),
+      )
+      div(
+        span(cls := "v", q.data.getOrElse("-")),
+        span(cls := "ph", q.isPlaceholderData.toString),
+        button(onClick := (_ => setK(2)), "next"),
+      )
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "one")
+    assert(c.querySelector("span.ph").textContent == "false")
+    fireClick(c.querySelector("button")) // key → 2; its first fetch is in flight
+    assert(c.querySelector("span.v").textContent == "one")  // prior key's data kept
+    assert(c.querySelector("span.ph").textContent == "true") // shown as placeholder
+    p2.success("two")
+    Scheduler.flushSync()
+    assert(c.querySelector("span.v").textContent == "two")
+    assert(c.querySelector("span.ph").textContent == "false")
+
+  test("a disabled query in a component does not fetch and is not loading"):
+    val c      = host()
+    val client = new QueryClient()
+    var calls  = 0
+    val App = view {
+      val (on, setOn, _) = useState(false)
+      val q = useQuery(queryKey("d"), () => { calls += 1; Future.successful(1) }, QueryOptions(staleTime = 1e9, enabled = on))
+      div(
+        span(cls := "v", q.data.map(_.toString).getOrElse("-")),
+        span(cls := "l", q.isLoading.toString),
+        button(onClick := (_ => setOn(true)), "go"),
+      )
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(calls == 0)
+    assert(c.querySelector("span.v").textContent == "-")
+    assert(c.querySelector("span.l").textContent == "false") // disabled is not "loading"
+    fireClick(c.querySelector("button"))                     // enable → fetch now
+    assert(calls == 1)
+    assert(c.querySelector("span.v").textContent == "1")
