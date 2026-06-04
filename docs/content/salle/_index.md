@@ -36,7 +36,7 @@ Every salle component is an ordinary function with default arguments, returning 
   `Segmented`.
 - **[Display](/salle/display/)** — `ImageCard`, `Image`/`Lightbox`, `Badge`/`Tag`,
   `Skeleton`, the `Spinner`/`Progress` busy indicators, and the `Empty` placeholder.
-- **[Navigation](/salle/navigation/)** — `Pagination`, `Dropdown`, and `Tabs`.
+- **[Navigation](/salle/navigation/)** — `Pagination`, `Dropdown`, `Tabs`, and `Breadcrumb`.
 - **[Overlays](/salle/overlays/)** — `Modal`, `Drawer`, `Toast`, and `Tooltip`.
 - **[Layout](/salle/layout/)** — the `Layout`/`Navbar`/`Footer` page shell, plus the
   `Row`/`Col` grid and `Masonry`.

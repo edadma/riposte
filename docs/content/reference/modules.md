@@ -181,7 +181,7 @@ A styled component library on top of the core.
   `RadialProgress` (ring); `Empty` (`EmptyImage`) — a `role=status` empty-state placeholder.
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
   `Dropdown` menu button (`MenuItem`/`MenuDivider`); `Tabs` (data-driven panels, `Tab`,
-  `TabsVariant`/`TabsPosition`).
+  `TabsVariant`/`TabsPosition`); `Breadcrumb` (`Crumb`) — a `nav` hierarchy trail.
 - **Overlays** — `Modal` (portal dialog) and `Drawer` (edge-docked panel) — both focus-
   trapped via the core `useFocusTrap`; `Toast`/`Toaster` (imperative `toast` API); and
   `Tooltip` (floating hint, hover/focus/click) — all animated via the core `usePresence` hook.
