@@ -64,6 +64,7 @@ final class FormStore(
   private val handlers = mutable.Map.empty[String, FieldHandlers]
 
   private val listeners        = mutable.Set.empty[() => Unit]
+  private val valueListeners    = mutable.Set.empty[() => Unit]
   private var snapshot         = build()
 
   // --- subscription (the useSyncExternalStore seam) ------------------------
@@ -73,6 +74,18 @@ final class FormStore(
     () => listeners -= cb
 
   def getSnapshot: FormState = snapshot
+
+  // A second, finer subscription: it fires on every change to a field *value*, not
+  // just on the observable `FormState`. `useWatch` and `Controller` ride this so a
+  // component that reads a field's live value re-renders as the user types — the
+  // opt-in reactivity the uncontrolled `formState` seam deliberately withholds.
+  // Callers bail out via `useSyncExternalStore`'s snapshot diff, so notifying on
+  // every value change (even unrelated fields) is cheap.
+  def subscribeValues(cb: () => Unit): () => Unit =
+    valueListeners += cb
+    () => valueListeners -= cb
+
+  private def notifyValues(): Unit = valueListeners.foreach(_())
 
   // Rebuild the snapshot and wake subscribers only if it actually changed. A keystroke
   // that moves no observable state — a further edit to an already-dirty field with no
@@ -146,6 +159,32 @@ final class FormStore(
     if !values.contains(name) then values(name) = defaults.getOrElse(name, "")
     handlers.getOrElseUpdate(name, makeHandlers(name))
 
+  // Register a controlled field — one whose value the store owns directly rather than
+  // reading from a DOM element through a ref. `Controller` calls this each render to keep
+  // the field's rules current and seed its value once; updates then flow through
+  // `changeField` / `blurField` instead of the uncontrolled `onInput` / `onBlur`.
+  def registerControlled(name: String, fieldRules: Rules): Unit =
+    rules(name) = fieldRules
+    if !values.contains(name) then values(name) = defaults.getOrElse(name, "")
+
+  // The controlled counterpart of `onInput`: a `Controller`-wrapped component reports a
+  // new value here. Validation follows the same per-mode policy as an uncontrolled field,
+  // and both subscriptions fire so a `useWatch` and the `formState` consumers update.
+  def changeField(name: String, value: Any): Unit =
+    values(name) = value
+    if shouldValidateOnChange(name) then revalidateField(name)
+    notifyValues()
+    notifyListeners()
+
+  // The controlled counterpart of `onBlur`: mark the field touched and validate it if the
+  // mode calls for it.
+  def blurField(name: String): Unit =
+    val wasTouched = touched(name)
+    touched += name
+    val validating = shouldValidateOnBlur(name)
+    if validating then revalidateField(name)
+    if validating || !wasTouched then notifyListeners()
+
   private def makeHandlers(name: String): FieldHandlers =
     val ref = (el: dom.Element | Null) =>
       el match
@@ -160,26 +199,37 @@ final class FormStore(
 
     val onInput = (_: dom.Event) =>
       elements.get(name).foreach(e => values(name) = readElement(e))
-      val validating = mode == ValidationMode.OnChange || mode == ValidationMode.All ||
-        (mode == ValidationMode.OnTouched && touched(name)) ||
-        (isSubmitted && (reValidateMode == ValidationMode.OnChange || reValidateMode == ValidationMode.All))
-      if validating then revalidateField(name)
+      if shouldValidateOnChange(name) then revalidateField(name)
       // A keystroke can flip `isDirty`/`dirtyFields` (and any error it just cleared)
       // even when we didn't validate, so rebuild the snapshot either way — the diff is
-      // cheap and uncontrolled inputs don't re-render from it.
+      // cheap and uncontrolled inputs don't re-render from it. `notifyValues` separately
+      // wakes any `useWatch` on this field.
+      notifyValues()
       notifyListeners()
 
     val onBlur = (_: dom.Event) =>
       val wasTouched = touched(name)
       touched += name
       elements.get(name).foreach(e => values(name) = readElement(e))
-      val validating = mode == ValidationMode.OnBlur || mode == ValidationMode.OnTouched ||
-        mode == ValidationMode.All ||
-        (isSubmitted && reValidateMode == ValidationMode.OnBlur)
+      val validating = shouldValidateOnBlur(name)
       if validating then revalidateField(name)
       if validating || !wasTouched then notifyListeners()
 
     FieldHandlers(ref, onInput, onBlur)
+
+  // Whether a field validates on a value change, given the form's mode (and, after the
+  // first submit, its reValidateMode). Shared by the uncontrolled `onInput` handler and
+  // the controlled `changeField`, so both honour the same policy.
+  private def shouldValidateOnChange(name: String): Boolean =
+    mode == ValidationMode.OnChange || mode == ValidationMode.All ||
+      (mode == ValidationMode.OnTouched && touched(name)) ||
+      (isSubmitted && (reValidateMode == ValidationMode.OnChange || reValidateMode == ValidationMode.All))
+
+  // Whether a field validates when it loses focus, under the same shared policy.
+  private def shouldValidateOnBlur(name: String): Boolean =
+    mode == ValidationMode.OnBlur || mode == ValidationMode.OnTouched ||
+      mode == ValidationMode.All ||
+      (isSubmitted && reValidateMode == ValidationMode.OnBlur)
 
   // Validate one field against its rules, updating its error entry. Returns whether the
   // entry changed, so a caller can decide whether the change is worth notifying for.
@@ -201,6 +251,7 @@ final class FormStore(
     values(name) = value
     elements.get(name).foreach(writeElement(_, value))
     if shouldValidate then revalidateField(name)
+    notifyValues()
     notifyListeners()
 
   def setError(name: String, error: FieldError): Unit =
@@ -236,6 +287,7 @@ final class FormStore(
     isSubmitted = false
     submitCount = 0
     elements.foreach((name, el) => values.get(name).foreach(writeElement(el, _)))
+    notifyValues()
     notifyListeners()
 
   // Validate every registered field and run `onValid` with the values when the form is

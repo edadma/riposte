@@ -44,8 +44,14 @@ final class Form private[forms] (val control: FormStore, val formState: FormStat
       control.submit(onValid, onInvalid)
 
   // The whole form's current values; uncontrolled, so this reflects what the user has
-  // typed without the form being controlled on every keystroke.
+  // typed without the form being controlled on every keystroke. This is a one-shot read —
+  // for a value that re-renders the component as it changes, use `watch`.
   def getValues: Map[String, Any] = control.getValues
+
+  // Reactively read one field's value: the calling component re-renders when this field
+  // changes (and only this field). A hook — call it unconditionally, like any other.
+  // Annotate the type at the call site: `val email = f.watch[String]("email")`.
+  def watch[T](field: String)(using Hooks): T = useWatch[T](control, field)
 
   // One field's current value, cast to the type the call site expects — the typed
   // read over the string-path store (`getValue[Int]("age")`).
