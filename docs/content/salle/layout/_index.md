@@ -3,5 +3,6 @@ title: "Layout"
 weight: 6
 ---
 
-Two ways to arrange tiles — one for *precise* column layouts (the `Row`/`Col` grid), one
-for *packed* ones (`Masonry`).
+The page shell that frames a site (`Layout`/`Navbar`/`Footer`), plus two ways to arrange
+tiles within it — one for *precise* column layouts (the `Row`/`Col` grid), one for *packed*
+ones (`Masonry`).

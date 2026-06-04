@@ -342,6 +342,21 @@ div(ref := box, /* … */)
 
 (salle's [`Masonry`](/salle/layout/masonry/) measures with this hook.)
 
+**`useFocusTrap(active)`** confines keyboard focus to one container while `active`. It
+returns a ref to attach to the container (give it `tabindex="-1"` so it can hold focus
+itself). While active, focus moves into the container when it opens, `Tab`/`Shift+Tab` wrap
+within it (and stray focus is pulled back), and focus is restored to the previously-focused
+element when `active` flips off or the component unmounts — the focus half of a modal
+overlay, separate from Escape-to-close, which each component still owns:
+
+```scala
+val panel = useFocusTrap(open)
+div(ref := panel, tabIndex := "-1", role := "dialog", /* … */)
+```
+
+(salle's [`Modal`](/salle/overlays/modal/) and [`Drawer`](/salle/overlays/drawer/) are built
+on this hook.)
+
 ## Rate-limiting a value
 
 Three hooks derive a slower-changing copy of a fast-changing value, so expensive renders

@@ -295,6 +295,60 @@ private val segmentedDemo = view {
   )
 }
 
+// The "no results" placeholder. A filter that matches nothing falls through to Empty with a
+// "Clear filters" action; alongside it sit the Simple and Custom illustration variants.
+private val emptyDemo = view {
+  val (q, setQ, _) = useState("aurora")
+  val matches = Seq("forest", "ocean", "desert").filter(_.contains(q.toLowerCase))
+  div(
+    cls := "demo-grid-stack",
+    Input(value = Some(q), placeholder = "Filter wallpapers…", onChange = setQ),
+    if matches.nonEmpty then
+      ul(matches.map(m => li(m)))
+    else
+      Empty(description = Some(s"No wallpapers match “$q”": VNode))(
+        Button("Clear filter", color = Color.Primary, onClick = () => setQ("")),
+      ),
+    div(
+      style := Map("display" -> "flex", "gap" -> "2rem", "flex-wrap" -> "wrap", "align-items" -> "flex-start"),
+      Empty(image = EmptyImage.Simple, description = Some("Nothing here yet": VNode))(),
+      Empty(image = EmptyImage.Custom("🖼️": VNode), description = Some("No favourites": VNode))(),
+    ),
+  )
+}
+
+// Category navigation: the default-separator trail (skin-drawn), a custom "›" separator, and a
+// clickable last-hop trail that reports the chosen crumb.
+private val breadcrumbDemo = view {
+  val (at, setAt, _) = useState("Forests")
+  div(
+    cls := "demo-grid-stack",
+    Breadcrumb(items =
+      Seq(
+        Crumb(label = "Home", href = Some("#")),
+        Crumb(label = "Nature", href = Some("#")),
+        Crumb(label = "Forests"),
+      ),
+    ),
+    Breadcrumb(
+      separator = Some("›": VNode),
+      items = Seq(
+        Crumb(label = "Gallery", href = Some("#")),
+        Crumb(label = "Landscapes", href = Some("#")),
+        Crumb(label = "Mountains"),
+      ),
+    ),
+    Breadcrumb(items =
+      Seq(
+        Crumb(label = "Home", onClick = Some(() => setAt("Home"))),
+        Crumb(label = "Nature", onClick = Some(() => setAt("Nature"))),
+        Crumb(label = at),
+      ),
+    ),
+    p(s"You are at: $at"),
+  )
+}
+
 // Buttons that fire the imperative toast API — the "Downloaded" / "Added to favourites"
 // confirmations a gallery shows. A single Toaster (added to the showcase below) renders
 // them, portalled to the body and grouped by placement.
@@ -497,6 +551,12 @@ private def showcase: VNode =
     ),
     section("Segmented — single-choice strip (sort, view mode, density; keyboard roving)")(
       segmentedDemo(),
+    ),
+    section("Empty — the no-results placeholder (filter, then clear; Simple + Custom variants)")(
+      emptyDemo(),
+    ),
+    section("Breadcrumb — category trail (default + custom separator + clickable hops)")(
+      breadcrumbDemo(),
     ),
     section("Image / Lightbox — click a thumbnail to open the navigable viewer (←/→, zoom, Esc)")(
       div(

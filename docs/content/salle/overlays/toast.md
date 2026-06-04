@@ -1,6 +1,6 @@
 ---
 title: "Toast & Toaster"
-weight: 2
+weight: 3
 ---
 
 Transient notifications, created **imperatively** — exactly what a "Downloaded" or "Added to
