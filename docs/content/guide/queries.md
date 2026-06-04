@@ -41,6 +41,8 @@ The result is a named tuple read by field:
 - `isFetching: Boolean` — a fetch is in flight, including a background refetch over data
   already shown.
 - `isError: Boolean` — the last settle was a failure.
+- `isPlaceholderData: Boolean` — `data` is a placeholder or the previous key's value rather
+  than this query's own settled result (see [placeholders](#placeholders-and-keeping-previous-data)).
 - `refetch: () => Unit` — force a refetch, deduped against any fetch already running.
 
 On first observe the query fetches; the component re-renders only when *this* query's cell
@@ -85,6 +87,54 @@ useQuery(
   that retry. Defaults to exponential backoff (1s, 2s, 4s, …) capped at 30s.
 - `refetchOnWindowFocus` / `refetchOnReconnect` (both default `true`) — refetch an observed,
   stale query when the window regains focus or the network comes back online.
+- `enabled` (default `true`) — while `false` the query never fetches (not on observe, focus,
+  reconnect, or interval) and stays pending; the knob for conditional and dependent queries.
+- `refetchInterval` (`Option[Double]`, ms) — when set, polls the query at that interval while
+  it is observed and enabled, refetching regardless of staleness.
+- `keepPreviousData` (default `false`) — across a key change, keep the prior key's data
+  visible (instead of a loading flash) until the new key's first fetch settles.
+
+## Conditional and dependent queries
+
+Set `enabled = false` to hold a query back until its inputs are ready — a query that depends
+on the result of another, or one gated on user input. While disabled it stays pending and
+never fetches; flipping it to `true` fetches if stale:
+
+```scala
+val user = useQuery(queryKey("user"), () => api.user())
+val projects = useQuery(
+  queryKey("projects", user.data.map(_.id)),
+  () => api.projects(user.data.get.id),
+  QueryOptions(enabled = user.data.isDefined),   // wait until the user is loaded
+)
+```
+
+For background polling, set `refetchInterval` (ms) — the query refetches at that cadence
+while it's observed and enabled, regardless of staleness.
+
+## Placeholders and keeping previous data
+
+To avoid a loading flash, give `useQuery` a `placeholderData` — a stand-in shown while the
+query is pending with no data of its own. For paginated or filtered lists, `keepPreviousData`
+holds the previous key's data on screen across a key change until the new fetch settles.
+Either way, the result's `isPlaceholderData` is `true` while what you see isn't yet this
+query's own settled value — handy for dimming stale content:
+
+```scala
+val q = useQuery(
+  queryKey("photos", page),
+  () => api.photos(page),
+  QueryOptions(keepPreviousData = true),
+  placeholderData = Some(Nil),
+)
+div(css("opacity" -> (if q.isPlaceholderData then "0.5" else "1")), renderPhotos(q.data.get))
+```
+
+To project the cached data into a derived shape, use `useSelectQuery(key, fetcher, select)` —
+the cache still holds the raw value; only the result is transformed (e.g.
+`useSelectQuery(queryKey("todos"), fetchTodos, _.length)` for just the count). It's a
+distinct name rather than a `select` parameter because Scala can't both default `select` to
+identity and infer the result type from it.
 
 ## Cache control
 

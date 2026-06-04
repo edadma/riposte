@@ -143,13 +143,15 @@ See [Routing](/guide/routing/).
 A TanStack-Query-style async data layer — a keyed cache of server state — built on
 riposte-atoms (each query is one atom).
 
-- **Read** — `useQuery(key, fetcher, options)` → a `QueryResult` named tuple
-  (`data`, `error`, `isLoading`, `isFetching`, `isError`, `refetch`).
+- **Read** — `useQuery(key, fetcher, options, placeholderData)` → a `QueryResult` named tuple
+  (`data`, `error`, `isLoading`, `isFetching`, `isError`, `isPlaceholderData`, `refetch`);
+  `useSelectQuery(key, fetcher, select, …)` projects the cached data into a derived shape.
 - **Keys** — `queryKey(parts*)` → a structured `Vector[Any]`; equal parts share an entry,
   prefixes drive invalidation.
 - **Options** — `QueryOptions(staleTime, gcTime, retry, retryDelay, refetchOnWindowFocus,
-  refetchOnReconnect)` tune freshness, garbage collection, retry/backoff, and focus/reconnect
-  refetch.
+  refetchOnReconnect, enabled, refetchInterval, keepPreviousData)` tune freshness, garbage
+  collection, retry/backoff, focus/reconnect refetch, conditional fetching, polling, and
+  cross-key data retention.
 - **Mutations** — `useMutation(mutationFn, onMutate, onSuccess, onError, onSettled)` → a
   `MutationResult` (`mutate`/`mutateAsync`/`reset` + status flags) for the write side.
 - **Infinite** — `useInfiniteQuery(key, fetchPage, initialPageParam, getNextPageParam,
@@ -176,7 +178,8 @@ A styled component library on top of the core.
   `Segmented` (`SegmentedOpt`) — a single-choice `radiogroup` strip.
 - **Display** — `ImageCard`; the previewable `Image` with its `Lightbox` viewer and
   `ImagePreviewGroup` (shared gallery lightbox); `Badge`/`Tag`/`CheckableTag` label pills;
-  `Skeleton` / `SkeletonText` / `SkeletonImage` loading placeholders.
+  `Skeleton` / `SkeletonText` / `SkeletonImage` loading placeholders; `Descriptions`
+  (`DescItem`) — a label/value metadata table (pure `descriptionsRows`).
 - **Feedback** — `Spinner` (indeterminate, with overlay mode), `Progress` (linear),
   `RadialProgress` (ring); `Empty` (`EmptyImage`) — a `role=status` empty-state placeholder.
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);

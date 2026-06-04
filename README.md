@@ -48,7 +48,7 @@ siblings depend on the core transitively.
 | `riposte-atoms`   | Jotai-inspired atomic shared state                  |
 | `riposte-router`  | Client-side routing for single-page apps            |
 | `riposte-query`   | TanStack-style async server-state cache (built on atoms) |
-| `riposte-salle`   | Styled, skinnable component library — form controls (incl. Segmented), Image/Lightbox, Badge/Tag, Skeleton, Spinner/Progress, Empty, Pagination, Dropdown, Tabs, Breadcrumb, Modal/Drawer/Toast/Tooltip, Layout/Navbar/Footer shell, grid + masonry layout, theming |
+| `riposte-salle`   | Styled, skinnable component library — form controls (incl. Segmented), Image/Lightbox, Badge/Tag, Skeleton, Spinner/Progress, Empty, Descriptions, Pagination, Dropdown, Tabs, Breadcrumb, Modal/Drawer/Toast/Tooltip, Layout/Navbar/Footer shell, grid + masonry layout, theming |
 
 ```scala
 libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.1.0"
