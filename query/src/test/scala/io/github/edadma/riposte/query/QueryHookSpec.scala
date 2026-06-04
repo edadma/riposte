@@ -315,3 +315,19 @@ class QueryHookSpec extends AnyFunSuite:
     fireClick(c.querySelector("button"))                     // enable → fetch now
     assert(calls == 1)
     assert(c.querySelector("span.v").textContent == "1")
+
+  test("q.cancel aborts the in-flight query from the component"):
+    val c      = host()
+    val client = new QueryClient()
+    val p      = Promise[Int]()
+    var sig: Option[dom.AbortSignal] = None
+    val App = view {
+      val q = useQuery(queryKey("x"), () => { sig = QueryFetch.signal; p.future })
+      div(span(cls := "f", q.isFetching.toString), button(onClick := (_ => q.cancel()), "x"))
+    }
+    render(QueryClientProvider(client)(App()), c)
+    Scheduler.flushSync()
+    assert(c.querySelector("span.f").textContent == "true")
+    fireClick(c.querySelector("button"))
+    assert(sig.get.aborted)
+    assert(c.querySelector("span.f").textContent == "false")

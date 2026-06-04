@@ -1,5 +1,6 @@
 package io.github.edadma.riposte.query
 
+import org.scalajs.dom
 import org.scalatest.funsuite.AnyFunSuite
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -432,3 +433,56 @@ class QueryClientSpec extends AnyFunSuite:
     observe(client, queryKey("x"), () => { calls += 1; Future.successful(1) }, opts)
     fireTimers()
     assert(calls == 0)
+
+  test("a fetcher sees a live, un-aborted signal while it runs"):
+    install()
+    val client                       = new QueryClient()
+    var seen: Option[dom.AbortSignal] = None
+    observe(client, queryKey("x"), () => { seen = QueryFetch.signal; Future.successful(1) })
+    assert(seen.isDefined)
+    assert(!seen.get.aborted)
+
+  test("cancelQuery aborts the in-flight fetch and clears fetching"):
+    install()
+    val client                      = new QueryClient()
+    val p                           = Promise[Int]()
+    var sig: Option[dom.AbortSignal] = None
+    val (cell, _)                   = observe(client, queryKey("x"), () => { sig = QueryFetch.signal; p.future })
+    assert(client.store.get(cell).isFetching)
+    client.cancelQuery(queryKey("x"))
+    assert(sig.get.aborted)
+    assert(!client.store.get(cell).isFetching)
+    assert(client.store.get(cell).status == QueryStatus.Pending)
+
+  test("a cancelled fetch's later result is ignored"):
+    install()
+    val client    = new QueryClient()
+    val p         = Promise[Int]()
+    val (cell, _) = observe(client, queryKey("x"), () => p.future)
+    client.cancelQuery(queryKey("x"))
+    p.success(99)                                // arrives after the abort
+    assert(client.store.get(cell).data == None)  // dropped, not written
+    assert(!client.store.get(cell).isFetching)
+
+  test("cancelQuery stops a pending retry"):
+    install()
+    val client  = new QueryClient()
+    val boom    = new RuntimeException("boom")
+    var n       = 0
+    val fetcher = () => { n += 1; Future.failed[Int](boom) }
+    observe(client, queryKey("x"), fetcher, QueryOptions(retry = 3))
+    assert(n == 1) // first attempt failed; a retry is scheduled
+    client.cancelQuery(queryKey("x"))
+    fireTimers()   // the scheduled retry must not run
+    assert(n == 1)
+
+  test("cancelPrefix cancels only matching in-flight queries"):
+    install()
+    val client                     = new QueryClient()
+    var sa: Option[dom.AbortSignal] = None
+    var sb: Option[dom.AbortSignal] = None
+    observe(client, queryKey("todos", 1), () => { sa = QueryFetch.signal; Promise[Int]().future })
+    observe(client, queryKey("users", 1), () => { sb = QueryFetch.signal; Promise[Int]().future })
+    client.cancelPrefix(queryKey("todos"))
+    assert(sa.get.aborted)
+    assert(!sb.get.aborted)
