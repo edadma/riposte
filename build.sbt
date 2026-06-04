@@ -3,12 +3,12 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 
 ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
-ThisBuild / version      := "0.1.0"
+ThisBuild / version      := "0.2.0"
 
 // --- Maven Central publishing ----------------------------------------------
 // Metadata for the generated POM and the Sonatype Central wiring, mirroring the
 // edadma cross-project template. Credentials live outside the repo (in
-// ~/.sbt/.../sonatype.sbt), so nothing secret is checked in. Only the four real
+// ~/.sbt/.../sonatype.sbt), so nothing secret is checked in. Only the six real
 // library modules publish; the demos and the root aggregator skip it.
 ThisBuild / organizationName     := "edadma"
 ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
