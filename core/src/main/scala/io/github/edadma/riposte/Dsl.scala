@@ -18,6 +18,13 @@ object Mod:
   given Conversion[Int, Mod]        = i  => ChildMod(VText(i.toString))
   given Conversion[Seq[VNode], Mod] = ns => ChildrenMod(ns)
 
+  // A bundle of mods spread in alongside others — the riposte analogue of JSX's
+  // `{...props}`. A helper that returns a `Seq[Mod]` (a form library's `register`,
+  // a set of shared attributes) drops straight into a tag's mod list:
+  // `input(reg, typ := "email")`. Scala forbids splicing a `Seq` with `*` next to
+  // other varargs, so this conversion (and `spread`) is how a bundle composes.
+  given seqModToMod: Conversion[Seq[Mod], Mod] = MultiMod(_)
+
   // An optional child: `Some(node)` shows the node, `None` renders an empty
   // placeholder rather than no child at all — so that toggling between the two
   // keeps a stable slot and leaves the surrounding siblings (and their state)
@@ -31,6 +38,10 @@ final case class ChildMod(node: VNode)                 extends Mod
 final case class ChildrenMod(nodes: Seq[VNode])        extends Mod
 final case class KeyMod(key: String)                   extends Mod
 final case class RefMod(ref: ElementRef)               extends Mod
+// A flattened group of mods, spliced into the host element in order — the carrier
+// behind the `Seq[Mod]` conversion and `spread`. Nesting is allowed; `h` folds it
+// recursively, so a bundle may itself contain bundles.
+final case class MultiMod(mods: Seq[Mod])              extends Mod
 case object NoMod                                       extends Mod
 
 // Folds a list of mods into a VElement. Later props with the same name win;
@@ -41,7 +52,7 @@ def h(tag: String)(mods: Mod*): VElement =
   val children                 = Vector.newBuilder[VNode]
   var key: Option[String]      = None
   var ref: ElementRef | Null   = null
-  mods.foreach {
+  def add(m: Mod): Unit = m match
     case PropMod("class", Attr(v)) =>
       props = props.updated("class", Attr(props.get("class") match
         case Some(Attr(existing)) if existing.nonEmpty => existing + " " + v
@@ -51,9 +62,15 @@ def h(tag: String)(mods: Mod*): VElement =
     case ChildrenMod(ns) => children ++= ns
     case KeyMod(k)       => key = Some(k)
     case RefMod(r)       => ref = r
+    case MultiMod(ms)    => ms.foreach(add)
     case NoMod           => ()
-  }
+  mods.foreach(add)
   VElement(tag, props, children.result(), key, ref)
+
+// Spread a bundle of mods into a tag's mod list — the explicit form of the
+// `Seq[Mod]` conversion, for when a named call reads more clearly than relying on
+// the implicit: `input(spread(reg), typ := "email")`.
+def spread(mods: Seq[Mod]): Mod = MultiMod(mods)
 
 // A transparent group of siblings — splices its children into the parent's
 // child list without introducing a wrapper element.

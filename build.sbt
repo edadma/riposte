@@ -51,7 +51,7 @@ Global / excludeLintKeys += publishMavenStyle
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(riposte, atoms, router, query, salle, salleDemo, salleE2E, demo)
+  .aggregate(riposte, atoms, router, query, forms, salle, salleDemo, salleE2E, demo)
   .settings(
     name                := "riposte-root",
     publish / skip      := true,
@@ -144,6 +144,23 @@ lazy val query = project
   .dependsOn(riposte, atoms)
   .settings(
     name := "riposte-query",
+    scalacOptions ++= commonScalacOptions,
+    Test / jsEnv := new JSDOMNodeJSEnv(),
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+
+// riposte-forms — a react-hook-form-style form layer, a separate artifact built on
+// the core's public API only (useSyncExternalStore for form state, refs for the
+// uncontrolled inputs, the DSL for what `register` spreads onto an element). Fields
+// are uncontrolled — the DOM owns the text and the store reads it through a ref — so
+// typing never re-renders; only form-state consumers do. Consumed by salle, but
+// usable standalone for anyone who doesn't want salle.
+lazy val forms = project
+  .in(file("forms"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(riposte)
+  .settings(
+    name := "riposte-forms",
     scalacOptions ++= commonScalacOptions,
     Test / jsEnv := new JSDOMNodeJSEnv(),
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,

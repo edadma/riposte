@@ -242,3 +242,41 @@ class DslSpec extends DomSuite:
     assert(c.querySelector("span.box").innerHTML == "<i>b</i>")
     fireClick(c.querySelector("button"))
     assert(c.querySelector("span.box").innerHTML == "")
+
+  // A `Seq[Mod]` spreads into a tag alongside other mods — the `{...props}` of the
+  // DSL, the thing a `register`-style helper relies on.
+
+  test("a Seq[Mod] is spread in alongside other mods"):
+    val c    = host()
+    val bits = Seq(typ := "email", placeholder := "you@example.com", required := true)
+    render(input(cls := "f", bits), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("input.f")
+    assert(el.getAttribute("type") == "email")
+    assert(el.getAttribute("placeholder") == "you@example.com")
+    assert(el.hasAttribute("required"))
+
+  test("spread(...) is the explicit form of the bundle conversion"):
+    val c = host()
+    render(div(spread(Seq(id := "d", role := "note")), "body"), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("div")
+    assert(el.getAttribute("id") == "d")
+    assert(el.getAttribute("role") == "note")
+    assert(el.textContent == "body")
+
+  test("a spread bundle's later prop wins and its class joins, like flat mods"):
+    val c = host()
+    render(span(cls := "a", Seq(cls := "b", id := "x"), id := "y"), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("span")
+    assert(el.getAttribute("class") == "a b") // class space-joins across the splice
+    assert(el.getAttribute("id") == "y")      // a later flat prop overrides the bundle
+
+  test("a nested bundle flattens"):
+    val c = host()
+    render(div(Seq(id := "outer", spread(Seq(role := "group"))), "x"), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("div")
+    assert(el.getAttribute("id") == "outer")
+    assert(el.getAttribute("role") == "group")

@@ -367,6 +367,33 @@ private val descriptionsDemo = view {
   )
 }
 
+// A featured-wallpaper banner: an autoplaying Carousel of full-bleed photos, each its own Hero
+// with a dimmed overlay so the caption stays legible. Hover to pause, use the arrows/dots, or
+// swipe; the keyboard steps it when focused.
+private val carouselDemo = view {
+  div(
+    cls := "demo-grid-stack",
+    div(
+      style := Map("width" -> "100%", "max-width" -> "640px"),
+      Carousel(
+        autoplay = true,
+        autoplaySpeed = 4000,
+        slides = wallpapers.take(4).map { (seed, title, res) =>
+          Hero(
+            bgImage = Some(s"https://picsum.photos/seed/$seed/640/280"),
+            overlay = true,
+            minHeight = Some("280px"),
+          )(
+            h2(style := Map("font-size" -> "1.5rem", "font-weight" -> "700"), title),
+            p(s"$res wallpaper"),
+            Button("Download", color = Color.Primary),
+          )
+        },
+      ),
+    ),
+  )
+}
+
 // Buttons that fire the imperative toast API — the "Downloaded" / "Added to favourites"
 // confirmations a gallery shows. A single Toaster (added to the showcase below) renders
 // them, portalled to the body and grouped by placement.
@@ -572,6 +599,9 @@ private def showcase: VNode =
     ),
     section("Empty — the no-results placeholder (filter, then clear; Simple + Custom variants)")(
       emptyDemo(),
+    ),
+    section("Carousel / Hero — featured-wallpaper banner (autoplay, hover to pause, arrows / dots / swipe)")(
+      carouselDemo(),
     ),
     section("Descriptions — wallpaper metadata table (bordered + vertical layout + spanning rows)")(
       descriptionsDemo(),
