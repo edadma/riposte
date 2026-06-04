@@ -50,13 +50,24 @@ object QueryState:
 // retry — by default exponential backoff capped at 30s. `refetchOnWindowFocus`
 // and `refetchOnReconnect` control whether an observed, stale query is refetched
 // when the window regains focus or the network comes back.
+//
+// `enabled` gates the query: while false it never fetches (not on observe, focus,
+// reconnect, or interval), staying pending — the knob for conditional and dependent
+// queries ("wait until the id is known"); flipping it to true fetches if stale.
+// `refetchInterval`, when set, polls the query every N ms while it is observed and
+// enabled, refetching regardless of staleness. `keepPreviousData` keeps the prior
+// key's data visible (instead of a loading flash) while a new key's first fetch is
+// in flight — the hook reports that via `isPlaceholderData`.
 final case class QueryOptions(
-    staleTime:            Double        = 0.0,
-    gcTime:               Double        = 5 * 60 * 1000.0,
-    retry:                Int           = 0,
-    retryDelay:           Int => Double = QueryOptions.defaultRetryDelay,
-    refetchOnWindowFocus: Boolean       = true,
-    refetchOnReconnect:   Boolean       = true,
+    staleTime:            Double         = 0.0,
+    gcTime:               Double         = 5 * 60 * 1000.0,
+    retry:                Int            = 0,
+    retryDelay:           Int => Double  = QueryOptions.defaultRetryDelay,
+    refetchOnWindowFocus: Boolean        = true,
+    refetchOnReconnect:   Boolean        = true,
+    enabled:              Boolean        = true,
+    refetchInterval:      Option[Double] = None,
+    keepPreviousData:     Boolean        = false,
 )
 
 object QueryOptions:
@@ -66,17 +77,20 @@ object QueryOptions:
 
 // What a component gets back from `useQuery` — a named tuple so fields are read by
 // name (`q.data`, `q.refetch`) in the spirit of `useState`'s destructured return,
-// but with the richer surface an async resource needs.
+// but with the richer surface an async resource needs. `isPlaceholderData` is true
+// when `data` is showing a placeholder or the previous key's value rather than this
+// query's own settled result (see `placeholderData` / `keepPreviousData`).
 //
 //   val q = useQuery(queryKey("todos"), fetchTodos)
 //   if q.isLoading then spinner else renderTodos(q.data.get)
 type QueryResult[A] = (
-    data:       Option[A],
-    error:      Option[Throwable],
-    isLoading:  Boolean,
-    isFetching: Boolean,
-    isError:    Boolean,
-    refetch:    () => Unit,
+    data:              Option[A],
+    error:             Option[Throwable],
+    isLoading:         Boolean,
+    isFetching:        Boolean,
+    isError:           Boolean,
+    isPlaceholderData: Boolean,
+    refetch:           () => Unit,
 )
 
 // Timing and environment events indirected so tests can install deterministic
