@@ -33,13 +33,13 @@ val Counter = view {
 **Full documentation lives at [riposte.edadma.dev](https://riposte.edadma.dev/).**
 
 - [Getting started](https://riposte.edadma.dev/getting-started/) — install and mount your first component
-- [Guide](https://riposte.edadma.dev/guide/) — components & the DSL, hooks, shared state, routing, data fetching
+- [Guide](https://riposte.edadma.dev/guide/) — components & the DSL, hooks, shared state, routing, data fetching, forms
 - [Component library (salle)](https://riposte.edadma.dev/salle/) — styled, skinnable widgets, one page per component
 - [Reference](https://riposte.edadma.dev/reference/) — the published modules and their APIs
 
 ## Modules
 
-Riposte ships as five independently published artifacts under `io.github.edadma`; the
+Riposte ships as six independently published artifacts under `io.github.edadma`; the
 siblings depend on the core transitively.
 
 | Artifact          | What it gives you                                  |
@@ -48,6 +48,7 @@ siblings depend on the core transitively.
 | `riposte-atoms`   | Jotai-inspired atomic shared state                  |
 | `riposte-router`  | Client-side routing for single-page apps            |
 | `riposte-query`   | TanStack-style async server-state cache (built on atoms) |
+| `riposte-forms`   | react-hook-form-style form layer (uncontrolled fields, validation) |
 | `riposte-salle`   | Styled, skinnable component library — form controls (incl. Segmented), Image/Lightbox, Badge/Tag, Skeleton, Spinner/Progress, Empty, Descriptions, Pagination, Dropdown, Tabs, Breadcrumb, Modal/Drawer/Toast/Tooltip, Layout/Navbar/Footer shell, grid + masonry layout, theming |
 
 ```scala
@@ -55,6 +56,7 @@ libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.1.0"
 libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.1.0"
 libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.1.0"
 libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.1.0"
 libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.1.0"
 ```
 
@@ -64,6 +66,7 @@ libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.1.0"
 - `atoms/` — `riposte-atoms`, atomic state built on the core's `useSyncExternalStore` seam
 - `router/` — `riposte-router`, client-side routing on the same public seam
 - `query/` — `riposte-query`, an async server-state cache built on `riposte-atoms`
+- `forms/` — `riposte-forms`, a react-hook-form-style form layer on the core's public API
 - `salle/` — `riposte-salle`, a styled component library built on the core's DSL + hooks
 - `demo/` — a runnable showcase (its own subproject, never published)
 - `salle-demo/` — a runnable showcase for salle (its own subproject, never published)
@@ -73,11 +76,12 @@ libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.1.0"
 ## Development
 
 ```sh
-sbt test              # every module's jsdom-backed suite (core + atoms + router + query + salle)
+sbt test              # every module's jsdom-backed suite (core + atoms + router + query + forms + salle)
 sbt riposte/test      # just the library (project id is `riposte`, in core/)
 sbt atoms/test        # just the atoms module
 sbt router/test       # just the router module
 sbt query/test        # just the query module
+sbt forms/test        # just the forms module
 sbt salle/test        # just the salle component library
 sbt demo/fastLinkJS   # build the demo's JS
 sbt salleDemo/fastLinkJS  # build the salle demo's JS
