@@ -63,6 +63,14 @@ final class FormStore(
   private val elements = mutable.Map.empty[String, dom.html.Element]
   private val handlers = mutable.Map.empty[String, FieldHandlers]
 
+  // Field-array bookkeeping: per array name, an ordered list of stable row keys. A row
+  // addresses its sub-fields by stable key (`items.<rowKey>.name`), never by index, so a
+  // remove / move / insert only reorders this list — no stored value has to shift, no
+  // registered handler goes stale, and the reconciler's keyed diff preserves each row's
+  // live DOM. The opaque keys come from a monotonic counter.
+  private val arrays    = mutable.Map.empty[String, mutable.ArrayBuffer[String]]
+  private var rowKeySeq = 0
+
   private val listeners        = mutable.Set.empty[() => Unit]
   private val valueListeners    = mutable.Set.empty[() => Unit]
   private var snapshot         = build()
@@ -307,3 +315,113 @@ final class FormStore(
 
     if errors.isEmpty then onValid(values.toMap)
     else onInvalid(errors.toMap)
+
+  // --- field arrays --------------------------------------------------------
+
+  private def nextRowKey(): String =
+    rowKeySeq += 1
+    s"r$rowKeySeq"
+
+  private def arrayBuf(name: String): mutable.ArrayBuffer[String] =
+    arrays.getOrElseUpdate(name, mutable.ArrayBuffer.empty[String])
+
+  // Write a row's seed values into the store under its stable-key paths.
+  private def seedRow(name: String, key: String, row: Map[String, Any]): Unit =
+    row.foreach((sub, v) => values(s"$name.$key.$sub") = v)
+
+  // Drop everything belonging to one row — values, errors, touched, rules, the live
+  // element, and the cached handlers — so a removed row leaves nothing behind in the
+  // store or in `getValues` / submit.
+  private def removeRowEntries(name: String, key: String): Unit =
+    val prefix = s"$name.$key."
+    values.filterInPlace((k, _) => !k.startsWith(prefix))
+    errors.filterInPlace((k, _) => !k.startsWith(prefix))
+    touched.filterInPlace(!_.startsWith(prefix))
+    rules.filterInPlace((k, _) => !k.startsWith(prefix))
+    elements.filterInPlace((k, _) => !k.startsWith(prefix))
+    handlers.filterInPlace((k, _) => !k.startsWith(prefix))
+
+  private def afterArrayChange(): Unit =
+    notifyValues()
+    notifyListeners()
+
+  // The ordered row keys of an array — what `useFieldArray` turns into keyed rows.
+  def fieldArrayKeys(name: String): Seq[String] =
+    arrays.get(name).map(_.toSeq).getOrElse(Seq.empty)
+
+  // Create an array once, seeding it from `initial`. Idempotent across re-renders and
+  // remounts: an array that already exists is left exactly as the user has edited it.
+  def ensureFieldArray(name: String, initial: Seq[Map[String, Any]]): Unit =
+    if !arrays.contains(name) then
+      val buf = mutable.ArrayBuffer.empty[String]
+      initial.foreach { row =>
+        val k = nextRowKey()
+        buf += k
+        seedRow(name, k, row)
+      }
+      arrays(name) = buf
+      afterArrayChange()
+
+  def arrayAppend(name: String, row: Map[String, Any]): Unit =
+    val k = nextRowKey()
+    arrayBuf(name) += k
+    seedRow(name, k, row)
+    afterArrayChange()
+
+  def arrayPrepend(name: String, row: Map[String, Any]): Unit =
+    val k = nextRowKey()
+    arrayBuf(name).prepend(k)
+    seedRow(name, k, row)
+    afterArrayChange()
+
+  def arrayInsert(name: String, index: Int, row: Map[String, Any]): Unit =
+    val buf = arrayBuf(name)
+    val at  = index.max(0).min(buf.length)
+    val k   = nextRowKey()
+    buf.insert(at, k)
+    seedRow(name, k, row)
+    afterArrayChange()
+
+  def arrayRemove(name: String, index: Int): Unit =
+    val buf = arrayBuf(name)
+    if index >= 0 && index < buf.length then
+      val k = buf.remove(index)
+      removeRowEntries(name, k)
+      afterArrayChange()
+
+  def arrayMove(name: String, from: Int, to: Int): Unit =
+    val buf = arrayBuf(name)
+    if from >= 0 && from < buf.length && to >= 0 && to < buf.length then
+      val k = buf.remove(from)
+      buf.insert(to, k)
+      afterArrayChange()
+
+  def arraySwap(name: String, a: Int, b: Int): Unit =
+    val buf = arrayBuf(name)
+    if a >= 0 && a < buf.length && b >= 0 && b < buf.length then
+      val tmp = buf(a)
+      buf(a) = buf(b)
+      buf(b) = tmp
+      afterArrayChange()
+
+  // Replace the whole array with fresh rows, discarding every old row's entries.
+  def arrayReplace(name: String, rows: Seq[Map[String, Any]]): Unit =
+    val buf = arrayBuf(name)
+    buf.toList.foreach(k => removeRowEntries(name, k))
+    buf.clear()
+    rows.foreach { row =>
+      val k = nextRowKey()
+      buf += k
+      seedRow(name, k, row)
+    }
+    afterArrayChange()
+
+  // The array's rows as ordered maps of sub-field → value, reconstructed from the flat
+  // store at read time — the ordered view the opaque stable keys don't give directly.
+  def fieldArrayValues(name: String): Seq[Map[String, Any]] =
+    fieldArrayKeys(name).map { key =>
+      val rowPrefix = s"$name.$key."
+      values.collect {
+        case (k, v) if k.startsWith(rowPrefix) => k.substring(rowPrefix.length) -> v
+      }.toMap
+    }
