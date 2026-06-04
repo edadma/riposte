@@ -14,7 +14,7 @@ API, usable on its own or under [salle](/salle/).
 Add the dependency (it pulls in the core transitively):
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-forms" % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-forms" % "0.2.0"
 
 import io.github.edadma.riposte.forms.*
 ```

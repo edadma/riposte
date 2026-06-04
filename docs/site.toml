@@ -39,7 +39,7 @@ output = "/juicerdocs.js"
 minify = true
 
 [juicerdocs]
-version    = "v0.1.0"
+version    = "v0.2.0"
 getStarted = true
 
 # Teal palette (overrides the theme's default pink/purple). Light mode.

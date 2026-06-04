@@ -13,7 +13,7 @@ subscriptions.
 Add the dependency (it pulls in the core and atoms transitively):
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-query" % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-query" % "0.2.0"
 
 import io.github.edadma.riposte.query.*
 ```

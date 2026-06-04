@@ -17,7 +17,7 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
 `riposte-query` also depends on `riposte-atoms`; the rest depend only on `riposte`. The
-current published version is `0.1.0`.
+current published version is `0.2.0`.
 
 ## riposte (core)
 

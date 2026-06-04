@@ -11,7 +11,7 @@ model of small, independent, identity-based units of state.
 Add the dependency (it pulls in the core transitively):
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms" % "0.1.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms" % "0.2.0"
 
 import io.github.edadma.riposte.atoms.*
 ```
