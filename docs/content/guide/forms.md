@@ -37,9 +37,14 @@ val Signup = view {
 }
 ```
 
-`f.formState` is the live snapshot — read `errors`, `isDirty`, `isValid`, `isSubmitting`,
-`isSubmitted`, `submitCount`, `touchedFields`, `dirtyFields` in the body and the component
-re-renders exactly when that slice changes.
+`f.formState` is the live snapshot — read `errors`, `isDirty`, `isValid`, `isValidating`,
+`isSubmitting`, `isSubmitted`, `submitCount`, `touchedFields`, `dirtyFields` in the body and
+the component re-renders exactly when that slice changes.
+
+For a submit that awaits — a server POST — use `handleSubmitAsync(values => api.save(values))`
+where the handler returns a `Future[Unit]`; `formState.isSubmitting` stays true across both
+validation and the handler, so a spinner or disabled button bound to it covers the whole
+round-trip.
 
 ## Validation rules
 
@@ -65,13 +70,30 @@ it. `Messages` overrides the default text; `%s` is filled with the rule's bound.
 (after it), each a `ValidationMode`: `OnSubmit` (default), `OnBlur`, `OnChange`, `OnTouched`,
 or `All`.
 
+## Schema validation
+
+To drive validation from a whole-form schema (zod/yup-style, or a hand-written check)
+instead of per-field `Rules`, pass a `resolver` — it takes the current values and returns the
+errors keyed by field (an empty map means valid):
+
+```scala
+val f = useForm(resolver = Some { values =>
+  if values.getOrElse("email", "") == "" then Map("email" -> FieldError("schema", "Required"))
+  else Map.empty
+})
+```
+
+`asyncResolver` is the awaiting counterpart (a server check, a uniqueness query) — while it
+runs, `formState.isValidating` is true. Configure one or the other, not both.
+
 ## The imperative API
 
 The handle also exposes:
 
 - `setValue(field, value, shouldValidate)` / `getValue[T](field)` / `getValues` — write and
   read field values (writing reflects back into the live element).
-- `trigger(field)` / `trigger()` — run validation on demand, returning validity.
+- `trigger(field)` / `trigger()` — run validation on demand, returning validity;
+  `triggerAsync(field)` / `triggerAsync()` return a `Future[Boolean]` for an async resolver.
 - `setError(field, err)` / `clearErrors(field)` / `clearErrors()` — drive errors by hand,
   e.g. from server-side validation.
 - `reset(values)` / `reset()` — reset to fresh values (or the original defaults), clearing
@@ -109,3 +131,30 @@ Controller("country", f.control, Rules(required = true)) { a =>
 The render function receives `field` (`name`/`value`/`onChange`/`onBlur`), `fieldState`
 (`error`/`isTouched`/`isDirty`/`invalid`), and the whole `formState`. The store owns the
 value, so it stays live and the `Controller` re-renders as it changes.
+
+## Field arrays
+
+`useFieldArray` manages a dynamic list of repeating field groups — guests on an invite, line
+items on an order. The handle's `fields` re-renders when rows are added, removed, or
+reordered; each row carries a **stable `id`** you use both as the reconciler `key` and inside
+the registered field paths:
+
+```scala
+val fa = useFieldArray(f.control, "guests", initial = Seq(Map("name" -> "")))
+
+div(
+  fa.fields.map { row =>
+    div(key := row.id)(
+      input(f.register(s"guests.${row.id}.name")*),
+      button(typ := "button", onClick := (_ => fa.remove(row.index)), "Remove"),
+    )
+  },
+  button(typ := "button", onClick := (_ => fa.append(Map("name" -> ""))), "Add guest"),
+)
+```
+
+Addressing a row by its `id` rather than its index is what keeps remove/move/insert robust
+over the flat string-path store: reordering never reshuffles stored values or invalidates a
+registered field. The handle exposes `append`/`prepend`/`insert`/`remove`/`move`/`swap`/
+`replace`, and `values` — the rows as ordered maps of sub-field → value, the view to read at
+submit time.

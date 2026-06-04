@@ -173,19 +173,24 @@ See [Data Fetching](/guide/queries/).
 A react-hook-form-style form layer built on the core's public API. Fields are uncontrolled
 (the DOM owns the value, read through a ref), so typing doesn't re-render.
 
-- **Setup** — `useForm(defaultValues, mode, reValidateMode)` → a `Form` handle; `mode` /
-  `reValidateMode` are `ValidationMode.{OnSubmit,OnBlur,OnChange,OnTouched,All}`.
+- **Setup** — `useForm(defaultValues, mode, reValidateMode, resolver, asyncResolver)` → a
+  `Form` handle; `mode` / `reValidateMode` are `ValidationMode.{OnSubmit,OnBlur,OnChange,
+  OnTouched,All}`.
 - **Fields** — `form.register(field, rules)` spreads mods onto an uncontrolled element;
-  `form.handleSubmit(onValid, onInvalid)` validates then submits.
+  `form.handleSubmit(onValid, onInvalid)` validates then submits; `handleSubmitAsync` awaits
+  an async valid handler (`isSubmitting` spans the `Future`).
 - **Rules** — `Rules(required, minLength, maxLength, min, max, pattern, validate, messages)`;
-  a failure is a `FieldError(kind, message)`; `Messages` overrides the defaults.
-- **State** — `form.formState` (`errors`, `isDirty`, `isValid`, `isSubmitting`,
-  `isSubmitted`, `submitCount`, `touchedFields`, `dirtyFields`).
-- **Imperative** — `setValue`/`getValue`/`getValues`, `trigger`, `setError`/`clearErrors`,
-  `reset`.
+  a failure is a `FieldError(kind, message)`; `Messages` overrides the defaults. A whole-form
+  `Resolver` / `AsyncResolver` replaces the per-field rules with a schema check.
+- **State** — `form.formState` (`errors`, `isDirty`, `isValid`, `isValidating`,
+  `isSubmitting`, `isSubmitted`, `submitCount`, `touchedFields`, `dirtyFields`).
+- **Imperative** — `setValue`/`getValue`/`getValues`, `trigger` / `triggerAsync`,
+  `setError`/`clearErrors`, `reset`.
 - **Watch** — `form.watch[T](field)`, `useWatch`, `useWatchAll`, `useWatchFields`.
 - **Controlled** — `Controller(name, control, rules) { args => … }` adapts a controlled
   component (value + onChange) into the form.
+- **Field arrays** — `useFieldArray(control, name, initial)` → a `FieldArray` (`fields` with
+  stable-`id` rows; `append`/`prepend`/`insert`/`remove`/`move`/`swap`/`replace`/`values`).
 
 See [Forms](/guide/forms/).
 
