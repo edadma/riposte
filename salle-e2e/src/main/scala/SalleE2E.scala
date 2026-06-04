@@ -29,6 +29,7 @@ object SalleE2E:
     case "navbar"    => navbarFixture()
     case "drawer"    => drawerFixture()
     case "segmented" => segmentedFixture()
+    case "carousel"  => carouselFixture()
     case _           => indexFixture
 
   // ---- tooltip: real hover/focus timing (the jsdom specs fake the Timers seam) ----------
@@ -183,6 +184,36 @@ object SalleE2E:
     )
   }
 
+  // ---- carousel: real autoplay timing + arrow/dot navigation + keyboard -----------------
+  // Three fixed-size coloured slides. Autoplay runs on the real Timers seam (genuine
+  // setTimeout), which only ticks in a browser — so the autoplay/pause behaviour is a
+  // browser-only concern the jsdom specs fake. A short speed keeps the spec quick.
+  private def slide(id: String, fill: String): VNode =
+    div(
+      attr("data-slide") := id,
+      style := Map("width" -> "320px", "height" -> "180px", "background" -> fill),
+      id,
+    )
+  private val carouselFixture = view {
+    // `&autoplay=off` builds a still carousel so the arrow/dot/keyboard/swipe specs are
+    // deterministic; the default autoplays for the timing/pause spec.
+    val autoplayOn =
+      !Option(new dom.URLSearchParams(dom.window.location.search).get("autoplay")).contains("off")
+    div(
+      id := "harness",
+      style := Map("padding" -> "2rem", "width" -> "320px"),
+      Carousel(
+        slides = Seq(
+          slide("zero", "crimson"),
+          slide("one", "seagreen"),
+          slide("two", "steelblue"),
+        ),
+        autoplay = autoplayOn,
+        autoplaySpeed = 600,
+      ),
+    )
+  }
+
   // ---- index: a plain links page, handy when opening the harness by hand ----------------
   private val indexFixture =
     div(
@@ -200,5 +231,6 @@ object SalleE2E:
         li(a(href := "?case=navbar", "navbar")),
         li(a(href := "?case=drawer", "drawer")),
         li(a(href := "?case=segmented", "segmented")),
+        li(a(href := "?case=carousel", "carousel")),
       ),
     )
