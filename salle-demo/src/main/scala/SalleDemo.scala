@@ -317,6 +317,38 @@ private val emptyDemo = view {
   )
 }
 
+// Category navigation: the default-separator trail (skin-drawn), a custom "›" separator, and a
+// clickable last-hop trail that reports the chosen crumb.
+private val breadcrumbDemo = view {
+  val (at, setAt, _) = useState("Forests")
+  div(
+    cls := "demo-grid-stack",
+    Breadcrumb(items =
+      Seq(
+        Crumb(label = "Home", href = Some("#")),
+        Crumb(label = "Nature", href = Some("#")),
+        Crumb(label = "Forests"),
+      ),
+    ),
+    Breadcrumb(
+      separator = Some("›": VNode),
+      items = Seq(
+        Crumb(label = "Gallery", href = Some("#")),
+        Crumb(label = "Landscapes", href = Some("#")),
+        Crumb(label = "Mountains"),
+      ),
+    ),
+    Breadcrumb(items =
+      Seq(
+        Crumb(label = "Home", onClick = Some(() => setAt("Home"))),
+        Crumb(label = "Nature", onClick = Some(() => setAt("Nature"))),
+        Crumb(label = at),
+      ),
+    ),
+    p(s"You are at: $at"),
+  )
+}
+
 // Buttons that fire the imperative toast API — the "Downloaded" / "Added to favourites"
 // confirmations a gallery shows. A single Toaster (added to the showcase below) renders
 // them, portalled to the body and grouped by placement.
@@ -522,6 +554,9 @@ private def showcase: VNode =
     ),
     section("Empty — the no-results placeholder (filter, then clear; Simple + Custom variants)")(
       emptyDemo(),
+    ),
+    section("Breadcrumb — category trail (default + custom separator + clickable hops)")(
+      breadcrumbDemo(),
     ),
     section("Image / Lightbox — click a thumbnail to open the navigable viewer (←/→, zoom, Esc)")(
       div(

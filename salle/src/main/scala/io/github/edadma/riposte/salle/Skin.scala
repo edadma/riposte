@@ -227,6 +227,19 @@ type EmptyClasses = (
     footer: String,
 )
 
+/** The per-part CSS classes for a [[Breadcrumb]] trail: the `root` `nav`, each `item` crumb, the
+  * `link` inside a navigable crumb, and an explicit `separator` (only rendered when a custom
+  * separator node is supplied — otherwise the skin draws its own via CSS). The `customSeparator`
+  * flag lets a skin suppress its automatic separator when the component supplies explicit ones. */
+type BreadcrumbClasses = (
+    root: String,
+    item: String,
+    link: String,
+    label: String,
+    icon: String,
+    separator: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -355,6 +368,11 @@ trait Skin:
   /** Classes for an [[Empty]] placeholder's parts. Stateless — the only choice (which
     * illustration) is resolved by the component, so the skin just supplies the layout surface. */
   def empty: EmptyClasses
+
+  /** Classes for a [[Breadcrumb]] trail's parts. `customSeparator` is true when the component
+    * supplies its own separator nodes, so the skin should suppress its automatic (CSS-drawn)
+    * separator to avoid doubling up. */
+  def breadcrumb(customSeparator: Boolean): BreadcrumbClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -566,6 +584,16 @@ object SalleSkin extends Skin:
       image = "salle-empty__image",
       description = "salle-empty__description",
       footer = "salle-empty__footer",
+    )
+
+  def breadcrumb(customSeparator: Boolean): BreadcrumbClasses =
+    (
+      root = bem("salle-breadcrumb", if customSeparator then "custom-sep" else ""),
+      item = "salle-breadcrumb__item",
+      link = "salle-breadcrumb__link",
+      label = "salle-breadcrumb__label",
+      icon = "salle-breadcrumb__icon",
+      separator = "salle-breadcrumb__separator",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -876,6 +904,19 @@ object DaisySkin extends Skin:
       image = "mb-2 text-base-content/30",
       description = "text-base-content/60 text-sm mb-4",
       footer = "mt-2",
+    )
+
+  // DaisyUI's `breadcrumbs` draws the chevron separators itself via `li::before`; when the
+  // component supplies explicit separator nodes, suppress that to avoid a double separator
+  // (matching AsterUI's `[&_li::before]:hidden`).
+  def breadcrumb(customSeparator: Boolean): BreadcrumbClasses =
+    (
+      root = "breadcrumbs text-sm" + (if customSeparator then " [&_li::before]:hidden" else ""),
+      item = "",
+      link = "",
+      label = "inline-flex items-center gap-2",
+      icon = "inline-flex items-center",
+      separator = "flex items-center px-1 text-base-content/50",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
