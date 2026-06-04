@@ -240,6 +240,20 @@ type BreadcrumbClasses = (
     separator: String,
 )
 
+/** The per-part CSS classes for a [[Descriptions]] list: the `root` wrapper, the `header` band with
+  * its `title`/`extra` slots, the `table`, and each `label` (`th`) and `content` (`td`) cell. The
+  * bordered look, size, and layout are folded into these classes by the skin, so the component
+  * applies one class per part without branching. */
+type DescriptionsClasses = (
+    root: String,
+    header: String,
+    title: String,
+    extra: String,
+    table: String,
+    label: String,
+    content: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -373,6 +387,11 @@ trait Skin:
     * supplies its own separator nodes, so the skin should suppress its automatic (CSS-drawn)
     * separator to avoid doubling up. */
   def breadcrumb(customSeparator: Boolean): BreadcrumbClasses
+
+  /** Classes for a [[Descriptions]] list's parts. `bordered` draws cell borders, `size` scales the
+    * text, and `layout` ([[DescriptionsLayout]]) tells the skin whether labels sit beside or above
+    * their values (it may, e.g., keep horizontal labels from wrapping). */
+  def descriptions(bordered: Boolean, size: Size, layout: DescriptionsLayout): DescriptionsClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -594,6 +613,22 @@ object SalleSkin extends Skin:
       label = "salle-breadcrumb__label",
       icon = "salle-breadcrumb__icon",
       separator = "salle-breadcrumb__separator",
+    )
+
+  // Bordered, size, and layout ride modifiers on the root; the label/content cells read them via
+  // descendant selectors in descriptions.css, so those parts keep a single stable class each.
+  def descriptions(bordered: Boolean, size: Size, layout: DescriptionsLayout): DescriptionsClasses =
+    val layoutTok = layout match
+      case DescriptionsLayout.Vertical   => "vertical"
+      case DescriptionsLayout.Horizontal => ""
+    (
+      root = bem("salle-descriptions", if bordered then "bordered" else "", size.token, layoutTok),
+      header = "salle-descriptions__header",
+      title = "salle-descriptions__title",
+      extra = "salle-descriptions__extra",
+      table = "salle-descriptions__table",
+      label = "salle-descriptions__label",
+      content = "salle-descriptions__content",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -917,6 +952,26 @@ object DaisySkin extends Skin:
       label = "inline-flex items-center gap-2",
       icon = "inline-flex items-center",
       separator = "flex items-center px-1 text-base-content/50",
+    )
+
+  // DaisyUI has no description-list component; mirror AsterUI's plain Tailwind table — a muted,
+  // semibold label cell over a base-100 content cell, with cell borders when `bordered`. The label
+  // is kept from wrapping in the horizontal layout (the value column absorbs the slack instead).
+  def descriptions(bordered: Boolean, size: Size, layout: DescriptionsLayout): DescriptionsClasses =
+    val sizeText = size match
+      case Size.Xs | Size.Sm => "text-sm"
+      case Size.Md           => "text-base"
+      case Size.Lg | Size.Xl => "text-lg"
+    val border = if bordered then "border border-base-content/10 " else ""
+    (
+      root = "",
+      header = "flex items-center justify-between mb-4",
+      title = "text-lg font-semibold",
+      extra = "",
+      table = "w-full " + (if bordered then "border-collapse " else "") + sizeText,
+      label = border + "bg-base-200/50 font-semibold text-base-content/70 text-left px-4 py-2" +
+        (if layout == DescriptionsLayout.Horizontal then " whitespace-nowrap" else ""),
+      content = border + "bg-base-100 text-base-content px-4 py-2",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish
