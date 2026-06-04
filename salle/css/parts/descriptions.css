@@ -1,0 +1,63 @@
+/* salle — Descriptions */
+
+/* ======================================================================== */
+/* Descriptions                                                              */
+/* ======================================================================== */
+
+.salle-descriptions {
+  color: var(--salle-input-fg, #0f172a);
+}
+
+/* The header band: a title on the left and any extra content pushed to the right. */
+.salle-descriptions__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.salle-descriptions__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.salle-descriptions__table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+/* Label cells read as muted, semibold headers; content cells carry the plain value. The bordered
+   modifier draws a hairline around every cell; size modifiers scale the whole table's text. */
+.salle-descriptions__label {
+  background: color-mix(in srgb, var(--salle-input-fg, #0f172a) 5%, transparent);
+  color: color-mix(in srgb, var(--salle-input-fg, #0f172a) 70%, transparent);
+  font-weight: 600;
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5rem 1rem;
+}
+.salle-descriptions__content {
+  vertical-align: top;
+  padding: 0.5rem 1rem;
+}
+
+/* In the horizontal layout a label sits beside its value, so keep it on one line; the value column
+   absorbs the remaining width. The vertical layout stacks labels over values, where wrapping is fine. */
+.salle-descriptions:not(.salle-descriptions--vertical) .salle-descriptions__label {
+  white-space: nowrap;
+}
+
+.salle-descriptions--bordered .salle-descriptions__label,
+.salle-descriptions--bordered .salle-descriptions__content {
+  border: 1px solid color-mix(in srgb, var(--salle-input-fg, #0f172a) 10%, transparent);
+}
+
+.salle-descriptions--xs .salle-descriptions__table,
+.salle-descriptions--sm .salle-descriptions__table {
+  font-size: 0.875rem;
+}
+.salle-descriptions--lg .salle-descriptions__table,
+.salle-descriptions--xl .salle-descriptions__table {
+  font-size: 1.125rem;
+}
