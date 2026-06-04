@@ -254,6 +254,33 @@ type DescriptionsClasses = (
     content: String,
 )
 
+/** The per-part CSS classes for a [[Carousel]]: the `root` `region`, the `viewport` clip, the
+  * sliding `track`, each `slide` cell, the shared `arrow` look with its `prev`/`next` position
+  * modifiers, the `dots` strip, and a dot in its inactive (`dot`) and active (`dotActive`) state
+  * (applied mutually-exclusively, since the two looks differ in more than one utility). The
+  * track transform and per-slide opacity ride inline style, not these classes. */
+type CarouselClasses = (
+    root: String,
+    viewport: String,
+    track: String,
+    slide: String,
+    arrow: String,
+    prev: String,
+    next: String,
+    dots: String,
+    dot: String,
+    dotActive: String,
+)
+
+/** The per-part CSS classes for a [[Hero]] banner: the `root` band, the `overlay` scrim (drawn
+  * only when requested), and the centred `content` box. The backdrop image and band height ride
+  * inline style, so these name only the structural surface. */
+type HeroClasses = (
+    root: String,
+    overlay: String,
+    content: String,
+)
+
 /** Maps a component's semantic props to the CSS classes that realize a particular
   * visual system. salle ships [[SalleSkin]] (its own look, styled by `salle.css`)
   * and [[DaisySkin]] (the DaisyUI class vocabulary). Add a method per new component;
@@ -392,6 +419,15 @@ trait Skin:
     * text, and `layout` ([[DescriptionsLayout]]) tells the skin whether labels sit beside or above
     * their values (it may, e.g., keep horizontal labels from wrapping). */
   def descriptions(bordered: Boolean, size: Size, layout: DescriptionsLayout): DescriptionsClasses
+
+  /** Classes for a [[Carousel]]'s parts. `vertical` orients the carousel top-to-bottom, which the
+    * skin uses to place the arrows and dots along the right axis. The active/disabled state and
+    * the current index ride `data-*`, so the slide transform is driven from there + inline style. */
+  def carousel(vertical: Boolean): CarouselClasses
+
+  /** Classes for a [[Hero]] banner's parts. Stateless — the backdrop and height ride inline
+    * style, so the skin just supplies the band, scrim, and content surfaces. */
+  def hero: HeroClasses
 
 /** salle's native look. Emits stable `salle-*` classes whose rules live in
   * `salle.css` under `@layer salle`. Apps retheme it with plain CSS — override the
@@ -629,6 +665,29 @@ object SalleSkin extends Skin:
       table = "salle-descriptions__table",
       label = "salle-descriptions__label",
       content = "salle-descriptions__content",
+    )
+
+  // Orientation rides `[data-vertical]` in carousel.css; the root carries a `--vertical` modifier
+  // too so an override can target it by class alone. Arrow/dot positioning is left to the CSS.
+  def carousel(vertical: Boolean): CarouselClasses =
+    (
+      root = bem("salle-carousel", if vertical then "vertical" else ""),
+      viewport = "salle-carousel__viewport",
+      track = "salle-carousel__track",
+      slide = "salle-carousel__slide",
+      arrow = "salle-carousel__arrow",
+      prev = "salle-carousel__arrow--prev",
+      next = "salle-carousel__arrow--next",
+      dots = "salle-carousel__dots",
+      dot = "salle-carousel__dot",
+      dotActive = "salle-carousel__dot salle-carousel__dot--active",
+    )
+
+  def hero: HeroClasses =
+    (
+      root = "salle-hero",
+      overlay = "salle-hero__overlay",
+      content = "salle-hero__content",
     )
 
 /** The DaisyUI vocabulary, seeded from AsterUI's component class maps. salle emits
@@ -972,6 +1031,38 @@ object DaisySkin extends Skin:
       label = border + "bg-base-200/50 font-semibold text-base-content/70 text-left px-4 py-2" +
         (if layout == DescriptionsLayout.Horizontal then " whitespace-nowrap" else ""),
       content = border + "bg-base-100 text-base-content px-4 py-2",
+    )
+
+  // DaisyUI's `carousel` is a scroll-snap strip; salle drives the slide with its own inline
+  // transform instead, so the root reuses `carousel` only for the relative/overflow context and
+  // each slide its `carousel-item`. The arrows and dots are built from Tailwind utilities the way
+  // AsterUI does, positioned along the carousel's axis. The active dot replaces the inactive look
+  // wholesale (mutually-exclusive), so the two never fight over `bg-*`/`w-*`.
+  def carousel(vertical: Boolean): CarouselClasses =
+    val prevPos = if vertical then "top-2 left-1/2 -translate-x-1/2" else "left-2 top-1/2 -translate-y-1/2"
+    val nextPos = if vertical then "bottom-2 left-1/2 -translate-x-1/2" else "right-2 top-1/2 -translate-y-1/2"
+    val dotsPos = if vertical then "right-2 top-1/2 -translate-y-1/2 flex-col" else "bottom-2 left-1/2 -translate-x-1/2 flex-row"
+    (
+      root = "carousel relative overflow-hidden block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" +
+        (if vertical then " carousel-vertical" else ""),
+      viewport = "overflow-hidden w-full h-full",
+      track = "",
+      slide = "carousel-item w-full flex-shrink-0",
+      arrow = "absolute btn btn-circle btn-sm bg-base-100/80 hover:bg-base-100 border-none shadow-md z-10 disabled:opacity-50 disabled:cursor-not-allowed",
+      prev = prevPos,
+      next = nextPos,
+      dots = "absolute flex gap-2 " + dotsPos,
+      dot = "w-2 h-2 rounded-full transition-all bg-base-content/30 hover:bg-base-content/50",
+      dotActive = "h-2 w-4 rounded-full transition-all bg-primary",
+    )
+
+  // DaisyUI's `hero` with `hero-overlay`/`hero-content`. The overlay tint matches AsterUI's
+  // `bg-opacity-60`; the backdrop image and height ride the component's inline style.
+  def hero: HeroClasses =
+    (
+      root = "hero",
+      overlay = "hero-overlay bg-opacity-60",
+      content = "hero-content",
     )
 
 // Join a base class with its non-empty modifier tokens using salle's BEM-ish

@@ -1,0 +1,138 @@
+/* salle — Carousel */
+
+/* ======================================================================== */
+/* Carousel                                                                  */
+/* ======================================================================== */
+
+/* The root is the positioning context for the arrows and dots, and clips the track. */
+.salle-carousel {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  border-radius: var(--salle-radius);
+}
+.salle-carousel:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--salle-color-primary) 25%, transparent);
+}
+
+.salle-carousel__viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* The track's flex/transform (or the slides' opacity in the fade effect) ride inline style,
+   since they depend on the active index. */
+.salle-carousel__track {
+  width: 100%;
+  height: 100%;
+}
+
+.salle-carousel__slide {
+  width: 100%;
+}
+.salle-carousel--vertical .salle-carousel__slide {
+  height: 100%;
+}
+
+/* ---- arrows ------------------------------------------------------------- */
+.salle-carousel__arrow {
+  position: absolute;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--salle-input-bg, #ffffff) 80%, transparent);
+  color: var(--salle-input-fg, #0f172a);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.salle-carousel__arrow:hover:not(:disabled) {
+  background: var(--salle-input-bg, #ffffff);
+}
+.salle-carousel__arrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Horizontal carousel: arrows hug the left/right edges, centred vertically. */
+.salle-carousel__arrow--prev {
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.salle-carousel__arrow--next {
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+/* Vertical carousel: arrows hug the top/bottom edges, centred horizontally. */
+.salle-carousel--vertical .salle-carousel__arrow--prev {
+  top: 0.5rem;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+.salle-carousel--vertical .salle-carousel__arrow--next {
+  bottom: 0.5rem;
+  top: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+/* ---- dots --------------------------------------------------------------- */
+.salle-carousel__dots {
+  position: absolute;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+}
+/* Horizontal: a centred row along the bottom edge. */
+.salle-carousel__dots {
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+}
+/* Vertical: a centred column down the right edge. */
+.salle-carousel--vertical .salle-carousel__dots {
+  bottom: auto;
+  left: auto;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+}
+
+.salle-carousel__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--salle-input-fg, #0f172a) 30%, transparent);
+  cursor: pointer;
+  transition: background 0.2s ease, width 0.2s ease;
+}
+.salle-carousel__dot:hover {
+  background: color-mix(in srgb, var(--salle-input-fg, #0f172a) 50%, transparent);
+}
+/* The active dot widens into a pill in the carousel's accent colour. */
+.salle-carousel__dot--active {
+  width: 1rem;
+  background: var(--salle-color-primary);
+}
+.salle-carousel--vertical .salle-carousel__dot--active {
+  width: 0.5rem;
+  height: 1rem;
+}

@@ -1,6 +1,7 @@
 package io.github.edadma.riposte.query
 
 import io.github.edadma.riposte.atoms.*
+import org.scalajs.dom
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -36,6 +37,12 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
     // The in-flight fetch, if any — its presence dedupes concurrent fetches of the
     // same key onto one promise.
     var promise: Option[Future[Any]] = None
+
+    // The abort controller for the in-flight fetch. Aborting it cancels the fetcher's
+    // request (if the fetcher wired in `QueryFetch.signal`) and makes the client drop
+    // the result — see `runAttempt`'s `aborted` guard. Reused across retries so one
+    // abort kills the whole retry chain.
+    var controller: Option[dom.AbortController] = None
 
     // The pending gc cancel, set while this query is unobserved and counting down
     // to eviction; cleared (and cancelled) when it is observed again.
@@ -210,31 +217,44 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
   private def doFetch(key: QueryKey, e: Entry): Unit =
     e.fetcher.foreach(fetch => startFetch(key, e, fetch))
 
-  // Begin a fetch from an explicit thunk: mark the cell fetching and enter the
-  // retry loop. The steady path passes `e.fetcher`; `fetchNextPage` passes a
-  // one-shot thunk resolving to the page-appended `InfiniteData`, so both share
-  // retry, in-flight dedup, and the zombie-cell guard.
+  // Begin a fetch from an explicit thunk: supersede any prior in-flight fetch with a
+  // fresh abort controller, mark the cell fetching, and enter the retry loop. The
+  // steady path passes `e.fetcher`; `fetchNextPage` passes a one-shot thunk resolving
+  // to the page-appended `InfiniteData`, so both share retry, in-flight dedup, the
+  // zombie-cell guard, and cancellation.
   private def startFetch(key: QueryKey, e: Entry, fetch: () => Future[Any]): Unit =
+    e.controller.foreach(_.abort())
+    val controller = new dom.AbortController()
+    e.controller = Some(controller)
     store.set(e.cell, store.get(e.cell).copy(isFetching = true))
-    runAttempt(key, e, fetch, 0)
+    runAttempt(key, e, fetch, 0, controller)
 
-  private def runAttempt(key: QueryKey, e: Entry, fetch: () => Future[Any], attempt: Int): Unit =
-    val f = fetch()
+  // The fetcher runs inside `QueryFetch.during`, so reading `QueryFetch.signal` while
+  // it builds its request yields this attempt's signal. A result that arrives after
+  // the fetch was aborted is dropped outright — no write, no retry — so a cancelled
+  // fetch can neither overwrite the cell nor keep retrying; `_ eq e` likewise drops a
+  // result for an entry that was evicted or replaced.
+  private def runAttempt(key: QueryKey, e: Entry, fetch: () => Future[Any], attempt: Int, controller: dom.AbortController): Unit =
+    val f = QueryFetch.during(controller.signal)(fetch())
     e.promise = Some(f) // stays Some across retries, so the fetch reads as in-flight
     f.onComplete { res =>
-      if entries.get(key).exists(_ eq e) then
+      if !controller.signal.aborted && entries.get(key).exists(_ eq e) then
         res match
           case Success(v) =>
-            e.promise = None
+            e.promise    = None
+            e.controller = None
             store.set(e.cell, QueryState(QueryStatus.Success, Some(v), None, isFetching = false, QueryEnv.now()))
           case Failure(err) =>
             if attempt < e.retry then
               QueryEnv.schedule(
-                () => if entries.get(key).exists(_ eq e) then runAttempt(key, e, fetch, attempt + 1),
+                () =>
+                  if !controller.signal.aborted && entries.get(key).exists(_ eq e) then
+                    runAttempt(key, e, fetch, attempt + 1, controller),
                 e.retryDelay(attempt),
               )
             else
-              e.promise = None
+              e.promise    = None
+              e.controller = None
               store.set(e.cell, store.get(e.cell).copy(status = QueryStatus.Error, error = Some(err), isFetching = false))
     }
 
@@ -242,13 +262,34 @@ final class QueryClient(val store: Store = new Store)(using ec: ExecutionContext
     e.gcCancel.foreach(_())
     e.gcCancel = Some(QueryEnv.schedule(() => evict(key, e), e.gcTime))
 
-  // Drop an unobserved query from the cache: forget its cell in the store and
-  // remove its entry. Guarded so a query re-observed during the countdown (now
-  // active again, or replaced by a fresh entry) survives.
+  // Drop an unobserved query from the cache: abort any in-flight fetch, forget its
+  // cell in the store, and remove its entry. Guarded so a query re-observed during
+  // the countdown (now active again, or replaced by a fresh entry) survives.
   private def evict(key: QueryKey, e: Entry): Unit =
     if entries.get(key).exists(_ eq e) && !e.active then
+      e.controller.foreach(_.abort())
       store.forget(e.cell)
       entries -= key
+
+  // Abort a query's in-flight fetch. The fetcher's request is cancelled (if it wired
+  // in `QueryFetch.signal`) and the pending result is dropped — no write, no retry —
+  // so the cell keeps whatever it last settled on, just no longer fetching. A no-op
+  // if nothing is in flight. For superseding a request whose result is now unwanted:
+  // a search box cancelling the previous term's fetch before firing the next.
+  def cancelQuery(key: QueryKey): Unit =
+    entries.get(key).foreach(cancelEntry)
+
+  // Cancel every in-flight query whose key begins with `prefix`, the cancellation
+  // counterpart of `invalidatePrefix`.
+  def cancelPrefix(prefix: QueryKey): Unit =
+    entries.filter((k, _) => k.startsWith(prefix)).values.toVector.foreach(cancelEntry)
+
+  private def cancelEntry(e: Entry): Unit =
+    e.controller.foreach(_.abort())
+    e.controller = None
+    e.promise    = None
+    val st = store.get(e.cell)
+    if st.isFetching then store.set(e.cell, st.copy(isFetching = false))
 
   // --- public cache control --------------------------------------------------
 

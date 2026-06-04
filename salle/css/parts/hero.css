@@ -1,0 +1,42 @@
+/* salle — Hero */
+
+/* ======================================================================== */
+/* Hero                                                                      */
+/* ======================================================================== */
+
+/* A full-bleed banner: a positioning context that centres its content box. The backdrop
+   image and band height ride inline style; the scrim and content are styled here. */
+.salle-hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  background-color: var(--salle-input-bg, #ffffff);
+  color: var(--salle-input-fg, #0f172a);
+  overflow: hidden;
+}
+
+/* The scrim dims a photographic backdrop so foreground text stays legible. */
+.salle-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 0;
+}
+
+/* The content sits above the scrim, padded and centred. */
+.salle-hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  max-width: 56rem;
+}
+/* When a scrim is present the backdrop is photographic, so light text reads best over it. */
+.salle-hero[data-overlay="true"] .salle-hero__content {
+  color: #ffffff;
+}
