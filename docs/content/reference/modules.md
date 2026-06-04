@@ -178,7 +178,7 @@ A styled component library on top of the core.
   `ImagePreviewGroup` (shared gallery lightbox); `Badge`/`Tag`/`CheckableTag` label pills;
   `Skeleton` / `SkeletonText` / `SkeletonImage` loading placeholders.
 - **Feedback** — `Spinner` (indeterminate, with overlay mode), `Progress` (linear),
-  `RadialProgress` (ring).
+  `RadialProgress` (ring); `Empty` (`EmptyImage`) — a `role=status` empty-state placeholder.
 - **Navigation** — `Pagination` (controlled; pure `paginationRange`/`pageCount`);
   `Dropdown` menu button (`MenuItem`/`MenuDivider`); `Tabs` (data-driven panels, `Tab`,
   `TabsVariant`/`TabsPosition`).

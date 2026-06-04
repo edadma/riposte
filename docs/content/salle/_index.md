@@ -35,7 +35,7 @@ Every salle component is an ordinary function with default arguments, returning 
 - **[Form controls](/salle/forms/)** — `Button`, `Input`, `Checkbox`/`Toggle`, `Select`,
   `Segmented`.
 - **[Display](/salle/display/)** — `ImageCard`, `Image`/`Lightbox`, `Badge`/`Tag`,
-  `Skeleton`, and the `Spinner`/`Progress` busy indicators.
+  `Skeleton`, the `Spinner`/`Progress` busy indicators, and the `Empty` placeholder.
 - **[Navigation](/salle/navigation/)** — `Pagination`, `Dropdown`, and `Tabs`.
 - **[Overlays](/salle/overlays/)** — `Modal`, `Drawer`, `Toast`, and `Tooltip`.
 - **[Layout](/salle/layout/)** — the `Layout`/`Navbar`/`Footer` page shell, plus the
