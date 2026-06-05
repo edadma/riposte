@@ -113,7 +113,7 @@ type TooltipClasses = (
 
 /** The per-part CSS classes for a [[Tabs]] set: the `root` wrapper, the `list` strip
   * (which carries the variant + size look), each `tab` button with its `active` and
-  * `disabled` modifiers (applied conditionally, like [[PaginationClasses.active]]), a tab's
+  * `disabled` modifiers (applied conditionally, like `PaginationClasses.active`), a tab's
   * leading `icon` slot, and the `panel` region. */
 type TabsClasses = (
     root: String,
