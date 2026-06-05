@@ -12,7 +12,8 @@ entire app's look from a single provider at the root, with no change at any call
 Two skins ship:
 
 - **`SalleSkin`** (the default) — salle's own look. It emits `salle-*` classes whose rules
-  live in `salle.css`. An app that configures nothing still gets a styled UI.
+  ship inside the artifact and self-install on first render, so an app that configures
+  nothing still gets a styled UI — no stylesheet to link.
 - **`DaisySkin`** — emits the [DaisyUI](https://daisyui.com/) class vocabulary
   (`btn btn-primary btn-sm`). The styles come from DaisyUI + Tailwind in your own CSS
   build; salle just produces the class names.

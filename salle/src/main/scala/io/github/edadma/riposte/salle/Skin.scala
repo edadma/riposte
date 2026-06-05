@@ -1080,8 +1080,16 @@ private def daisy(base: String, tokens: String*): String =
 val SkinContext: Context[Skin] = createContext(SalleSkin)
 
 /** The skin in effect at this point in the tree. Components call this and ask it for
-  * their classes rather than hard-coding any. */
-def useSkin()(using Hooks): Skin = useContext(SkinContext)
+  * their classes rather than hard-coding any.
+  *
+  * When that skin is [[SalleSkin]], this also self-installs salle's stylesheet (see
+  * [[SalleStyles]]) — synchronously, before the component paints, so the default-skin
+  * app is styled with no setup and no flash of unstyled content. The call is a cheap
+  * no-op after the first one. */
+def useSkin()(using Hooks): Skin =
+  val skin = useContext(SkinContext)
+  if skin eq SalleSkin then SalleStyles.install()
+  skin
 
 /** Apply `skin` to every salle component inside `child`:
   * `render(SkinProvider(DaisySkin)(App(())), container)`. Without it, components use

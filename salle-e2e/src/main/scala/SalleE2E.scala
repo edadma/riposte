@@ -30,7 +30,20 @@ object SalleE2E:
     case "drawer"    => drawerFixture()
     case "segmented" => segmentedFixture()
     case "carousel"  => carouselFixture()
+    case "styles"    => stylesFixture()
     case _           => indexFixture
+
+  // ---- styles: real-browser proof of the runtime CSS injection --------------------------
+  // salle bakes its stylesheet into the artifact and injects it on first render (SalleStyles).
+  // jsdom can't parse the cascade layers it uses, so the unit tests skip injection — only a
+  // real browser proves the <style> lands and actually styles a component.
+  private val stylesFixture = view {
+    div(
+      id := "harness",
+      style := Map("padding" -> "2rem"),
+      Button("Styled button"),
+    )
+  }
 
   // ---- tooltip: real hover/focus timing (the jsdom specs fake the Timers seam) ----------
   private val tooltipFixture = view {

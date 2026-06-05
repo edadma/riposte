@@ -29,23 +29,23 @@ lazy val app = project
   .in(file("app"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    libraryDependencies += "io.github.edadma" %%% "riposte" % "0.2.0",
+    libraryDependencies += "io.github.edadma" %%% "riposte" % "0.2.1",
   )
 ```
 
 The optional sibling artifacts are added the same way when you need them:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.2.0"
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.2.0"
-libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.2.0"
-libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.2.0"
-libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.2.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.2.1"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.2.1"
+libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.2.1"
+libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.2.1"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.2.1"
 ```
 
 They all depend on `riposte` transitively, so you do not need to list the core separately.
-([salle](/salle/) is the styled component library; it also ships a `salle.css` you
-include in your page.)
+([salle](/salle/) is the styled component library; its styles are baked into the artifact
+and self-install on first render, so there is nothing to add to your page.)
 
 ## A DOM to render into
 

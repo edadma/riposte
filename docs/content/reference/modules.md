@@ -17,7 +17,7 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
 `riposte-query` also depends on `riposte-atoms`; the rest depend only on `riposte`. The
-current published version is `0.2.0`.
+current published version is `0.2.1`.
 
 ## riposte (core)
 
@@ -200,7 +200,8 @@ A styled component library on top of the core.
 
 - **Skin system** — components express intent (`Color`, `Size`, per-component variant
   enums like `ButtonVariant`); a `Skin` maps that to CSS classes. Ships `SalleSkin`
-  (default, styled by `salle.css`) and `DaisySkin` (DaisyUI vocabulary). Set one with
+  (default; its `salle.css` is baked into the artifact and self-installs at runtime) and
+  `DaisySkin` (DaisyUI vocabulary). Set one with
   `SkinProvider(skin) { … }`; read it with `useSkin()`.
 - **Theming** — one open `data-theme` set (ships `light`/`dark`, `system` follows the OS).
   `useTheme()` → `(theme, resolved, setTheme, toggle)`; plus `ThemeToggle` (sun/moon icon

@@ -39,10 +39,11 @@ set. To define your own theme, add a `[data-theme="name"]` block (overriding the
 
 ## Theming the default look
 
-`SalleSkin`'s styles live in `salle.css`. Include it once in your app, then put any
-overrides after it. Every rule sits in a low-priority `@layer salle` cascade layer, so
-your own unlayered CSS always wins — no `!important`, no specificity fights. Two ways to
-retheme, both plain CSS:
+`SalleSkin`'s styles ship inside the `riposte-salle` artifact and self-install the first
+time a component renders — there is no `salle.css` to link. To retheme, just add your own
+CSS: every salle rule sits in a low-priority `@layer salle` cascade layer, so your own
+unlayered CSS always wins — no `!important`, no specificity fights. Two ways to retheme,
+both plain CSS:
 
 1. **Values** — override the `--salle-*` custom properties (colors, radius, focus ring) at
    `:root` or under a `[data-theme=…]` block.

@@ -3,7 +3,7 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 
 ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
-ThisBuild / version      := "0.2.0"
+ThisBuild / version      := "0.2.1"
 
 // --- Maven Central publishing ----------------------------------------------
 // Metadata for the generated POM and the Sonatype Central wiring, mirroring the
@@ -180,6 +180,11 @@ lazy val salle = project
     scalacOptions ++= commonScalacOptions,
     Test / jsEnv := new JSDOMNodeJSEnv(),
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+    // Bake salle.css + its parts into the artifact as a string constant; the library
+    // injects it at runtime (SalleStyles), so consumers need no separate CSS asset.
+    Compile / sourceGenerators += Def.task {
+      SalleCss.generate(baseDirectory.value / "css", (Compile / sourceManaged).value)
+    }.taskValue,
   )
 
 // salle-demo — a runnable showcase for salle. Mirrors the riposte `demo` module
