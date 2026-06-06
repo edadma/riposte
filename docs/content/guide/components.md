@@ -85,6 +85,31 @@ Enumerated booleans — `draggable`, `spellcheck`, `contenteditable`, and the AR
 render the literal strings `"true"` / `"false"` rather than toggling by presence, which is
 what those attributes actually require.
 
+### Typed properties
+
+Some DOM things aren't attributes at all. A checkbox's `indeterminate` tri-state has no
+attribute; a media element's `volume` and `currentTime` are numbers, not strings; and a
+custom element (web component) expects rich **properties** — arrays, objects — not
+stringified markup. For these, `prop[T](name)` sets a value straight on the live DOM node
+via its property, untouched:
+
+```scala
+input(typ := "checkbox", indeterminate := true)  // a property with no attribute form
+audio(volume := 0.5, currentTime := 12.0)         // numeric properties
+myWidget(prop[js.Array[Item]]("items") := rows)    // rich data to a custom element
+```
+
+The value passes through with its real type, not as text; removing the prop on a later
+render resets the property to `null`. `indeterminate` and the numeric
+`volume` / `playbackRate` / `currentTime` / `valueAsNumber` / `valueAsDate` are provided as
+ready-made keys; `prop[T]("name")` covers any other property.
+
+Reach for `prop` only when an attribute genuinely can't express the value — ordinary
+attributes (and the boolean/enumerated keys above) remain the right default, and are what
+the host re-reads on patch. Under the hood this is vdom's `PropValue`, the one channel that
+hands a host a typed value rather than a string — the same mechanism a non-DOM host (a
+native renderer) uses to receive a colour or a size directly.
+
 ### Inline styles
 
 `css` takes `name -> value` pairs and sets the `style` attribute:
