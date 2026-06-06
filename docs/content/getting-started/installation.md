@@ -29,18 +29,18 @@ lazy val app = project
   .in(file("app"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    libraryDependencies += "io.github.edadma" %%% "riposte" % "0.2.2",
+    libraryDependencies += "io.github.edadma" %%% "riposte" % "0.3.0",
   )
 ```
 
 The optional sibling artifacts are added the same way when you need them:
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.2.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.2.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.2.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.2.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.2.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.3.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.3.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.3.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.3.0"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.3.0"
 ```
 
 They all depend on `riposte` transitively, so you do not need to list the core separately.
