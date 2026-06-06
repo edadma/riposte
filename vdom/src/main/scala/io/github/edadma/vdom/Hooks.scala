@@ -1,6 +1,5 @@
-package io.github.edadma.riposte
+package io.github.edadma.vdom
 
-import org.scalajs.dom
 import scala.collection.mutable.ArrayBuffer
 
 // An effect's optional teardown, run before the effect re-runs and on unmount.
@@ -135,9 +134,9 @@ def useThrottledValue[T](value: T, intervalMs: Int)(using Hooks): T =
 // must not be called conditionally or in loops.
 object Hooks:
   // Process-wide counter behind useId. IDs need only be unique within a session,
-  // and JavaScript is single-threaded, so a plain counter suffices.
+  // and the reconciler runs single-threaded, so a plain counter suffices.
   private var idSeq: Long = 0
-  private[riposte] def nextId(): String =
+  private[vdom] def nextId(): String =
     idSeq += 1
     s"riposte-$idSeq"
 
@@ -145,7 +144,7 @@ object Hooks:
   // Before the start it is `startValue`; at or past `startMs + durationMs` it is
   // exactly `target` (so a transition settles cleanly). A non-positive duration
   // jumps straight to the target.
-  private[riposte] def transitionCurrent(cell: TransitionCell, now: Double): Double =
+  def transitionCurrent(cell: TransitionCell, now: Double): Double =
     if cell.durationMs <= 0 then cell.target
     else
       val raw = (now - cell.startMs) / cell.durationMs.toDouble
@@ -156,38 +155,36 @@ object Hooks:
         val k = 1.0 - u * u * u // easeOutCubic
         cell.startValue + (cell.target - cell.startValue) * k
 
-// Timing for useTransition, indirected so tests can install a deterministic
-// clock and frame pump. In the browser these are `performance.now()` and
-// `requestAnimationFrame` / `cancelAnimationFrame`.
-private[riposte] object Transition:
-  var now:          () => Double          = () => dom.window.performance.now()
-  var requestFrame: (() => Unit) => Int    = cb => dom.window.requestAnimationFrame((_: Double) => cb())
-  var cancelFrame:  Int => Unit            = id => dom.window.cancelAnimationFrame(id)
+// Timing for useTransition / usePresence, indirected so a host can install real
+// frame timing and tests a deterministic clock + frame pump. The defaults are
+// inert (a zero clock, a no-op frame loop): the host installs the browser's
+// `performance.now()` and `requestAnimationFrame` / `cancelAnimationFrame`.
+object Transition:
+  var now:          () => Double         = () => 0.0
+  var requestFrame: (() => Unit) => Int   = _ => 0
+  var cancelFrame:  Int => Unit           = _ => ()
 
-// Timer indirection behind the debounce/throttle hooks: `schedule(fn, delayMs)`
-// runs `fn` after the delay and returns a cancel function. In the browser this is
-// setTimeout/clearTimeout; tests install a manual version that fires pending
-// timers on demand, so debounce/throttle behaviour is deterministic without real
-// waiting.
-private[riposte] object Timers:
-  var schedule: (() => Unit, Int) => (() => Unit) = (fn, delayMs) =>
-    val id = dom.window.setTimeout(() => fn(), delayMs.toDouble)
-    () => dom.window.clearTimeout(id)
+// Timer indirection behind the debounce/throttle/presence hooks:
+// `schedule(fn, delayMs)` runs `fn` after the delay and returns a cancel function.
+// The default is inert; the host installs setTimeout/clearTimeout, and tests
+// install a manual version that fires pending timers on demand.
+object Timers:
+  var schedule: (() => Unit, Int) => (() => Unit) = (_, _) => () => ()
 
-final class Hooks private[riposte] ():
+final class Hooks private[vdom] ():
 
   // Back-reference to the owning component instance, set at mount. Hooks use
   // it to mark the component dirty when state changes.
-  private[riposte] var instance: ComponentInstance[?] | Null = null
+  private[vdom] var instance: ComponentInstance[?] | Null = null
 
-  private val cells          = ArrayBuffer.empty[Any]
-  private var index          = 0
+  private val cells = ArrayBuffer.empty[Any]
+  private var index = 0
 
   // Contexts this component reads. The reconciler consults this when a provider
   // value changes, to wake the component even if a memoized ancestor bailed.
-  private[riposte] val subscribedContexts = scala.collection.mutable.HashSet.empty[Context[?]]
+  private[vdom] val subscribedContexts = scala.collection.mutable.HashSet.empty[Context[?]]
 
-  private[riposte] def beginRender(): Unit = index = 0
+  private[vdom] def beginRender(): Unit = index = 0
 
   // -- useState -------------------------------------------------------------
 
@@ -215,9 +212,9 @@ final class Hooks private[riposte] ():
     val update: (T => T) => Unit = f => cellSet(slot, f(cellGet[T](slot)))
     (current, set, update)
 
-  private[riposte] def cellGet[T](slot: Int): T = cells(slot).asInstanceOf[T]
+  private[vdom] def cellGet[T](slot: Int): T = cells(slot).asInstanceOf[T]
 
-  private[riposte] def cellSet[T](slot: Int, next: T): Unit =
+  private[vdom] def cellSet[T](slot: Int, next: T): Unit =
     val prev = cells(slot)
     if prev != next then
       cells(slot) = next
@@ -236,7 +233,7 @@ final class Hooks private[riposte] ():
   // -- useRef ---------------------------------------------------------------
 
   // A mutable box that persists across renders. Writing `ref.current` does NOT
-  // trigger a re-render — use it for DOM handles, timers, or any value that
+  // trigger a re-render — use it for host handles, timers, or any value that
   // should survive renders without driving them.
   def useRef[T](initial: T): Ref[T] =
     val slot = index
@@ -354,7 +351,7 @@ final class Hooks private[riposte] ():
   def useEffect(body: () => Cleanup, deps: Array[Any] | Null): Unit =
     scheduleEffect(body, deps, layout = false)
 
-  // Like `useEffect`, but runs synchronously after the DOM is committed and
+  // Like `useEffect`, but runs synchronously after the host is committed and
   // before paint — for effects that must read or adjust layout without the user
   // seeing an intermediate frame.
   def useLayoutEffect(body: () => Cleanup, deps: Array[Any] | Null): Unit =
@@ -414,7 +411,7 @@ final class Hooks private[riposte] ():
 
   // Run every live effect cleanup. Called by the reconciler when the owning
   // component unmounts.
-  private[riposte] def runUnmountCleanups(): Unit =
+  private[vdom] def runUnmountCleanups(): Unit =
     var i = 0
     while i < cells.length do
       cells(i) match
@@ -447,7 +444,7 @@ final class Hooks private[riposte] ():
 // run; `cleanup` is the teardown returned by the previous run. `queued` guards
 // against the same cell being enqueued twice before a flush. `owner` lets the
 // scheduler order effects by depth and skip unmounted components.
-private[riposte] final class EffectCell(
+private[vdom] final class EffectCell(
     var deps:        Array[Any] | Null,
     var cleanup:     Cleanup | Null,
     var pendingBody: () => Cleanup,
@@ -464,7 +461,7 @@ private final class MemoCell(var deps: Array[Any] | Null, var value: Any)
 // `durationMs`, starting at `startMs` (on the transition clock). `rafId` is the
 // pending animation-frame handle, or -1 when no frame is in flight — which
 // doubles as the "settled" marker.
-private[riposte] final class TransitionCell(
+final class TransitionCell(
     var startValue: Double,
     var target:     Double,
     var startMs:    Double,

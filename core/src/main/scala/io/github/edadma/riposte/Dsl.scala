@@ -142,7 +142,7 @@ final class EnumAttrKey(val name: String):
 final class EventKey[E <: dom.Event](val name: String, private val options: EventOptions = EventOptions()):
   def :=(fn: E => Unit): Mod =
     val key = if options.capture then s"on:$name:capture" else s"on:$name"
-    PropMod(key, Handler(fn.asInstanceOf[dom.Event => Unit], options))
+    PropMod(key, Handler(fn.asInstanceOf[Any => Unit], options))
 
   /** Listen in the capture phase (root → target) instead of bubbling. */
   def capture: EventKey[E] = new EventKey(name, options.copy(capture = true))
@@ -181,7 +181,7 @@ object key:
 // name doesn't case-clash with the `Ref` class on case-insensitive filesystems.
 final class RefKey:
   def :=[T](box: Ref[T]): Mod                   = RefMod(BoxRef(box))
-  def :=(fn: (dom.Element | Null) => Unit): Mod = RefMod(FnRef(fn))
+  def :=(fn: (dom.Element | Null) => Unit): Mod = RefMod(FnRef(fn.asInstanceOf[(AnyRef | Null) => Unit]))
 
 val ref = new RefKey
 

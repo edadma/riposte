@@ -1,4 +1,4 @@
-package io.github.edadma.riposte
+package io.github.edadma.vdom
 
 // A typed context handle. Create one with `createContext(default)`, wrap a
 // subtree with `ctx.provide(value, child)`, and read the nearest provided value

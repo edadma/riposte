@@ -1,4 +1,4 @@
-package io.github.edadma.riposte
+package io.github.edadma.vdom
 
 // A function component. The render body is a context function `Hooks ?=> VNode`:
 // the Hooks context is supplied implicitly by the reconciler, so the body calls
@@ -73,15 +73,15 @@ def memo[P](c: Component[P]): Component[P] =
 //   }
 //   Card((title = "Hi", count = 3))
 
-final class Component2[A, B] private[riposte] (private[riposte] val underlying: Component[(A, B)]):
+final class Component2[A, B] private[vdom] (private[vdom] val underlying: Component[(A, B)]):
   def apply(a: A, b: B): VNode              = underlying((a, b))
   def apply(a: A, b: B, key: String): VNode = underlying((a, b), key)
 
-final class Component3[A, B, C] private[riposte] (private[riposte] val underlying: Component[(A, B, C)]):
+final class Component3[A, B, C] private[vdom] (private[vdom] val underlying: Component[(A, B, C)]):
   def apply(a: A, b: B, c: C): VNode              = underlying((a, b, c))
   def apply(a: A, b: B, c: C, key: String): VNode = underlying((a, b, c), key)
 
-final class Component4[A, B, C, D] private[riposte] (private[riposte] val underlying: Component[(A, B, C, D)]):
+final class Component4[A, B, C, D] private[vdom] (private[vdom] val underlying: Component[(A, B, C, D)]):
   def apply(a: A, b: B, c: C, d: D): VNode              = underlying((a, b, c, d))
   def apply(a: A, b: B, c: C, d: D, key: String): VNode = underlying((a, b, c, d), key)
 
@@ -122,7 +122,7 @@ def memo[A, B, C, D](c: Component4[A, B, C, D]): Component4[A, B, C, D] =
 // React.
 type Children = Vector[VNode]
 
-final class Container private[riposte] (private[riposte] val underlying: Component[Children]):
+final class Container private[vdom] (private[vdom] val underlying: Component[Children]):
   def apply(children: VNode*): VNode = underlying(children.toVector)
 
 def container(render: Children => (Hooks ?=> VNode)): Container =
@@ -135,7 +135,7 @@ def container(render: Children => (Hooks ?=> VNode)): Container =
 //     section(h2(p.title), div(cls := "body", children))
 //   }
 //   Panel((title = "Settings"))(toggle, slider)
-final class ContainerP[P] private[riposte] (private[riposte] val underlying: Component[(P, Children)]):
+final class ContainerP[P] private[vdom] (private[vdom] val underlying: Component[(P, Children)]):
   def apply(props: P)(children: VNode*): VNode = underlying((props, children.toVector))
 
 def container[P](render: (P, Children) => (Hooks ?=> VNode)): ContainerP[P] =

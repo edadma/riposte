@@ -1,7 +1,5 @@
-package io.github.edadma.riposte
+package io.github.edadma.vdom
 
-import org.scalajs.dom
-import org.scalajs.macrotaskexecutor.MacrotaskExecutor
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
@@ -9,17 +7,27 @@ import scala.util.control.NonFatal
 //
 //   • State writes mark a component dirty and request a flush on the MICROTASK
 //     queue. Several updates within one tick collapse into a single re-render
-//     that commits to the DOM before the browser paints — no flicker, tightest
+//     that commits to the host before the browser paints — no flicker, tightest
 //     coalescing.
-//   • Layout effects run synchronously inside that flush, after the DOM is
+//   • Layout effects run synchronously inside that flush, after the host is
 //     committed but before paint, so they can read/adjust layout invisibly.
 //   • Passive effects run later, after paint, on a MACROTASK, so heavy effect
 //     work doesn't block the frame.
+//
+// The two scheduling primitives are seams: the host installs real microtask /
+// macrotask queues (the browser's `queueMicrotask` and a macrotask executor),
+// while a test host leaves them as no-ops and drives everything through
+// `flushSync`. Both default to no-ops, so a forgotten install fails closed
+// (nothing auto-flushes) rather than mis-coalescing.
 //
 // Dirty components re-render shallowest-first; re-rendering a parent reconciles
 // its subtree (clearing descendant dirty flags), so each renders at most once.
 // Effects run deepest-first, matching React's child-before-parent ordering.
 object Scheduler:
+
+  // Host-installed scheduling primitives. Each takes a thunk to run later.
+  var scheduleMicrotask: (() => Unit) => Unit = _ => ()
+  var scheduleMacrotask: (() => Unit) => Unit = _ => ()
 
   private val dirty          = mutable.ArrayBuffer.empty[ComponentInstance[?]]
   private val layoutEffects  = mutable.ArrayBuffer.empty[EffectCell]
@@ -39,7 +47,7 @@ object Scheduler:
       dirty += inst
     requestFlush()
 
-  private[riposte] def scheduleEffect(cell: EffectCell): Unit =
+  private[vdom] def scheduleEffect(cell: EffectCell): Unit =
     if !cell.queued then
       cell.queued = true
       if cell.layout then layoutEffects += cell else passiveEffects += cell
@@ -55,7 +63,7 @@ object Scheduler:
   private def requestFlush(): Unit =
     if !renderScheduled then
       renderScheduled = true
-      dom.window.queueMicrotask(() => flush())
+      scheduleMicrotask(() => flush())
 
   private def flush(): Unit =
     renderScheduled = false
@@ -65,7 +73,7 @@ object Scheduler:
   private def requestPassive(): Unit =
     if !passiveScheduled then
       passiveScheduled = true
-      MacrotaskExecutor.execute(() => drainPassive())
+      scheduleMacrotask(() => drainPassive())
 
   // Re-render dirty components and run layout effects, repeating while either a
   // layout effect or a re-render produced more work — so a layout effect's own

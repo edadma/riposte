@@ -1,5 +1,6 @@
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import xerial.sbt.Sonatype.sonatypeCentralHost
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
@@ -51,15 +52,38 @@ Global / excludeLintKeys += publishMavenStyle
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(riposte, atoms, router, query, forms, salle, salleDemo, salleE2E, demo)
+  .aggregate(vdom.js, vdom.jvm, riposte, atoms, router, query, forms, salle, salleDemo, salleE2E, demo)
   .settings(
     name                := "riposte-root",
     publish / skip      := true,
     publishLocal / skip := true,
   )
 
+// vdom — the host-agnostic core extracted from riposte: the VNode model, the
+// reconciler, the hooks runtime, the scheduler, and the `HostConfig` abstraction
+// they mutate the world through. It names no platform type, so it cross-builds to
+// JS (which riposte's DOM host drives) and JVM (where a headless TestHost drives
+// the reconciler/hooks tests). The JVM target is the forcing function: a stray
+// `org.scalajs.dom` reference would fail to compile there.
+//
+// Developed in-tree for now (riposte `.dependsOn(vdom.js)`); it moves to its own
+// repo once mature, hence `publish / skip` — riposte must not ship a POM pointing
+// at an unpublished module.
+lazy val vdom = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("vdom"))
+  .settings(
+    name                := "vdom",
+    scalacOptions       ++= commonScalacOptions,
+    publish / skip      := true,
+    publishLocal / skip := true,
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+
 // riposte — a React-style virtual-DOM UI library for Scala.js. The published
-// library, in core/ so the repo root can stay a thin aggregator.
+// library, in core/ so the repo root can stay a thin aggregator. It is the DOM
+// host for `vdom`: it supplies the `HostConfig`, the HTML/SVG builder DSL, the
+// DOM-specific hooks, and re-exports vdom's public API under its own package.
 //
 // An immutable VNode tree describes the UI; a reconciler diffs each new tree
 // against the live DOM and mutates the DOM to match. Function components carry
@@ -67,6 +91,7 @@ lazy val root = project
 lazy val riposte = project
   .in(file("core"))
   .enablePlugins(ScalaJSPlugin)
+  .dependsOn(vdom.js)
   .settings(
     name := "riposte",
     scalacOptions ++= commonScalacOptions,
