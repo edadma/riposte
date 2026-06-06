@@ -2,7 +2,7 @@ import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import xerial.sbt.Sonatype.sonatypeCentralHost
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
-ThisBuild / scalaVersion := "3.8.3"
+ThisBuild / scalaVersion := "3.8.4"
 ThisBuild / organization := "io.github.edadma"
 ThisBuild / version      := "0.2.2"
 
@@ -53,7 +53,7 @@ Global / excludeLintKeys += publishMavenStyle
 // aggregation and the modules' `.dependsOn(riposte)`.
 lazy val root = project
   .in(file("."))
-  .aggregate(vdom.js, vdom.jvm, riposte, atoms, router, query, forms, salle, salleDemo, salleE2E, demo)
+  .aggregate(vdom.js, vdom.jvm, vdom.native, riposte, atoms, router, query, forms, salle, salleDemo, salleE2E, demo)
   .settings(
     name                := "riposte-root",
     publish / skip      := true,
@@ -72,7 +72,7 @@ lazy val root = project
 // build publishes today — riposte's POM depends on it. Only the JS artifact is a
 // published dependency (riposte is JS-only); the JVM build exists solely for the
 // headless reconciler/hooks tests and stays unpublished.
-lazy val vdom = crossProject(JSPlatform, JVMPlatform)
+lazy val vdom = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("vdom"))
   .settings(
@@ -82,6 +82,15 @@ lazy val vdom = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
   )
   .jvmSettings(
+    publish / skip      := true,
+    publishLocal / skip := true,
+  )
+  // The Native target is the forcing function for the future SDL3 host (the `suit`
+  // toolkit, in its own repo, pulls this via a source ProjectRef): the same pure
+  // sources that drive a browser and a headless JVM test host must also cross to a
+  // pixel-canvas host with no DOM assumptions. Unpublished for now — it graduates to
+  // Maven Central once the HostConfig surface stabilizes.
+  .nativeSettings(
     publish / skip      := true,
     publishLocal / skip := true,
   )
