@@ -17,7 +17,15 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
 `riposte-query` also depends on `riposte-atoms`; the rest depend only on `riposte`. The
-current published version is `0.2.1`.
+current published version is `0.2.2`.
+
+Under `riposte` sits **`vdom`** — a host-agnostic engine (the `VNode` model, the
+reconciler, the hooks runtime, and the scheduler) that names no DOM type. `riposte` is its
+DOM host: it supplies the `HostConfig` that performs the real DOM mutations, the HTML/SVG
+DSL, and the DOM hooks, then re-exports vdom's API under `io.github.edadma.riposte`. `vdom`
+is published (riposte depends on it transitively) and cross-builds to the JVM, where a
+headless test host drives the reconciler and hooks — but you import `riposte`, never `vdom`
+directly.
 
 ## riposte (core)
 

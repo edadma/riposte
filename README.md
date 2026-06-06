@@ -40,11 +40,15 @@ val Counter = view {
 ## Modules
 
 Riposte ships as six independently published artifacts under `io.github.edadma`; the
-siblings depend on the core transitively.
+siblings depend on the core transitively. The core itself is a thin **DOM host** over
+`vdom` — a host-agnostic engine (the `VNode` model, reconciler, hooks runtime, and
+scheduler) that names no platform type and is pulled in transitively. You depend on
+`riposte`, not `vdom`.
 
 | Artifact          | What it gives you                                  |
 |-------------------|----------------------------------------------------|
 | `riposte`         | The core: components, hooks, the DSL, rendering     |
+| `vdom`            | The host-agnostic engine riposte hosts (transitive) |
 | `riposte-atoms`   | Jotai-inspired atomic shared state                  |
 | `riposte-router`  | Client-side routing for single-page apps            |
 | `riposte-query`   | TanStack-style async server-state cache (built on atoms) |
@@ -52,17 +56,21 @@ siblings depend on the core transitively.
 | `riposte-salle`   | Styled, skinnable component library — form controls (incl. Segmented), Image/Lightbox, Carousel/Hero, Badge/Tag, Skeleton, Spinner/Progress, Empty, Descriptions, Pagination, Dropdown, Tabs, Breadcrumb, Modal/Drawer/Toast/Tooltip, Layout/Navbar/Footer shell, grid + masonry layout, theming |
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.2.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.2.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.2.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.2.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.2.1"
-libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.2.1"
+libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.2.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.2.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.2.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.2.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.2.2"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.2.2"
 ```
 
 ## Repository layout
 
-- `core/` — the `riposte` library (the published artifact)
+- `vdom/` — the host-agnostic core (`VNode`, reconciler, hooks, scheduler, `HostConfig`),
+  a `crossProject(JS, JVM)`; riposte hosts the JS build, the JVM build runs headless
+  reconciler/hooks tests
+- `core/` — the `riposte` library: the DOM host for `vdom` (its `HostConfig`, the HTML/SVG
+  DSL, the DOM hooks) plus the re-export of vdom's API under `io.github.edadma.riposte`
 - `atoms/` — `riposte-atoms`, atomic state built on the core's `useSyncExternalStore` seam
 - `router/` — `riposte-router`, client-side routing on the same public seam
 - `query/` — `riposte-query`, an async server-state cache built on `riposte-atoms`
@@ -76,7 +84,9 @@ libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.2.1"
 ## Development
 
 ```sh
-sbt test              # every module's jsdom-backed suite (core + atoms + router + query + forms + salle)
+sbt test              # every module (vdom JVM+JS, core + atoms + router + query + forms + salle)
+sbt vdomJVM/test      # the host-agnostic core, headless on the JVM (TestHost)
+sbt vdomJS/test       # the same suite on JS
 sbt riposte/test      # just the library (project id is `riposte`, in core/)
 sbt atoms/test        # just the atoms module
 sbt router/test       # just the router module

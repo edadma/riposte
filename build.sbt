@@ -4,13 +4,14 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "io.github.edadma"
-ThisBuild / version      := "0.2.1"
+ThisBuild / version      := "0.2.2"
 
 // --- Maven Central publishing ----------------------------------------------
 // Metadata for the generated POM and the Sonatype Central wiring, mirroring the
 // edadma cross-project template. Credentials live outside the repo (in
-// ~/.sbt/.../sonatype.sbt), so nothing secret is checked in. Only the six real
-// library modules publish; the demos and the root aggregator skip it.
+// ~/.sbt/.../sonatype.sbt), so nothing secret is checked in. Seven real library
+// artifacts publish — the six riposte* modules plus the JS build of the vdom core
+// they sit on; the demos, the JVM vdom test build, and the root aggregator skip it.
 ThisBuild / organizationName     := "edadma"
 ThisBuild / organizationHomepage := Some(url("https://github.com/edadma"))
 ThisBuild / licenses             := Seq("ISC" -> url("https://opensource.org/licenses/ISC"))
@@ -66,18 +67,23 @@ lazy val root = project
 // the reconciler/hooks tests). The JVM target is the forcing function: a stray
 // `org.scalajs.dom` reference would fail to compile there.
 //
-// Developed in-tree for now (riposte `.dependsOn(vdom.js)`); it moves to its own
-// repo once mature, hence `publish / skip` — riposte must not ship a POM pointing
-// at an unpublished module.
+// Developed in-tree for now (riposte `.dependsOn(vdom.js)`); it will move to its own
+// repo once mature, but the `io.github.edadma::vdom` coordinate is stable, so the JS
+// build publishes today — riposte's POM depends on it. Only the JS artifact is a
+// published dependency (riposte is JS-only); the JVM build exists solely for the
+// headless reconciler/hooks tests and stays unpublished.
 lazy val vdom = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("vdom"))
   .settings(
-    name                := "vdom",
-    scalacOptions       ++= commonScalacOptions,
+    name        := "vdom",
+    description := "The host-agnostic core of riposte: the VNode model, reconciler, hooks runtime, and scheduler over a HostConfig abstraction. riposte is its DOM host.",
+    scalacOptions ++= commonScalacOptions,
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+  )
+  .jvmSettings(
     publish / skip      := true,
     publishLocal / skip := true,
-    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
   )
 
 // riposte — a React-style virtual-DOM UI library for Scala.js. The published
