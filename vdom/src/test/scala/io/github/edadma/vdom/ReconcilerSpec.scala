@@ -39,6 +39,19 @@ class ReconcilerSpec extends VdomSuite:
     assert(e.attributes("id") == "b")
     assert(!e.attributes.contains("title"))
 
+  test("a typed PropValue is delivered to setProperty, updated, and reset on removal"):
+    val c    = container()
+    val root = createRoot(c)
+    final case class Rgba(r: Int, g: Int, b: Int)
+    root.render(el("box", "bg" -> PropValue(Rgba(255, 0, 0)))())
+    val e = c.children.head.asInstanceOf[TestElement]
+    assert(e.properties("bg") == Rgba(255, 0, 0)) // the host gets the value itself, not a string
+    assert(!e.attributes.contains("bg"))          // and not as an attribute
+    root.render(el("box", "bg" -> PropValue(Rgba(0, 0, 255)))())
+    assert(e.properties("bg") == Rgba(0, 0, 255)) // a changed value re-sets the property
+    root.render(el("box")())
+    assert(e.properties("bg") == null)            // removal hands the host null to reset the field
+
   test("an event drives a state update and a re-render"):
     val c = container()
     val Counter = view {

@@ -51,6 +51,7 @@ type BoolAttr     = vdom.BoolAttr
 type Handler      = vdom.Handler
 type StyleProp    = vdom.StyleProp
 type RawHtml      = vdom.RawHtml
+type PropValue    = vdom.PropValue
 type EventOptions = vdom.EventOptions
 
 val Attr         = vdom.Attr
@@ -58,6 +59,7 @@ val BoolAttr     = vdom.BoolAttr
 val Handler      = vdom.Handler
 val StyleProp    = vdom.StyleProp
 val RawHtml      = vdom.RawHtml
+val PropValue    = vdom.PropValue
 val EventOptions = vdom.EventOptions
 
 type ElementRef = vdom.ElementRef

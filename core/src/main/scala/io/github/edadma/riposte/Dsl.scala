@@ -1,6 +1,7 @@
 package io.github.edadma.riposte
 
 import org.scalajs.dom
+import scala.scalajs.js
 
 // The builder DSL. Elements are assembled from a varargs list of `Mod`s, each
 // of which is either a property setter, a child, a list of children, or a key.
@@ -128,6 +129,43 @@ final class EnumAttrKey(val name: String):
   def :=(v: Int):     Mod = PropMod(name, Attr(v.toString))
   def :=(v: Double):  Mod = PropMod(name, Attr(v.toString))
   def :=(v: Boolean): Mod = PropMod(name, Attr(if v then "true" else "false"))
+
+// A *live DOM property*, set on the node object directly via `setProperty` rather
+// than as a string attribute. For the DOM cases an attribute can't express:
+//
+//   • properties with no attribute form — a checkbox's `indeterminate`, a media
+//     element's `muted`;
+//   • properties that take a non-string value — `volume`, `playbackRate`,
+//     `currentTime`, `valueAsNumber`, `valueAsDate` (a `Date`, not text);
+//   • the main case: handing rich object / array data to a custom element (web
+//     component), which reads properties, not stringified attributes — what React
+//     19 does for custom elements.
+//
+// The value passes through untouched to the property; on removal the property is set
+// to `null`. Use a JS-friendly value (`Boolean`, `Double`, `String`, `js.Any`, a
+// `js.Object`/`js.Array`); a plain Scala object reaches the DOM as an opaque ref.
+// Equality is structural, so re-passing the same value across renders is a no-op.
+final class PropKey[T](val name: String):
+  def :=(value: T): Mod = PropMod(name, PropValue(value))
+
+/** Build a typed live-property key: `prop[Double]("volume") := 0.5`. */
+def prop[T](name: String): PropKey[T] = new PropKey[T](name)
+
+// A checkbox's tri-state, settable only as a property — there is no `indeterminate`
+// attribute. The canonical reason typed properties exist; provided ready-made.
+val indeterminate = new PropKey[Boolean]("indeterminate")
+
+// Numeric / Date live DOM properties no attribute can hold, ready-made over the
+// typed channel: a media element's `volume` / `playbackRate` / `currentTime`, and an
+// input's `valueAsNumber` / `valueAsDate`. (`muted` and `selected` already exist as
+// boolean *attribute* keys, which set those elements' initial state; for their live
+// property forms use `prop[Boolean]("muted")` / `prop[Boolean]("selected")`.) For any
+// other property, reach for `prop[T](name)`.
+val volume        = new PropKey[Double]("volume")
+val playbackRate  = new PropKey[Double]("playbackRate")
+val currentTime   = new PropKey[Double]("currentTime")
+val valueAsNumber = new PropKey[Double]("valueAsNumber")
+val valueAsDate   = new PropKey[js.Date]("valueAsDate")
 
 // An event name plus the DOM event type it delivers, so a handler is typed at
 // the call site with no cast: `onClick := (e => …)` gets a `dom.MouseEvent`,

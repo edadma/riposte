@@ -1,6 +1,7 @@
 package io.github.edadma.riposte
 
 import org.scalajs.dom
+import scala.scalajs.js
 
 // The builder DSL covers the everyday long tail of HTML — sectioning, tables,
 // forms, media — plus the open-ended `aria-*` / `data-*` namespaces and the
@@ -280,3 +281,52 @@ class DslSpec extends DomSuite:
     val el = c.querySelector("div")
     assert(el.getAttribute("id") == "outer")
     assert(el.getAttribute("role") == "group")
+
+  // Typed live properties (`prop` / `indeterminate`): set on the DOM node object via
+  // setProperty, not as a string attribute — for properties with no attribute form,
+  // non-string values, or rich data handed to custom elements.
+
+  test("indeterminate sets the checkbox property, not an attribute, and toggles off"):
+    val c = host()
+    val Box = view {
+      val (on, set, _) = useState(true)
+      div(
+        input(cls := "cb", typ := "checkbox", indeterminate := on),
+        button(onClick := (_ => set(false)), "off"),
+      )
+    }
+    render(Box(), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("input.cb").asInstanceOf[dom.html.Input]
+    assert(el.indeterminate)                  // the live property is set…
+    assert(!el.hasAttribute("indeterminate")) // …and there is no such attribute
+    fireClick(c.querySelector("button"))      // re-render patches the same node
+    Scheduler.flushSync()
+    assert(!el.indeterminate)
+
+  test("prop[T] passes a non-string value straight to the DOM property and resets on removal"):
+    val c = host()
+    val Box = view {
+      val (present, set, _) = useState(true)
+      div(
+        div(cls := "p", if present then prop[Int]("myValue") := 7 else NoMod),
+        button(onClick := (_ => set(false)), "drop"),
+      )
+    }
+    render(Box(), c)
+    Scheduler.flushSync()
+    val el = c.querySelector("div.p")
+    assert(el.asInstanceOf[js.Dynamic].myValue.asInstanceOf[Int] == 7) // the Int itself, not "7"
+    assert(!el.hasAttribute("myValue"))
+    fireClick(c.querySelector("button")) // the prop is dropped on the next render
+    Scheduler.flushSync()
+    assert(el.asInstanceOf[js.Dynamic].myValue == null) // reset to null
+
+  test("the ready-made numeric live-property keys build typed PropValue mods"):
+    // The DOM round-trip is covered by the `indeterminate` and `prop[T]` tests above;
+    // these keys share that exact path, so assert their structure deterministically
+    // rather than depend on jsdom's partial media-element implementation.
+    assert((volume := 0.5) == PropMod("volume", PropValue(0.5)))
+    assert((playbackRate := 1.5) == PropMod("playbackRate", PropValue(1.5)))
+    assert((currentTime := 12.0) == PropMod("currentTime", PropValue(12.0)))
+    assert((valueAsNumber := 3.0) == PropMod("valueAsNumber", PropValue(3.0)))

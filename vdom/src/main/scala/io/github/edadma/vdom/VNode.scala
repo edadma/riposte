@@ -82,6 +82,17 @@ final case class BoolAttr(value: Boolean) extends Prop
 final case class Handler(fn: Any => Unit, options: EventOptions = EventOptions()) extends Prop
 final case class StyleProp(decls: Map[String, String]) extends Prop
 
+// A typed live property. The host receives `value` as-is through setProperty —
+// not stringified through an attribute. This is the channel for hosts whose nodes
+// hold real typed fields rather than CSS-shaped strings: a native render object that
+// takes a Color, a size as a Double, an alignment enum. Routed to setProperty by
+// name, bypassing the small attribute-vs-property name distinction the DOM needs
+// (riposte's DOM host never emits one, so its behaviour is unaffected). On removal
+// the host is handed `null` for the property so it can reset the field. Equality is
+// structural, so passing the same value across renders is a no-op — but a value with
+// no meaningful `==` (e.g. a closure) churns; use [[Handler]] for callbacks.
+final case class PropValue(value: Any) extends Prop
+
 // addEventListener flags for a handler. `capture` listens in the capture phase
 // (and is part of the listener's identity, so a capture and a bubble handler for
 // the same event coexist); `once` auto-removes the listener after one fire; and

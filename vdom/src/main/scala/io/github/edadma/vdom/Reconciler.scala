@@ -444,13 +444,13 @@ object Reconciler:
   ): Map[String, AnyRef] =
     var listeners = oldListeners
 
-    oldProps.foreach { (k, _) =>
+    oldProps.foreach { (k, oldProp) =>
       if !newProps.contains(k) then
         if k.startsWith("on:") then
           val (evt, capture) = parseListenerKey(k)
           listeners.get(k).foreach(l => host.removeListener(el, evt, capture, l))
           listeners = listeners.removed(k)
-        else removeStatic(el, k)
+        else removeStatic(el, k, oldProp)
     }
 
     newProps.foreach { (k, prop) =>
@@ -492,10 +492,13 @@ object Reconciler:
       else host.removeAttribute(el, name)
     case StyleProp(decls) => host.setStyle(el, decls)
     case RawHtml(html)    => host.setInnerHtml(el, html)
+    case PropValue(v)     => host.setProperty(el, name, v)
     case _: Handler       => ()
 
-  private def removeStatic(el: AnyRef, name: String): Unit =
-    if isProperty(name) then host.setProperty(el, name, "")
-    else if name == "style" then host.clearStyle(el)
-    else if name == "innerHTML" then host.setInnerHtml(el, "")
-    else host.removeAttribute(el, name)
+  private def removeStatic(el: AnyRef, name: String, prop: Prop): Unit = prop match
+    case _: PropValue => host.setProperty(el, name, null)
+    case _ =>
+      if isProperty(name) then host.setProperty(el, name, "")
+      else if name == "style" then host.clearStyle(el)
+      else if name == "innerHTML" then host.setInnerHtml(el, "")
+      else host.removeAttribute(el, name)
