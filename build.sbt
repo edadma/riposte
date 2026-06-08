@@ -4,7 +4,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 ThisBuild / scalaVersion := "3.8.4"
 ThisBuild / organization := "io.github.edadma"
-ThisBuild / version      := "0.3.0"
+ThisBuild / version      := "0.3.1"
 
 // --- Maven Central publishing ----------------------------------------------
 // Metadata for the generated POM and the Sonatype Central wiring, mirroring the
@@ -69,8 +69,8 @@ lazy val root = project
 //
 // Developed in-tree for now (riposte `.dependsOn(vdom.js)`); it will move to its own
 // repo once mature, but the `io.github.edadma::vdom` coordinate is stable, so the JS
-// build publishes today — riposte's POM depends on it. Only the JS artifact is a
-// published dependency (riposte is JS-only); the JVM build exists solely for the
+// and Native builds publish today — riposte's POM depends on the JS artifact, and the
+// `suit` toolkit depends on the Native one. The JVM build exists solely for the
 // headless reconciler/hooks tests and stays unpublished.
 lazy val vdom = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
@@ -85,15 +85,10 @@ lazy val vdom = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     publish / skip      := true,
     publishLocal / skip := true,
   )
-  // The Native target is the forcing function for the future SDL3 host (the `suit`
-  // toolkit, in its own repo, pulls this via a source ProjectRef): the same pure
-  // sources that drive a browser and a headless JVM test host must also cross to a
-  // pixel-canvas host with no DOM assumptions. Unpublished for now — it graduates to
-  // Maven Central once the HostConfig surface stabilizes.
-  .nativeSettings(
-    publish / skip      := true,
-    publishLocal / skip := true,
-  )
+  // The Native target is the SDL3 host's foundation: the same pure sources that drive a
+  // browser and a headless JVM test host must also cross to a pixel-canvas host with no
+  // DOM assumptions. The `suit` toolkit (its own repo) depends on this artifact, so it
+  // publishes to Maven Central alongside the JS build.
 
 // riposte — a React-style virtual-DOM UI library for Scala.js. The published
 // library, in core/ so the repo root can stay a thin aggregator. It is the DOM
