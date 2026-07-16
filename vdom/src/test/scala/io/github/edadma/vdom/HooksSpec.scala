@@ -132,6 +132,22 @@ class HooksSpec extends VdomSuite:
     Scheduler.flushSync()
     assert(host.textOf(c) == "5")
 
+  test("a layout effect that unconditionally sets state raises maximum update depth"):
+    val c = container()
+    val Comp = view {
+      val (n, _, update) = useState(0)
+      // deps null → runs after every commit; the unconditional set makes each commit
+      // schedule the next, a loop with no fixed point.
+      useLayoutEffect(() => { update(_ + 1); noCleanup }, null)
+      el("span")(s"$n")
+    }
+    createRoot(c).render(Comp())
+    val ex = intercept[IllegalStateException](Scheduler.flushSync())
+    assert(ex.getMessage.contains("Maximum update depth exceeded"))
+    // The scheduler is left consistent, not half-drained: a later well-behaved flush is a
+    // no-op rather than re-throwing on stranded work.
+    Scheduler.flushSync()
+
   test("transitionCurrent eases with easeOutCubic and clamps to the target"):
     val cell = new TransitionCell(startValue = 0.0, target = 10.0, startMs = 0.0, durationMs = 100, rafId = -1)
     assert(Hooks.transitionCurrent(cell, 0.0) == 0.0)

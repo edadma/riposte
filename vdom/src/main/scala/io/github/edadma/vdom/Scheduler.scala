@@ -84,6 +84,26 @@ object Scheduler:
       runRenderPass()
       runEffects(layoutEffects)
       pass += 1
+    if dirty.nonEmpty || layoutEffects.nonEmpty then reportRunawayUpdates()
+
+  // Work is still pending after the cap: a component keeps scheduling an update from
+  // its render, or a layout effect does, with no condition that stops. Returning here
+  // would strand that work — the flush already cleared `renderScheduled`, so nothing
+  // reschedules it and the UI silently stops updating until some unrelated update
+  // happens by — while looping would hang outright. So the pending work is dropped and
+  // the fault is raised, loudly, the way React raises "maximum update depth exceeded",
+  // rather than failing quietly. The buffers (and the flags they mirror) are reset so
+  // the scheduler is left consistent for anyone who catches the throw.
+  private def reportRunawayUpdates(): Unit =
+    dirty.foreach(_.dirty = false)
+    dirty.clear()
+    layoutEffects.foreach(_.queued = false)
+    layoutEffects.clear()
+    throw new IllegalStateException(
+      "Maximum update depth exceeded: a component repeatedly scheduled an update from " +
+        "render or a layout effect with no stopping condition. Look for an unconditional " +
+        "state write during render, or in a useLayoutEffect with missing/incorrect deps.",
+    )
 
   private def runRenderPass(): Unit =
     if dirty.nonEmpty then

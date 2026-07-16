@@ -4,7 +4,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 ThisBuild / scalaVersion := "3.8.4"
 ThisBuild / organization := "io.github.edadma"
-ThisBuild / version      := "0.3.1"
+ThisBuild / version      := "0.3.2"
 
 // --- Maven Central publishing ----------------------------------------------
 // Metadata for the generated POM and the Sonatype Central wiring, mirroring the
@@ -80,6 +80,12 @@ lazy val vdom = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     description := "The host-agnostic core of riposte: the VNode model, reconciler, hooks runtime, and scheduler over a HostConfig abstraction. riposte is its DOM host.",
     scalacOptions ++= commonScalacOptions,
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test,
+    // The suites install process-global seams before each test — the HostConfig, the
+    // Scheduler's microtask/macrotask queues, and the transition/timer clocks — and reset
+    // them in `withFixture`. That isolation holds only if suites run one at a time; run in
+    // parallel they clobber one another's seams on the shared Scheduler singleton. ScalaTest
+    // is already sequential within a suite; this serializes across them too.
+    Test / parallelExecution := false,
   )
   .jvmSettings(
     publish / skip      := true,

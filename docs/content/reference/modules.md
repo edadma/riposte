@@ -17,7 +17,7 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
 `riposte-query` also depends on `riposte-atoms`; the rest depend only on `riposte`. The
-current published version is `0.3.0`.
+current published version is `0.3.2`.
 
 Under `riposte` sits **`vdom`** — a host-agnostic engine (the `VNode` model, the
 reconciler, the hooks runtime, and the scheduler) that names no DOM type. `riposte` is its
