@@ -17,11 +17,6 @@ import scala.util.control.NonFatal
 // algorithm drives a browser DOM, a native renderer, or a test host.
 object Reconciler:
 
-  // The component currently being rendered, so hooks know who they belong to.
-  // The reconciler runs on a single thread per host, so a plain var is a correct
-  // "current fiber".
-  private[vdom] var current: ComponentInstance[?] | Null = null
-
   private def host = Host.config
 
   private val SvgNs = "http://www.w3.org/2000/svg"
@@ -127,14 +122,13 @@ object Reconciler:
         inst.child   = mount(eb.fallback(e), parentDom, before, inst)
     inst
 
-  // Run a component's render function against its hook state.
+  // Run a component's render function against its hook state. The hooks object
+  // is the component's own and carries a back-reference to it, so nothing here
+  // needs an ambient "component being rendered" — a render nested inside another
+  // (a parent whose patch re-renders a child) is naturally reentrant.
   private def renderComponent[P](inst: ComponentInstance[P]): VNode =
-    val prev = current
-    current = inst
     inst.hooks.beginRender()
-    val out = inst.component.render(inst.props)(using inst.hooks)
-    current = prev
-    out
+    inst.component.render(inst.props)(using inst.hooks)
 
   // --- patch ---------------------------------------------------------------
 
@@ -200,14 +194,23 @@ object Reconciler:
   // Update the provided value and reconcile the child. Patching the child
   // re-renders the subtree top-down, which covers ordinary consumers — but a
   // memoized ancestor may bail and skip consumers below it, so when the value
-  // actually changes we also walk the subtree and wake every component that
-  // reads this context.
+  // actually changes we also mark every component that reads this context.
+  //
+  // The marking runs BEFORE the patch, not after, and that ordering is what keeps
+  // each consumer to a single render. Marking sets `dirty`; the top-down patch then
+  // renders every consumer it reaches and `rerender` clears the flag again, so at
+  // the next flush the scheduler's `mounted && dirty` check skips them — leaving
+  // exactly the consumers a memo bailout hid, which is the set this walk exists for.
+  // Marking afterwards instead would re-enqueue every consumer the patch had just
+  // rendered, giving each a second, output-identical render. It also means a
+  // memoized consumer patched directly is already dirty when the bailout tests
+  // `!c.dirty`, so it renders in this cascade rather than a flush later.
   private def patchProvider(pr: ProviderInstance, next: VProvider[?]): Unit =
     val changed = pr.value != next.value
     pr.value = next.value
     pr.vnode = next
-    pr.child = patch(pr.child.asInstanceOf[Instance], next.child)
     if changed then invalidateContextConsumers(pr.child.asInstanceOf[Instance], pr.ctx)
+    pr.child = patch(pr.child.asInstanceOf[Instance], next.child)
 
   // Same target (sameType already checked): reconcile the child in place. The
   // child's own host node lives in `target`, and the child diff resolves its
@@ -269,6 +272,13 @@ object Reconciler:
   // sub-subtree resolves to the inner provider's (unchanged) value, so it is
   // shielded and must not be woken — which is why a global subscriber set would
   // over-invalidate here.
+  //
+  // Every other instance that owns children is descended into, portals and error
+  // boundaries included. A portal's child is elsewhere in the HOST tree but still
+  // right here in the component tree — `useContext` resolves through instance
+  // parents — so a themed overlay behind a memoized ancestor is reachable only
+  // through this case. A boundary's child, real or fallback, is likewise ordinary
+  // subtree.
   private def invalidateContextConsumers(inst: Instance, ctx: Context[?]): Unit =
     inst match
       case c: ComponentInstance[?] =>
@@ -278,6 +288,8 @@ object Reconciler:
       case f: FragmentInstance => f.children.foreach(invalidateContextConsumers(_, ctx))
       case p: ProviderInstance =>
         if !(p.ctx eq ctx) then invalidateContextConsumers(p.child.asInstanceOf[Instance], ctx)
+      case pt: PortalInstance        => invalidateContextConsumers(pt.child.asInstanceOf[Instance], ctx)
+      case eb: ErrorBoundaryInstance => invalidateContextConsumers(eb.child.asInstanceOf[Instance], ctx)
       case _ => () // text / empty — no children, never a consumer
 
   private def patchComponent(c: ComponentInstance[?], next: VNode): Unit =
@@ -455,13 +467,21 @@ object Reconciler:
 
     newProps.foreach { (k, prop) =>
       if k.startsWith("on:") then
-        prop match
-          case Handler(fn, opts) =>
-            val (evt, capture) = parseListenerKey(k)
-            listeners.get(k).foreach(l => host.removeListener(el, evt, capture, l))
-            val handle = host.addListener(el, evt, capture, opts.once, opts.passive, fn)
-            listeners = listeners.updated(k, handle)
-          case _ => ()
+        // An unchanged handler keeps its existing registration. `Handler` compares
+        // structurally over (fn, options), and function equality is reference
+        // equality, so a hoisted or `useCallback`-stabilized handler is equal to
+        // last render's and costs nothing here — which is what makes that
+        // stabilization worth doing on an element, not just on a memoized child.
+        // A changed function or changed options is unequal and re-registers.
+        // (An inline lambda is a fresh reference each render and still churns.)
+        if !oldProps.get(k).contains(prop) then
+          prop match
+            case Handler(fn, opts) =>
+              val (evt, capture) = parseListenerKey(k)
+              listeners.get(k).foreach(l => host.removeListener(el, evt, capture, l))
+              val handle = host.addListener(el, evt, capture, opts.once, opts.passive, fn)
+              listeners = listeners.updated(k, handle)
+            case _ => ()
       else if !oldProps.get(k).contains(prop) then setStatic(el, k, prop)
     }
 

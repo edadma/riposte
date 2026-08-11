@@ -55,9 +55,13 @@ trait HostConfig:
   def setAttribute(node: AnyRef, name: String, value: String): Unit
   def removeAttribute(node: AnyRef, name: String): Unit
 
-  /** Set a live property rather than an attribute — `value` / `checked` and the
-    * uncontrolled `defaultValue` / `defaultChecked` seeds. `value` is a `String` or
-    * `Boolean`. */
+  /** Set a live property rather than an attribute. Two things arrive here: the
+    * well-known DOM names the reconciler routes as properties — `value` / `checked`
+    * and the uncontrolled `defaultValue` / `defaultChecked` seeds, carrying a
+    * `String` or `Boolean` — and any prop the application declared as a
+    * [[PropValue]], whose payload is passed through untouched and may be of any
+    * type the host understands. A removed prop arrives as `null` (a `PropValue`) or
+    * `""` (a well-known name), for the host to reset the field with. */
   def setProperty(node: AnyRef, name: String, value: Any): Unit
 
   /** Replace the element's inline style with exactly `decls`. */
@@ -88,7 +92,7 @@ trait HostConfig:
 // The active host binding. A host installs its config once at startup — riposte's
 // DOM host the first time anything in its package is touched, a test host in its
 // setup. One process drives one host, mirroring the single-threaded, single-document
-// model the reconciler already assumes (see [[Reconciler.current]]).
+// model the reconciler already assumes.
 object Host:
   var config: HostConfig = UninstalledHost
 

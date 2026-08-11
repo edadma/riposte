@@ -138,7 +138,7 @@ object Hooks:
   private var idSeq: Long = 0
   private[vdom] def nextId(): String =
     idSeq += 1
-    s"riposte-$idSeq"
+    s"vdom-$idSeq"
 
   // The eased value of an in-flight transition at time `now`, using easeOutCubic.
   // Before the start it is `startValue`; at or past `startMs + durationMs` it is
