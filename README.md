@@ -56,12 +56,12 @@ scheduler) that names no platform type and is pulled in transitively. You depend
 | `riposte-salle`   | Styled, skinnable component library — form controls (incl. Segmented), Image/Lightbox, Carousel/Hero, Badge/Tag, Skeleton, Spinner/Progress, Empty, Descriptions, Pagination, Dropdown, Tabs, Breadcrumb, Modal/Drawer/Toast/Tooltip, Layout/Navbar/Footer shell, grid + masonry layout, theming |
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.3.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.3.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.3.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.3.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.3.2"
-libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.3.2"
+libraryDependencies += "io.github.edadma" %%% "riposte"        % "0.3.3"
+libraryDependencies += "io.github.edadma" %%% "riposte-atoms"  % "0.3.3"
+libraryDependencies += "io.github.edadma" %%% "riposte-router" % "0.3.3"
+libraryDependencies += "io.github.edadma" %%% "riposte-query"  % "0.3.3"
+libraryDependencies += "io.github.edadma" %%% "riposte-forms"  % "0.3.3"
+libraryDependencies += "io.github.edadma" %%% "riposte-salle"  % "0.3.3"
 ```
 
 ## Repository layout

@@ -17,7 +17,7 @@ transitively, so adding any of them is enough — you don't list `riposte` separ
 | `riposte-salle`   | `io.github.edadma.riposte.salle.*`      | Styled, skinnable component library     |
 
 `riposte-query` also depends on `riposte-atoms`; the rest depend only on `riposte`. The
-current published version is `0.3.2`.
+current published version is `0.3.3`.
 
 Under `riposte` sits **`vdom`** — a host-agnostic engine (the `VNode` model, the
 reconciler, the hooks runtime, and the scheduler) that names no DOM type. `riposte` is its
@@ -94,7 +94,9 @@ See [Hooks](/guide/hooks/).
   enumerated booleans render `"true"`/`"false"`.
 - **Events** — typed `EventKey := handler` (`onClick`, `onInput`, `onKeyDown`, …);
   `on(name)` for the rest; `targetValue(e)` reads an input's value. Chain `.capture`,
-  `.once`, and/or `.passive` for listener options (`onScroll.passive := h`).
+  `.once`, and/or `.passive` for listener options (`onScroll.passive := h`). A listener is
+  re-registered only when its handler or its options change, so `.once` fires at most once
+  per registration.
 - **Refs** — `ref := box` binds an element to a `useRef` box (or a callback); pass a
   ref down as a prop to forward it, and `useImperativeHandle` to expose a custom handle.
 - **Keys** — `key := id` on an element (or a second arg to a component) for stable list

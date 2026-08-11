@@ -294,7 +294,9 @@ A component instance can be keyed too, by passing a key as the second argument:
 
 Wrapping a component in `memo` makes it bail out of a parent-driven re-render when its new
 props are equal (`==`) to the previous ones — Riposte's `React.memo`. It still re-renders
-on its own state changes:
+on its own state changes, and a component below it that reads a context still re-renders
+when that context's value changes, even though the bailout stopped the parent's cascade
+from reaching it — including across a `portal` or an `errorBoundary`:
 
 ```scala
 val Row = memo(component[RowProps] { props => … })

@@ -179,6 +179,11 @@ val onSelect = useCallback((id: String) => setSelected(id), Array())
 Row(rowProps, onSelect)   // Row can now actually bail out
 ```
 
+A stable handler also pays off on a plain element: a listener whose handler is unchanged
+keeps its existing registration across a patch, while an inline lambda is a new function
+each render and so is removed and re-added every time the element is patched. That is
+invisible in a small tree and worth avoiding in a large or frequently re-rendered one.
+
 ## useId
 
 `useId()` returns a stable, unique string id — the same value across re-renders of that
